@@ -13,7 +13,7 @@ const testimonials = [
     role: "Software Engineer",
     company: "Zoho",
     text: "The real-time project experience at Inetz helped me clear my technical rounds at Zoho effortlessly. Highly recommended!",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400",
+    image: "/student.jpeg",
     border: "border-amber-500/40",
     roleColor: "text-amber-600",
   },
@@ -22,7 +22,7 @@ const testimonials = [
     role: "Full Stack Architect",
     company: "Infosys",
     text: "Excellent mentors who explain concepts with real-world scenarios. The placement support is genuine and active.",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
+    image: "/student.jpeg",
     border: "border-indigo-500/40",
     roleColor: "text-indigo-600",
   },
@@ -31,7 +31,7 @@ const testimonials = [
     role: "Java Tech Lead",
     company: "TCS",
     text: "Flexible timings allowed me to manage college while gaining professional skills. Truly the best in Chennai!",
-    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400",
+    image: "/student.jpeg",
     border: "border-emerald-500/40",
     roleColor: "text-emerald-600",
   },
@@ -40,7 +40,7 @@ const testimonials = [
     role: "UI/UX Designer",
     company: "Freshworks",
     text: "The design immersive program at Inetz changed my perspective on user-centric design. Got placed with an amazing package!",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400",
+    image: "/student.jpeg",
     border: "border-rose-500/40",
     roleColor: "text-rose-600",
   },
@@ -49,7 +49,7 @@ const testimonials = [
     role: "Data Scientist",
     company: "Amazon",
     text: "Comprehensive curriculum and hands-on ML projects. The mock interviews were incredibly close to the actual process.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+    image: "/student.jpeg",
     border: "border-sky-500/40",
     roleColor: "text-sky-600",
   },
@@ -58,7 +58,7 @@ const testimonials = [
     role: "DevOps Engineer",
     company: "Accenture",
     text: "Mastered Docker, K8s and CI/CD pipelines here. The instructors are industry veterans who know exactly what's needed.",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400",
+    image: "  https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400",
     border: "border-violet-500/40",
     roleColor: "text-violet-600",
   },
@@ -106,35 +106,41 @@ export default function SuccessStories() {
   };
 
   return (
-    <Section className="bg-white dark:bg-zinc-950 py-24 overflow-hidden">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 px-6 max-w-[1400px] mx-auto">
-        <div className="max-w-2xl">
+    <Section className="bg-white dark:bg-zinc-950 py-24 overflow-hidden relative">
+      {/* Premium dark mode glow */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/5 blur-[150px] rounded-full hidden dark:block" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full hidden dark:block" />
+
+      <div className="flex flex-col gap-6 mb-16 px-6 max-w-[1400px] mx-auto relative z-10">
+        {/* Centered Badge + Heading */}
+        <div className="text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-6">
             Success Stories
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-6 leading-tight">
-            Our Alumni <br />
-            <span className="text-emerald-600">Impact Stories</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-2 leading-tight">
+            Our Alumni <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-emerald-400">Impact Stories</span>
           </h2>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium">
-            Join 5000+ professionals who transformed their careers with Inetz Technologies.
-          </p>
         </div>
 
-        {/* Scroll Buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => scroll("left")}
-            className="h-12 w-12 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-emerald-500 transition-all text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 shadow-sm"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            className="h-12 w-12 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-emerald-500 transition-all text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 shadow-sm"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+        {/* Description + Nav Buttons row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium max-w-2xl">
+            Join 5000+ professionals who transformed their careers with Inetz Technologies.
+          </p>
+          <div className="flex gap-4 shrink-0">
+            <button
+              onClick={() => scroll("left")}
+              className="h-12 w-12 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-emerald-500 transition-all text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 shadow-sm"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              className="h-12 w-12 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-emerald-500 transition-all text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 shadow-sm"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 

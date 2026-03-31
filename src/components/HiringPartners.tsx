@@ -5,13 +5,14 @@ import { Section } from "@/components/ui/Section";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 
+import { Counter } from "@/components/ui/Counter";
 import { FaWhatsapp } from "react-icons/fa";
 
 export default function HiringPartners() {
   const partners = [
     { name: "eNoah", color: "text-[#ED7F10]" },
-    { name: "Enormous", color: "text-[#2B2D42]" },
-    { name: "FedEx", color: "text-[#4D148C]" },
+    { name: "Enormous", color: "text-[#2B2D42] dark:text-zinc-300" },
+    { name: "FedEx", color: "text-[#4D148C] dark:text-violet-400" },
     { name: "G10X", color: "text-zinc-900 dark:text-zinc-100" },
     { name: "G2 TechSoft", color: "text-zinc-800 dark:text-zinc-200" },
     { name: "Gainwell", color: "text-[#0082CA]" },
@@ -31,15 +32,16 @@ export default function HiringPartners() {
 
   return (
     <Section className="bg-white dark:bg-zinc-950 overflow-hidden py-24 relative">
-      <div className="relative text-center mb-16">
-        <h2 className="text-3xl md:text-5xl font-bold text-[#0B4234] dark:text-emerald-400 mb-6 tracking-tight">
-          Our Hiring Partners
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full hidden dark:block" />
+      <div className="text-center mb-6">
+        <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+          Our Hiring <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-emerald-400">Partners</span>
         </h2>
-        <p className="mt-4 text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto text-sm sm:text-base leading-relaxed">
-          We place candidates with trusted companies across diverse industries. 
-          Our network of 100+ partner organizations ensures relevant job opportunities.
-        </p>
       </div>
+      <p className="text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto text-sm sm:text-base leading-relaxed text-center mb-16">
+        We place candidates with trusted companies across diverse industries.
+        Our network of 100+ partner organizations ensures relevant job opportunities.
+      </p>
 
       {/* Scroller Container */}
       <div className="relative mt-20 flex flex-col gap-10">
@@ -81,13 +83,13 @@ export default function HiringPartners() {
       {/* Stats Section - Matching the image's clean white look */}
       <div className="mt-24 grid gap-6 sm:grid-cols-3 max-w-6xl mx-auto px-4">
         {[
-          { label: "Partner Companies", val: "200+", color: "text-[#0B4234]" },
-          { label: "Placement Rate", val: "90%", color: "text-[#0B4234]" },
-          { label: "Professionals Placed", val: "1500+", color: "text-[#0B4234]" },
+          { label: "Partner Companies", val: 200, suffix: "+", color: "text-[#0B4234] dark:text-emerald-400" },
+          { label: "Placement Rate", val: 90, suffix: "%", color: "text-[#0B4234] dark:text-emerald-400" },
+          { label: "Professionals Placed", val: 1500, suffix: "+", color: "text-[#0B4234] dark:text-emerald-400" },
         ].map((stat, i) => (
           <div key={i} className="bg-emerald-50/10 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl p-10 text-center shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
             <h3 className={cn("text-4xl sm:text-5xl font-bold mb-4", stat.color)}>
-              {stat.val}
+              <Counter to={stat.val} />{stat.suffix}
             </h3>
             <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm">
               {stat.label}
@@ -101,9 +103,9 @@ export default function HiringPartners() {
         href="https://wa.me/919840234475"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-8 right-8 z-[200] group"
+        className="fixed bottom-8 right-2 z-[200] group animate-bounce"
       >
-        <div className="animate-bounce absolute -inset-4 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/40 transition-all" />
+        <div className="absolute -inset-4 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/40 transition-all" />
         <div className="relative h-16 w-16 bg-[#25D366] rounded-full flex items-center justify-center text-white shadow-2xl transition-transform hover:scale-110 active:scale-95">
           <FaWhatsapp className="h-9 w-9" />
         </div>

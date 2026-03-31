@@ -13,7 +13,8 @@ type Course = {
   title: string;
   desc: string;
   tag: string;
-  image: string;
+  video: string;
+  image?: string;
   color: string;
   details: string;
   duration: string;
@@ -28,7 +29,7 @@ export default function PremiumCoursesSection() {
       title: "MERN Stack Development",
       desc: "Build modern web apps using React & Node.",
       tag: "Full Stack",
-      image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=800",
+      video: "https://cdn.pixabay.com/video/2019/04/10/22616-330089849_large.mp4",
       color: "from-orange-500/20 to-orange-500/5",
       details: "Comprehensive training in MongoDB, Express, React, and Node.js. Includes real-world projects and deployment strategies.",
       duration: "4 Months",
@@ -38,7 +39,7 @@ export default function PremiumCoursesSection() {
       title: "Java Fullstack Development",
       desc: "Enterprise apps using Spring Boot.",
       tag: "Backend Focus",
-      image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800",
+      video: "https://cdn.pixabay.com/video/2022/02/16/107936-678508493_large.mp4",
       color: "from-blue-600/20 to-blue-600/5",
       details: "Master Spring Boot, REST APIs, and microservices architecture with Java. Focus on enterprise-grade system design.",
       duration: "5 Months",
@@ -48,7 +49,7 @@ export default function PremiumCoursesSection() {
       title: "Python Fullstack Development",
       desc: "Build apps using Django & Flask.",
       tag: "Data Driven",
-      image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800",
+      video: "https://cdn.pixabay.com/video/2020/09/27/50868-462310862_large.mp4",
       color: "from-yellow-500/20 to-yellow-500/5",
       details: "Learn Python from scratch to advanced web development with Django and Flask. Includes integration with AI/ML tools.",
       duration: "4 Months",
@@ -58,7 +59,7 @@ export default function PremiumCoursesSection() {
       title: "Data Science & AI",
       desc: "AI, ML, and data modeling.",
       tag: "Advanced Tech",
-      image: "https://images.unsplash.com/photo-1551288049-bbda48242175?auto=format&fit=crop&q=80&w=800",
+      video: "https://cdn.pixabay.com/video/2020/03/12/33580-398014022_large.mp4",
       color: "from-purple-600/20 to-purple-600/5",
       details: "Deep dive into statistical analysis, machine learning algorithms, and neural networks using Python and R.",
       duration: "6 Months",
@@ -68,7 +69,7 @@ export default function PremiumCoursesSection() {
       title: "Embedded Systems",
       desc: "IoT & real-time systems.",
       tag: "Hardware",
-      image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800",
+      video: "https://cdn.pixabay.com/video/2022/10/30/137021-766158022_large.mp4",
       color: "from-teal-600/20 to-teal-600/5",
       details: "Experience hardware-software co-design. Learn microcontrollers, RTOS, and industrial IoT protocols.",
       duration: "4 Months",
@@ -78,7 +79,7 @@ export default function PremiumCoursesSection() {
       title: "Data Analytics",
       desc: "Transform raw data into business insights.",
       tag: "Analytics",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800",
+      video: "https://cdn.pixabay.com/video/2023/07/22/172675-847844070_large.mp4",
       color: "from-sky-500/20 to-sky-500/5",
       details: "Master Excel, SQL, Tableau, and PowerBI. Learn to clean, analyze, and visualize data to drive strategic business decisions.",
       duration: "3 Months",
@@ -91,23 +92,27 @@ export default function PremiumCoursesSection() {
       <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-orange-500/5 blur-[120px] rounded-full" />
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
-        <div className="max-w-2xl">
-          <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm tracking-wider uppercase mb-4">
+      <div className="flex flex-col gap-6 mb-16">
+        {/* Centered Badge + Heading */}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
             <Sparkles className="h-4 w-4" />
             Empower your future
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
-            Industry Specialized <br />
-            <span className="text-emerald-600">Learning Paths</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100">
+            Industry Specialized <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-emerald-400">Learning Paths</span>
           </h2>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400">
-            Our programs are designed by industry experts to get you from basics to professional level in months, not years.
-          </p>
         </div>
-        <Button href="/programs" variant="outline" size="lg" className="rounded-2xl border-2">
-          Browse all programs
-        </Button>
+
+        {/* Description + Button row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl">
+            Our programs are designed by industry experts to get you from basics to professional level in months, not years. Use trending technologies through real-time projects to master every challenge.
+          </p>
+          <Button href="/programs" variant="ghost" size="lg" className="rounded-2xl border-2 shrink-0 self-start md:self-center bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 hover:border-emerald-700">
+            Browse all programs
+          </Button>
+        </div>
       </div>
 
       {/* Grid */}
@@ -123,31 +128,33 @@ export default function PremiumCoursesSection() {
             <Card
               variant="outline"
               hover="lift"
-              className="p-0 border-zinc-200/60 dark:border-zinc-800/60 transition-colors group h-full flex flex-col overflow-hidden"
+              className="p-4 border border-zinc-200/80 dark:border-zinc-800/80 transition-shadow duration-300 group h-full flex flex-col bg-white dark:bg-zinc-950 rounded-3xl shadow-sm hover:shadow-lg"
             >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={course.image}
-                  alt={course.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              {/* Inset Video Container without gradients/badges */}
+              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-6 bg-zinc-100 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                <video
+                  src={course.video}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className={cn("absolute inset-0 bg-gradient-to-t opacity-60", course.color)} />
-                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur rounded-full text-[10px] font-bold text-zinc-900 dark:text-white shadow-lg uppercase tracking-wider">
-                  {course.tag}
-                </div>
+                {/* Optional: Simple subtle inner shadow to mimic video container depth */}
+                <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.02)] rounded-2xl pointer-events-none" />
               </div>
 
-              <div className="p-6 flex flex-col flex-1">
-                <h3 className="text-xl font-bold mb-2 text-zinc-900 dark:text-zinc-100 transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-emerald-600 group-hover:to-teal-500 group-hover:bg-clip-text group-hover:text-transparent">
+              <div className="px-2 flex flex-col flex-1 pb-2">
+                <h3 className="text-[20px] font-semibold text-zinc-900 dark:text-zinc-50 tracking-tight leading-snug mb-3">
                   {course.title}
                 </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 line-clamp-2 leading-relaxed">
-                  {course.desc}
+                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-6">
+                  {course.details}
                 </p>
 
-                <div className="mt-auto">
-                  <Link href="/programs" className="inline-flex items-center gap-2 text-orange-500 text-lg font-bold group/btn hover:underline decoration-2 underline-offset-4">
-                    View Program Details
+                <div className="mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
+                  <Link href="/programs" className="inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-bold group/btn hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+                    View more details
                     <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                   </Link>
                 </div>

@@ -21,11 +21,11 @@ const footerLinks = {
     { label: "Contact", href: "/contact" },
   ],
   programs: [
-    { label: "Career Gap Program", href: "/programs/gap" },
-    { label: "Evolve Program", href: "/programs/evolve" },
-    { label: "Accelerator", href: "/programs/accelerator" },
-    { label: "Placement Assistance", href: "/placement" },
-    { label: "Corporate Training", href: "/corporate" },
+    { label: "Career Gap Program", href: "/programs#career-gap-program" },
+    { label: "Evolve Program", href: "/programs#evolve-program" },
+    { label: "Accelerator", href: "/programs#accelerator" },
+    { label: "Placement Assistance", href: "/programs#placement-assistance" },
+    { label: "Corporate Training", href: "/programs#corporate-training" },
   ],
   support: [
     { label: "Privacy Policy", href: "/privacy" },
@@ -127,28 +127,33 @@ export default function Footer() {
                     <div className="h-10 w-10 shrink-0 rounded-xl bg-orange-500/5 flex items-center justify-center text-orange-500">
                         <MapPin className="h-5 w-5" />
                     </div>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed font-medium">
+                    <a 
+                      href="https://maps.google.com/?q=No.+159,+3rd+Floor,+KP+Towers,+Arcot+Road,+Opp.+Nexus+Vijaya+Mall,+Vadapalani,+Chennai+-+600026" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed font-medium hover:text-orange-500 transition-colors"
+                    >
                         No. 159, 3rd Floor, KP Towers, Arcot Road <br/> 
                         Opp. Nexus Vijaya Mall, Vadapalani, <br/> 
                         Chennai - 600026
-                    </p>
+                    </a>
                 </div>
                 <div className="flex gap-4">
                     <div className="h-10 w-10 shrink-0 rounded-xl bg-orange-500/5 flex items-center justify-center text-orange-500">
                         <Phone className="h-5 w-5" />
                     </div>
-                    <div className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">
-                        <p>+91 98402 34475</p>
-                        <p>+91 98844 68682</p>
+                    <div className="text-zinc-500 dark:text-zinc-400 text-sm font-medium flex flex-col space-y-1">
+                        <a href="tel:+919840234475" className="hover:text-orange-500 transition-colors">+91 98402 34475</a>
+                        <a href="tel:+919884468682" className="hover:text-orange-500 transition-colors">+91 98844 68682</a>
                     </div>
                 </div>
                 <div className="flex gap-4">
                     <div className="h-10 w-10 shrink-0 rounded-xl bg-orange-500/5 flex items-center justify-center text-orange-500">
                         <Mail className="h-5 w-5" />
                     </div>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">
+                    <a href="mailto:info@inetztech.com" className="text-zinc-500 dark:text-zinc-400 text-sm font-medium hover:text-orange-500 transition-colors">
                         info@inetztech.com
-                    </p>
+                    </a>
                 </div>
              </div>
           </div>

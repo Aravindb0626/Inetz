@@ -1,9 +1,9 @@
 import CoursesSection from "@/components/CourseSection";
 import CTASection from "@/components/CTA";
 import CertificateSection from "@/components/CertificateSection";
-import Footer from "@/components/Footer";
 import { HeroInternship } from "@/components/HeroInternship";
 import HiringPartners from "@/components/HiringPartners";
+import IndustrySectors from "@/components/IndustrySectors";
 import InternshipProcess from "@/components/InternshipProcess";
 import SuccessStories from "@/components/SuccessStories";
 
@@ -15,11 +15,11 @@ export default function Home() {
       <HeroInternship />
       <InternshipProcess/>
       <HiringPartners/>
+      <IndustrySectors/>
       <CoursesSection/>   
       <CertificateSection/>
       <SuccessStories/>
       <CTASection/>
-      <Footer/>
     </div>
   );
 }

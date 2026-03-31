@@ -85,8 +85,11 @@ const steps = [
 
 export default function InternshipProcess() {
   return (
-    <Section className="bg-zinc-50 dark:bg-zinc-900/50">
-      <div className="relative text-center mb-16">
+    <Section className="bg-zinc-50 dark:bg-zinc-950 transition-colors relative overflow-hidden">
+      {/* Dark mode glow */}
+      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] rounded-full hidden dark:block" />
+
+      <div className="text-center mb-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -94,25 +97,25 @@ export default function InternshipProcess() {
         >
           Our Roadmap
         </motion.div>
-        
+
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100"
         >
-          Your Journey to <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-emerald-500">Excellence</span>
+          Your Journey to <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-emerald-400">Excellence</span>
         </motion.h2>
-
-        <motion.p 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="mt-4 text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto"
-        >
-         The content below makes students feel that they are joining a structured career-focused system, not just another ordinary class.
-        </motion.p>
       </div>
+
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        className="text-lg text-zinc-600 dark:text-zinc-400 w-full mb-16 max-w-2xl mx-auto text-center"
+      >
+        The content below makes students feel that they are joining a structured career-focused system, not just another ordinary class.
+      </motion.p>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 relative">
         {/* Connection line for desktop */}

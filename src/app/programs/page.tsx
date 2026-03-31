@@ -15,7 +15,7 @@ const courses = [
     title: "MERN Stack Development",
     desc: "Build modern web apps using React & Node.",
     tag: "Full Stack",
-    image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=800",
+    video: "https://cdn.pixabay.com/video/2019/04/10/22616-330089849_large.mp4",
     color: "from-orange-500/20 to-orange-500/5",
     details: "Comprehensive training in MongoDB, Express, React, and Node.js. Includes real-world projects and deployment strategies.",
     duration: "4 Months",
@@ -24,7 +24,7 @@ const courses = [
     title: "Java Fullstack Development",
     desc: "Enterprise apps using Spring Boot.",
     tag: "Backend Focus",
-    image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800",
+    video: "https://cdn.pixabay.com/video/2022/02/16/107936-678508493_large.mp4",
     color: "from-blue-600/20 to-blue-600/5",
     details: "Master Spring Boot, REST APIs, and microservices architecture with Java. Focus on enterprise-grade system design.",
     duration: "5 Months",
@@ -33,7 +33,7 @@ const courses = [
     title: "Python Fullstack Development",
     desc: "Build apps using Django & Flask.",
     tag: "Data Driven",
-    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800",
+    video: "https://cdn.pixabay.com/video/2020/09/27/50868-462310862_large.mp4",
     color: "from-yellow-500/20 to-yellow-500/5",
     details: "Learn Python from scratch to advanced web development with Django and Flask. Includes integration with AI/ML tools.",
     duration: "4 Months",
@@ -42,7 +42,7 @@ const courses = [
     title: "Data Science & AI",
     desc: "AI, ML, and data modeling.",
     tag: "Advanced Tech",
-    image: "https://images.unsplash.com/photo-1551288049-bbda48242175?auto=format&fit=crop&q=80&w=800",
+    video: "https://cdn.pixabay.com/video/2020/03/12/33580-398014022_large.mp4",
     color: "from-purple-600/20 to-purple-600/5",
     details: "Deep dive into statistical analysis, machine learning algorithms, and neural networks using Python and R.",
     duration: "6 Months",
@@ -51,7 +51,7 @@ const courses = [
     title: "Embedded Systems",
     desc: "IoT & real-time systems.",
     tag: "Hardware",
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800",
+    video: "https://cdn.pixabay.com/video/2022/10/30/137021-766158022_large.mp4",
     color: "from-teal-600/20 to-teal-600/5",
     details: "Experience hardware-software co-design. Learn microcontrollers, RTOS, and industrial IoT protocols.",
     duration: "4 Months",
@@ -60,7 +60,7 @@ const courses = [
     title: "Data Analytics",
     desc: "Transform raw data into business insights.",
     tag: "Analytics",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800",
+    video: "https://cdn.pixabay.com/video/2023/07/22/172675-847844070_large.mp4",
     color: "from-sky-500/20 to-sky-500/5",
     details: "Master Excel, SQL, Tableau, and PowerBI. Learn to clean, analyze, and visualize data to drive strategic business decisions.",
     duration: "3 Months",
@@ -190,43 +190,32 @@ export default function ProgramsPage() {
                       <Card 
                         variant="outline" 
                         hover="lift" 
-                        className="p-0 border-zinc-200/60 dark:border-zinc-800/60 transition-colors group h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-900"
+                        onClick={() => {
+                          setSelectedCourse(course.title);
+                          setStep("duration");
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="p-4 border border-zinc-200/80 dark:border-zinc-800/80 transition-shadow duration-300 group h-full flex flex-col bg-white dark:bg-zinc-950 rounded-3xl shadow-sm hover:shadow-lg cursor-pointer"
                       >
-                        <div className="relative h-48 overflow-hidden">
-                          <img
-                            src={course.image}
-                            alt={course.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-6 bg-zinc-100 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                          <video
+                            src={course.video}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           />
-                          <div className={cn("absolute inset-0 bg-gradient-to-t opacity-40", course.color)} />
-                          <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur rounded-full text-[10px] font-bold text-zinc-900 dark:text-white shadow-lg uppercase tracking-wider">
-                            {course.tag}
-                          </div>
+                          <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.02)] rounded-2xl pointer-events-none" />
                         </div>
                         
-                        <div className="p-8 flex flex-col flex-1">
-                          <h3 className="text-2xl font-bold mb-3 text-zinc-900 dark:text-zinc-100 transition-colors">
+                        <div className="px-2 flex flex-col flex-1 pb-2">
+                          <h3 className="text-[20px] font-semibold text-zinc-900 dark:text-zinc-50 tracking-tight leading-snug mb-3">
                             {course.title}
                           </h3>
-                          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8 leading-relaxed">
+                          <p className="text-[15px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
                             {course.details}
                           </p>
-
-                          <div className="mt-auto flex items-center justify-between">
-                            <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Industry Track</span>
-                            <Button 
-                              onClick={() => {
-                                setSelectedCourse(course.title);
-                                setStep("duration");
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }}
-                              variant="secondary" 
-                              size="sm" 
-                              className="font-bold rounded-xl"
-                            >
-                              Select Program <ArrowRight className="h-4 w-4 ml-1" />
-                            </Button>
-                          </div>
                         </div>
                       </Card>
                     </motion.div>
@@ -311,16 +300,20 @@ export default function ProgramsPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {specializedPrograms.map((program, idx) => (
-                    <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: idx * 0.1 }}
-                    >
-                        <Card className="bg-white/5 border-white/10 p-8 h-full hover:bg-white/[0.08] transition-all group">
-                            <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center mb-6 shadow-xl transition-transform group-hover:scale-110 group-hover:rotate-6", program.bg, program.color)}>
+                {specializedPrograms.map((program, idx) => {
+                    const sectionId = program.title.toLowerCase().replace(/\s+/g, '-');
+                    return (
+                        <motion.div
+                            key={idx}
+                            id={sectionId}
+                            className="scroll-mt-32"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: idx * 0.1 }}
+                        >
+                            <Card className="bg-white/5 border-white/10 p-8 h-full hover:bg-white/[0.08] transition-all group">
+                                <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center mb-6 shadow-xl transition-transform group-hover:scale-110 group-hover:rotate-6", program.bg, program.color)}>
                                 <program.icon className="h-7 w-7" />
                             </div>
                             <h3 className="text-2xl font-bold mb-4">{program.title}</h3>
@@ -334,12 +327,13 @@ export default function ProgramsPage() {
                             </div>
                         </Card>
                     </motion.div>
-                ))}
+                );
+                })}
             </div>
         </Section>
       </section>
 
-      <Footer />
+      
     </div>
   );
 }
