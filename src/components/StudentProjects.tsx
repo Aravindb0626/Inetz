@@ -3,6 +3,18 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MoveUpRight, Code2, Rocket, Laptop, Database, Globe, BarChart, Settings, X, CheckCircle2, Cpu, Smartphone } from "lucide-react";
+import { 
+  SiReact, 
+  SiNextdotjs, 
+  SiTailwindcss, 
+  SiNodedotjs, 
+  SiMongodb, 
+  SiPython, 
+  SiPostgresql,
+  SiTypescript,
+  SiFramer,
+  SiPrisma
+} from "react-icons/si";
 import { Section } from "@/components/ui/Section";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
@@ -10,9 +22,11 @@ import { cn } from "@/lib/utils";
 type Project = {
   id: string;
   title: string;
+  label: string;
   desc: string;
   gradient: string;
   icon: any;
+  techIcons: any[];
   accentColor: string;
   borderColor: string;
   modalContent: {
@@ -26,10 +40,12 @@ type Project = {
 const studentProjects: Project[] = [
   {
     id: "01",
-    title: "Weather App",
+    title: "Global Weather App",
+    label: "Frontend mastery",
     desc: "A sleek real-time weather tracking application that fetches global data with dynamic visual changes based on conditions.",
-    gradient: "from-orange-500/20 to-orange-500/5",
-    icon: Globe,
+    gradient: "from-orange-500/10 to-transparent",
+    icon: SiReact,
+    techIcons: [SiReact, SiTailwindcss],
     accentColor: "text-orange-500",
     borderColor: "group-hover:border-orange-500/30",
     modalContent: {
@@ -41,10 +57,12 @@ const studentProjects: Project[] = [
   },
   {
     id: "02",
-    title: "Admin Dashboard",
+    title: "Enterprise Dashboard",
+    label: "Fullstack Architecture",
     desc: "A comprehensive enterprise-grade dashboard for managing users, tracking analytics, and visualizing complex data sets.",
-    gradient: "from-sky-500/20 to-sky-500/5",
-    icon: Laptop,
+    gradient: "from-sky-500/10 to-transparent",
+    icon: SiNextdotjs,
+    techIcons: [SiNextdotjs, SiTypescript, SiPrisma],
     accentColor: "text-sky-500",
     borderColor: "group-hover:border-sky-500/30",
     modalContent: {
@@ -56,10 +74,12 @@ const studentProjects: Project[] = [
   },
   {
     id: "03",
-    title: "Portfolio Website",
+    title: "Premium Portfolio",
+    label: "Motion & UI Design",
     desc: "A high-performance personal brand showcase featuring glassmorphism design, smooth animations, and optimized SEO.",
-    gradient: "from-emerald-500/20 to-emerald-500/5",
-    icon: Rocket,
+    gradient: "from-emerald-500/10 to-transparent",
+    icon: SiFramer,
+    techIcons: [SiNextdotjs, SiFramer],
     accentColor: "text-emerald-500",
     borderColor: "group-hover:border-emerald-500/30",
     modalContent: {
@@ -71,10 +91,12 @@ const studentProjects: Project[] = [
   },
   {
     id: "04",
-    title: "Inventory System",
+    title: "Inventory SaaS",
+    label: "Backend Scalability",
     desc: "A full-stack CRUD application for business logistics, featuring real-time stock alerts and secure database management.",
-    gradient: "from-blue-500/20 to-blue-500/5",
-    icon: Database,
+    gradient: "from-blue-500/10 to-transparent",
+    icon: SiNodedotjs,
+    techIcons: [SiNodedotjs, SiMongodb],
     accentColor: "text-blue-500",
     borderColor: "group-hover:border-blue-500/30",
     modalContent: {
@@ -86,10 +108,12 @@ const studentProjects: Project[] = [
   },
   {
     id: "05",
-    title: "Analytics Engine",
+    title: "Predictive Analytics",
+    label: "Data Engineering",
     desc: "A specialized data processing engine that transforms raw CSV data into interactive visual reports with predictive insights.",
-    gradient: "from-indigo-500/20 to-indigo-500/5",
-    icon: BarChart,
+    gradient: "from-indigo-500/10 to-transparent",
+    icon: SiPython,
+    techIcons: [SiPython, SiReact],
     accentColor: "text-indigo-500",
     borderColor: "group-hover:border-indigo-500/30",
     modalContent: {
@@ -101,10 +125,12 @@ const studentProjects: Project[] = [
   },
   {
     id: "06",
-    title: "EMS System",
+    title: "EMS Institution Platform",
+    label: "Relational Systems",
     desc: "A scalable Education Management System for tracking student performance, attendance, and assignment submissions.",
-    gradient: "from-purple-500/20 to-purple-500/5",
-    icon: Settings,
+    gradient: "from-purple-500/10 to-transparent",
+    icon: SiPostgresql,
+    techIcons: [SiNextdotjs, SiPostgresql],
     accentColor: "text-purple-500",
     borderColor: "group-hover:border-purple-500/30",
     modalContent: {
@@ -120,11 +146,11 @@ export default function StudentProjects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   return (
-    <Section className="bg-white dark:bg-zinc-950 transition-colors overflow-hidden py-12 sm:py-16 relative">
+    <Section className="bg-white dark:bg-zinc-950 transition-colors overflow-hidden py-16 sm:py-24 relative">
       <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] rounded-full hidden dark:block" />
-      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-orange-500/5 blur-[120px] rounded-full hidden dark:block" />
+      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-sky-500/5 blur-[120px] rounded-full hidden dark:block" />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-24">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -134,14 +160,10 @@ export default function StudentProjects() {
             What Students Build Here
           </motion.div>
           
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 tracking-tight text-zinc-900 dark:text-white leading-[1.1]">
+          <h2 className="text-5xl md:text-6xl font-black mb-8 tracking-tight text-zinc-900 dark:text-white leading-[1] max-w-4xl mx-auto">
             Project-first learning that <br className="hidden md:block" />
-            makes <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">students stand out.</span>
+            makes <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-400">students stand out.</span>
           </h2>
-          
-          <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto font-medium leading-relaxed">
-            Instead of just watching videos, students complete tasks and build projects that improve skills, confidence, and interview readiness.
-          </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -154,52 +176,81 @@ export default function StudentProjects() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
-                className="group"
+                className="group relative"
                 onClick={() => setSelectedProject(project)}
               >
-                <Card 
-                  variant="glass" 
-                  hover="lift" 
+                <div 
                   className={cn(
-                    "relative h-full flex flex-col p-8 rounded-[2.5rem] border-zinc-200/50 dark:border-zinc-800/50 overflow-hidden transition-all duration-500 cursor-pointer",
+                    "relative flex flex-col h-full p-6 rounded-[2rem] bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-500 cursor-pointer overflow-hidden",
                     project.borderColor
                   )}
                 >
-                  {/* Subtle Gradient Hover */}
                   <div className={cn(
-                    "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700",
+                    "absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none",
                     project.gradient
                   )} />
                   
                   <div className="relative z-10 flex flex-col h-full">
-                    <div className="flex justify-between items-start mb-10">
-                      <div className={cn("p-4 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 group-hover:border-zinc-200 dark:group-hover:border-zinc-700 transition-all", project.accentColor)}>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className={cn("p-4 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 group-hover:scale-110 transition-transform shadow-sm", project.accentColor)}>
                         <Icon className="w-6 h-6" />
                       </div>
-                      <div className="text-sm font-black text-zinc-300 dark:text-zinc-700 uppercase tracking-widest">{project.id}</div>
+                      <div className="text-xs font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-[0.2em]">{project.id}</div>
                     </div>
 
-                    <h3 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-white transition-colors">
+                    <div className="mb-2">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                         {project.label}
+                       </span>
+                    </div>
+
+                    <h3 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-white group-hover:text-emerald-500 transition-colors uppercase tracking-tight">
                       {project.title}
                     </h3>
                     
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium mb-8 flex-grow">
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium mb-6 flex-grow">
                       {project.desc}
                     </p>
 
-                    <div className="flex items-center justify-between pt-6 border-t border-zinc-100 dark:border-zinc-800 mt-auto">
-                      <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                        <Code2 className="w-4 h-4" />
-                        Professional Level
+                    <div className="flex items-center justify-between pt-6 border-t border-zinc-200 dark:border-zinc-800 mt-auto">
+                      <div className="flex gap-2">
+                        {project.techIcons.map((Tech, i) => (
+                           <Tech key={i} className="w-4 h-4 text-zinc-400 dark:text-zinc-600" />
+                        ))}
                       </div>
-                      <MoveUpRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white transition-all transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-black uppercase tracking-widest group-hover:bg-gradient-to-r group-hover:from-emerald-600 group-hover:to-emerald-400 group-hover:text-white transition-all shadow-sm">
+                        Case Study <MoveUpRight className="w-3 h-3" />
+                      </div>
                     </div>
                   </div>
-                </Card>
+                </div>
               </motion.div>
             );
           })}
         </div>
+{/* 
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.6 }}
+          className="flex justify-center mt-20 relative z-20"
+        >
+          <motion.a 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            href="/programs" 
+            className="inline-flex items-center gap-3 px-10 py-5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-white font-black text-xl hover:shadow-[0_10px_40px_rgba(16,185,129,0.3)] transition-all cursor-pointer group"
+          >
+            Explore Our Programs 
+            <motion.div
+              animate={{ x: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            >
+              <MoveUpRight className="w-5 h-5" />
+            </motion.div>
+          </motion.a>
+        </motion.div> */}
       </div>
 
       {/* Project Detail Modal */}
@@ -226,41 +277,39 @@ export default function StudentProjects() {
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center gap-4 mb-8">
-                <div className={cn("p-4 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800", selectedProject.accentColor)}>
-                  <selectedProject.icon className="w-8 h-8" />
+              <div className="flex items-center gap-5 mb-10">
+                <div className={cn("p-5 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-inner", selectedProject.accentColor)}>
+                  <selectedProject.icon className="w-10 h-10" />
                 </div>
                 <div>
-                  <div className="text-xs font-black text-orange-500 uppercase tracking-[0.2em] mb-1">
-                    Project Case Study {selectedProject.id}
+                  <div className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">
+                    Student Case Study {selectedProject.id}
                   </div>
-                  <h3 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
+                  <h3 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight leading-none uppercase">
                     {selectedProject.title}
                   </h3>
                 </div>
               </div>
 
-              <div className="space-y-10">
+              <div className="space-y-12">
                 <div>
-                  <h4 className="text-lg font-bold text-zinc-900 dark:text-white mb-3 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-orange-500" />
-                    Overview
+                  <h4 className="text-sm font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="w-8 h-[1px] bg-orange-500" /> Executive Overview
                   </h4>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-lg">
+                  <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-lg font-medium">
                     {selectedProject.modalContent.overview}
                   </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid md:grid-cols-2 gap-12">
                   <div>
-                    <h4 className="text-lg font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
-                      <Cpu className="w-5 h-5 text-orange-500" />
-                      Key Features
+                    <h4 className="text-sm font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <span className="w-8 h-[1px] bg-emerald-500" /> Key Features
                     </h4>
-                    <ul className="space-y-3">
+                    <ul className="space-y-4">
                       {selectedProject.modalContent.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400 font-medium">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <li key={i} className="flex items-start gap-3 text-zinc-600 dark:text-zinc-300 font-bold text-sm">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                           {feature}
                         </li>
                       ))}
@@ -268,13 +317,12 @@ export default function StudentProjects() {
                   </div>
 
                   <div>
-                    <h4 className="text-lg font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
-                      <Smartphone className="w-5 h-5 text-orange-500" />
-                      Tech Stack
+                    <h4 className="text-sm font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <span className="w-8 h-[1px] bg-blue-500" /> Stack
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedProject.modalContent.techStack.map((tech, i) => (
-                        <span key={i} className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold">
+                        <span key={i} className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-black uppercase tracking-tighter">
                           {tech}
                         </span>
                       ))}
@@ -282,13 +330,13 @@ export default function StudentProjects() {
                   </div>
                 </div>
 
-                <div className="p-8 rounded-[2rem] bg-orange-500/5 border border-orange-500/10 relative overflow-hidden group/result">
-                   <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 blur-2xl rounded-full -translate-y-1/2 translate-x-1/2" />
-                  <h4 className="text-lg font-bold text-zinc-900 dark:text-white mb-3 flex items-center gap-2">
+                <div className="p-8 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 relative overflow-hidden group/result">
+                   <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/5 blur-3xl rounded-full" />
+                  <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <Rocket className="w-5 h-5 text-orange-500" />
-                    Learning Outcome
+                    Industrial Impact
                   </h4>
-                  <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed font-bold text-lg">
                     {selectedProject.modalContent.result}
                   </p>
                 </div>

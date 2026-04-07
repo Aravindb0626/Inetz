@@ -127,7 +127,7 @@ export default function ProblemSolution() {
                   <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                 </div>
                 <div className="flex flex-col justify-center pt-2 z-10">
-                  <p className="text-zinc-700 dark:text-zinc-200 font-semibold text-lg leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-50 transition-colors">
+                  <p className="text-zinc-700 dark:text-zinc-200 font-medium text-md leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-50 transition-colors">
                     {solution}
                   </p>
                 </div>

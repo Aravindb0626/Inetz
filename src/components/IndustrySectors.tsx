@@ -2,7 +2,36 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ArrowRight, X, Building2, Briefcase, Zap } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  X,
+  Building2,
+  Briefcase,
+  Zap,
+  TrendingUp,
+  Map,
+  Users,
+  Target,
+  Rocket
+} from "lucide-react";
+import {
+  SiGoogle,
+  SiMicrosoft,
+  SiAws,
+  SiAtlassian,
+  SiUber,
+  SiMeta,
+  SiOpenai,
+  SiNvidia,
+  SiIntel,
+  SiSiemens,
+  SiQualcomm,
+  SiStripe,
+  SiPostman,
+  SiAccenture
+} from "react-icons/si";
 
 type Sector = {
   title: string;
@@ -13,24 +42,11 @@ type Sector = {
   badge: string;
   modalContent: {
     about: string;
-    companies: string[];
+    companies: { name: string; icon: any; domain?: string }[];
     surviving: string;
+    growth: string;
+    pathway: string[];
   };
-};
-
-const domainMap: Record<string, string> = {
-  Google: "google.com", Microsoft: "microsoft.com", Amazon: "amazon.com",
-  Atlassian: "atlassian.com", Uber: "uber.com", Meta: "meta.com",
-  TCS: "tcs.com", Infosys: "infosys.com", Wipro: "wipro.com",
-  Accenture: "accenture.com", Cognizant: "cognizant.com", Capgemini: "capgemini.com",
-  OpenAI: "openai.com", Anthropic: "anthropic.com", Palantir: "palantir.com",
-  "Mu Sigma": "mu-sigma.com", "Fractal Analytics": "fractal.ai", "Google DeepMind": "deepmind.google",
-  Stripe: "stripe.com", Razorpay: "razorpay.com", Cred: "cred.club",
-  Zerodha: "zerodha.com", Groww: "groww.in", Postman: "postman.com",
-  Intel: "intel.com", Qualcomm: "qualcomm.com", "Texas Instruments": "ti.com",
-  Bosch: "bosch.com", NVIDIA: "nvidia.com", Siemens: "siemens.com",
-  Ogilvy: "ogilvy.com", GroupM: "groupm.com", Dentsu: "dentsu.com",
-  "Publicis Sapient": "publicissapient.com", Performics: "performics.com",
 };
 
 const sectors: Sector[] = [
@@ -42,22 +58,39 @@ const sectors: Sector[] = [
     highlight: "500+ alumni placed",
     badge: "Most Placed",
     modalContent: {
-      about: "Product companies focus on building software solutions, platforms, and applications that scale to millions of users. The work involves deep problem-solving, system design, and continuous iteration based on user feedback.",
-      companies: ["Google", "Microsoft", "Amazon", "Atlassian", "Uber", "Meta"],
-      surviving: "Focus heavily on Data Structures & Algorithms, System Design, and writing highly optimized code. You must understand the product lifecycle and user-centric development."
+      about: "Product companies focus on building software solutions, platforms, and applications that scale to millions of users. The work involves deep problem-solving, system design, and continuous iteration.",
+      companies: [
+        { name: "Google", icon: SiGoogle, domain: "google.com" },
+        { name: "Microsoft", icon: SiMicrosoft, domain: "microsoft.com" },
+        { name: "Amazon", icon: SiAws, domain: "amazon.com" },
+        { name: "Atlassian", icon: SiAtlassian, domain: "atlassian.com" },
+        { name: "Uber", icon: SiUber, domain: "uber.com" },
+        { name: "Meta", icon: SiMeta, domain: "meta.com" }
+      ],
+      surviving: "Focus heavily on Data Structures & Algorithms, System Design, and writing highly optimized code. You must understand the product lifecycle.",
+      growth: "A+",
+      pathway: ["SDE I (Junior)", "SDE II (Mid-Level)", "Senior Engineer", "Staff Engineer"]
     }
   },
   {
-    title: "IT Services & Consulting",
+    title: "IT Services & MNCs",
     label: "Enterprise IT",
     image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1000",
     desc: "Join top IT service companies delivering technology solutions across banking, retail, and enterprise clients globally.",
     highlight: "Leading MNC placements",
     badge: "High Demand",
     modalContent: {
-      about: "IT Services and Consulting firms provide technology solutions to other businesses. They handle diverse, large-scale projects across domains including banking, healthcare, automotive, and retail.",
-      companies: ["TCS", "Infosys", "Wipro", "Accenture", "Cognizant", "Capgemini"],
-      surviving: "Adaptability is key. You must be willing to learn new tech stacks quickly as client projects demand. Strong communication skills and client-facing acumen will massively accelerate your growth."
+      about: "IT Services and Consulting firms provide technology solutions to other businesses. They handle diverse, large-scale projects across domains like banking and healthcare.",
+      companies: [
+        { name: "Accenture", icon: SiAccenture, domain: "accenture.com" },
+        { name: "TCS", icon: Building2, domain: "tcs.com" },
+        { name: "Infosys", icon: Building2, domain: "infosys.com" },
+        { name: "Capgemini", icon: Building2, domain: "capgemini.com" },
+        { name: "Cognizant", icon: Building2, domain: "cognizant.com" }
+      ],
+      surviving: "Adaptability is key. Learn new tech stacks quickly as client projects demand. Strong communication skills are vital for success.",
+      growth: "B+",
+      pathway: ["Assoc. Engineer", "System Engineer", "Technology Analyst", "Solution Architect"]
     }
   },
   {
@@ -68,22 +101,36 @@ const sectors: Sector[] = [
     highlight: "Highest salary bracket",
     badge: "Trending",
     modalContent: {
-      about: "This rapidly growing industry leverages vast amounts of data to predict trends, build generative ML models, and automate complex decision-making processes.",
-      companies: ["OpenAI", "Anthropic", "Palantir", "Mu Sigma", "Fractal Analytics", "Google DeepMind"],
-      surviving: "A strong mathematical foundation in statistics and linear algebra is crucial along with Python mastery. Keep up with rapidly evolving research papers and master frameworks like PyTorch and TensorFlow."
+      about: "This industry leverages data to predict trends, build generative models, and automate complex decisions. High focus on mathematics and logic.",
+      companies: [
+        { name: "OpenAI", icon: SiOpenai, domain: "openai.com" },
+        { name: "NVIDIA", icon: SiNvidia, domain: "nvidia.com" },
+        { name: "DeepMind", icon: SiGoogle, domain: "deepmind.google" },
+        { name: "Anthropic", icon: Building2, domain: "anthropic.ai" }
+      ],
+      surviving: "Master Python and Statistics. Keep up with rapidly evolving research papers and master frameworks like PyTorch.",
+      growth: "Exponential",
+      pathway: ["Data Analyst", "Applied Scientist", "ML Engineer", "Head of AI"]
     }
   },
   {
-    title: "Startups & FinTech",
+    title: "FinTech & Startups",
     label: "Fast Growth",
     image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&q=80&w=1000",
     desc: "Accelerate your career at innovative startups and fintech companies where you own features end-to-end from day one.",
     highlight: "Equity & growth roles",
     badge: "Hot Sector",
     modalContent: {
-      about: "Startups and FinTechs operate at blistering speeds. You will wear multiple hats, push code to production daily, and work directly with founders to disrupt traditional markets.",
-      companies: ["Stripe", "Razorpay", "Cred", "Zerodha", "Groww", "Postman"],
-      surviving: "Extreme ownership is required. You cannot be just a 'frontend' or 'backend' dev; you must be a product engineer. Move fast, break things, and fix them faster."
+      about: "Startups operate at blistering speeds. You will wear multiple hats, push code daily, and work directly with founders.",
+      companies: [
+        { name: "Stripe", icon: SiStripe, domain: "stripe.com" },
+        { name: "Razorpay", icon: Building2, domain: "razorpay.com" },
+        { name: "Postman", icon: SiPostman, domain: "postman.com" },
+        { name: "Zerodha", icon: Building2, domain: "zerodha.com" }
+      ],
+      surviving: "Extreme ownership is required. Move fast, break things, and fix them faster. Product thinking is just as important as code.",
+      growth: "High",
+      pathway: ["Founding Engineer", "Tech Lead", "VP Engineering", "CTO"]
     }
   },
   {
@@ -94,22 +141,16 @@ const sectors: Sector[] = [
     highlight: "Niche, high-demand roles",
     badge: "Specialized",
     modalContent: {
-      about: "This sector involves programming hardware directly. From consumer smart appliances to industrial robotics, you will work at the intersection of electronics and software.",
-      companies: ["Intel", "Qualcomm", "Texas Instruments", "Bosch", "NVIDIA", "Siemens"],
-      surviving: "Master C, C++, and Rust. Understand memory management intrinsically. Embedded systems have strict resource constraints, so optimized, bug-free code is non-negotiable."
-    }
-  },
-  {
-    title: "Digital Marketing",
-    label: "Brand & Growth",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1000",
-    desc: "Drive digital strategy, SEO, paid media, and analytics for leading brands across industries.",
-    highlight: "Creative + technical roles",
-    badge: "Cross-Industry",
-    modalContent: {
-      about: "Digital Marketing companies scale user acquisition and brand presence using data-driven advertising, content strategies, and growth hacking.",
-      companies: ["Ogilvy", "GroupM", "Dentsu", "Publicis Sapient", "Performics"],
-      surviving: "Understand the metrics: CAC, LTV, ROAS. Combine creative copywriting with hardcore data analytics. Master tools like Google Analytics, Meta Ads, and SEO platforms."
+      about: "Programming hardware directly. From consumer smart appliances to industrial robotics, you work at the hardware-software junction.",
+      companies: [
+        { name: "Intel", icon: SiIntel, domain: "intel.com" },
+        { name: "Qualcomm", icon: SiQualcomm, domain: "qualcomm.com" },
+        { name: "NVIDIA", icon: SiNvidia, domain: "nvidia.com" },
+        { name: "Siemens", icon: SiSiemens, domain: "siemens.com" }
+      ],
+      surviving: "Master C, C++, and Rust. Understand memory management intrinsically. Optimized, bug-free code is non-negotiable.",
+      growth: "Moderate",
+      pathway: ["Firmware Engineer", "Embedded Systems Dev", "IoT Architect", "Systems Lead"]
     }
   },
 ];
@@ -132,17 +173,15 @@ export default function IndustrySectors() {
     <section className="bg-zinc-50 dark:bg-zinc-950 py-24 overflow-hidden relative">
       <div className="max-w-[1400px] mx-auto px-6">
         <div className="flex flex-col gap-6 mb-14">
-          {/* Centered Badge + Heading */}
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-widest mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
               Where Our Alumni Work
             </div>
             <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-zinc-100 mb-4">
-              Industry Specialized <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Global Sectors</span>
+              Industry Specialized <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-400">Global Sectors</span>
             </h2>
           </div>
 
-          {/* Description + Nav Buttons row */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <p className="text-zinc-600 dark:text-zinc-400 text-lg font-medium max-w-2xl">
               Select any sector card to explore career opportunities our graduates have seized across the tech ecosystem.
@@ -164,7 +203,6 @@ export default function IndustrySectors() {
           </div>
         </div>
 
-        {/* Horizontal Scroll Cards */}
         <div
           ref={scrollRef}
           className="flex gap-5 overflow-x-auto pb-6 snap-x snap-mandatory hide-scrollbar"
@@ -176,30 +214,25 @@ export default function IndustrySectors() {
                 key={i}
                 layout
                 onClick={() => setActive(isActive ? null : i)}
-                animate={{ width: isActive ? 520 : 300, minWidth: isActive ? 520 : 300 }}
+                animate={{ width: isActive ? 520 : 270, minWidth: isActive ? 520 : 270 }}
                 transition={{ type: "spring", stiffness: 280, damping: 30 }}
-                className="relative rounded-[2rem] overflow-hidden cursor-pointer snap-start shrink-0 select-none group"
-                style={{ height: 450 }}
+                className="relative rounded-3xl overflow-hidden cursor-pointer snap-start shrink-0 select-none group"
+                style={{ height: 420 }}
               >
-                {/* Background Image */}
                 <img
                   src={sector.image}
                   alt={sector.title}
                   draggable={false}
                   className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ${isActive ? "scale-110" : "group-hover:scale-105"}`}
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
 
-                {/* Dark gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-
-                {/* Badge top-left */}
                 <div className="absolute top-5 left-5 z-10">
-                  <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-widest">
+                  <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest border border-white/10">
                     {sector.badge}
                   </span>
                 </div>
 
-                {/* Collapsed state — label at bottom */}
                 <AnimatePresence>
                   {!isActive && (
                     <motion.div
@@ -209,17 +242,16 @@ export default function IndustrySectors() {
                       transition={{ duration: 0.2 }}
                       className="absolute bottom-0 left-0 right-0 p-7 pointer-events-none"
                     >
-                      <p className="text-white/55 text-[10px] font-bold uppercase tracking-widest mb-2">
+                      <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-2">
                         {sector.label}
                       </p>
-                      <h3 className="text-white font-bold text-2xl leading-snug">
+                      <h3 className="text-white font-bold text-2xl leading-none uppercase tracking-tight">
                         {sector.title}
                       </h3>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* Expanded state — rich content */}
                 <AnimatePresence>
                   {isActive && (
                     <motion.div
@@ -229,17 +261,17 @@ export default function IndustrySectors() {
                       transition={{ duration: 0.3, delay: 0.1 }}
                       className="absolute bottom-0 left-0 right-0 p-8 flex flex-col gap-4"
                     >
-                      <span className="text-white/55 text-[10px] font-bold uppercase tracking-widest">
+                      <span className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">
                         {sector.label}
                       </span>
-                      <h3 className="text-white font-black text-3xl leading-tight">
+                      <h3 className="text-white font-black text-3xl leading-none uppercase tracking-tighter">
                         {sector.title}
                       </h3>
-                      <p className="text-white/75 text-sm leading-relaxed max-w-sm">
+                      <p className="text-zinc-300 text-sm leading-relaxed max-w-sm font-medium">
                         {sector.desc}
                       </p>
-                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                        <span className="text-emerald-400 text-xs font-bold">
+                      <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                        <span className="text-emerald-400 text-xs font-black uppercase tracking-widest">
                           ✦ {sector.highlight}
                         </span>
                         <button
@@ -247,9 +279,9 @@ export default function IndustrySectors() {
                             e.stopPropagation();
                             setSelectedIndustry(sector);
                           }}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/15 backdrop-blur text-white text-xs font-bold hover:bg-emerald-500 transition-colors"
+                          className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-500 text-white text-xs font-black uppercase transition-all hover:bg-emerald-400 shadow-lg"
                         >
-                          Explore <ArrowRight className="h-3.5 w-3.5" />
+                          Explore Guide <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </motion.div>
@@ -268,7 +300,7 @@ export default function IndustrySectors() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
             onClick={() => setSelectedIndustry(null)}
           >
             <motion.div
@@ -276,67 +308,95 @@ export default function IndustrySectors() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[2rem] bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-8 md:p-12 hide-scrollbar"
+              className="relative w-full max-w-4xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden hide-scrollbar"
             >
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedIndustry(null)}
-                className="absolute top-6 right-6 w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center justify-center transition-colors shadow-none"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="inline-flex px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black uppercase tracking-widest mb-6">
-                {selectedIndustry.label}
+              <div className="h-40 relative">
+                <img src={selectedIndustry.image} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
+                <button
+                  onClick={() => setSelectedIndustry(null)}
+                  className="absolute top-6 right-6 w-12 h-12 rounded-full bg-black/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-white hover:text-zinc-950 transition-all z-[101]"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
-              <h3 className="text-3xl md:text-5xl font-extrabold text-zinc-900 dark:text-white mb-6 tracking-tight">
-                {selectedIndustry.title}
-              </h3>
 
-              <div className="space-y-8 mt-10">
-                {/* About Section */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Building2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                    <h4 className="text-xl font-bold text-zinc-900 dark:text-white">About the Industry</h4>
+              <div className="p-8 md:p-12 -mt-10 relative z-10">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-zinc-200 dark:border-zinc-800 pb-10 mb-10">
+                  <div>
+                    <div className="inline-flex px-3 py-1 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-4 border border-emerald-500/20">
+                      {selectedIndustry.label}
+                    </div>
+                    <h3 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white leading-none uppercase tracking-tighter">
+                      {selectedIndustry.title}
+                    </h3>
                   </div>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-lg">
-                    {selectedIndustry.modalContent.about}
-                  </p>
-                </div>
-
-                {/* Companies */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Briefcase className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                    <h4 className="text-xl font-bold text-zinc-900 dark:text-white">Top Companies</h4>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {selectedIndustry.modalContent.companies.map((company, i) => {
-                      const domain = domainMap[company];
-                      return (
-                        <span key={i} className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-xl font-semibold text-sm shadow-sm transition-transform hover:scale-105 cursor-default">
-                          {domain ? (
-                            <img src={`https://logo.clearbit.com/${domain}?size=60`} alt={company} className="w-5 h-5 rounded object-contain bg-white" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                          ) : (
-                            <span className="w-5 h-5 rounded bg-emerald-500/10 flex items-center justify-center text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">{company[0]}</span>
-                          )}
-                          {company}
-                        </span>
-                      );
-                    })}
+                  <div className="flex gap-4">
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Market Growth</p>
+                      <p className="text-2xl font-black text-emerald-500 leading-none">{selectedIndustry.modalContent.growth}</p>
+                    </div>
+                    <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Opportunity</p>
+                      <p className="text-2xl font-black text-emerald-500 leading-none">{selectedIndustry.badge}</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Surviving / Succeeding */}
-                <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Zap className="w-5 h-5 text-emerald-600 dark:text-emerald-400 fill-emerald-600/20 dark:fill-emerald-400/20" />
-                    <h4 className="text-xl font-bold text-emerald-800 dark:text-emerald-400">How to Survive & Succeed</h4>
+                <div className="grid md:grid-cols-2 gap-12">
+                  <div className="space-y-10">
+                    <div>
+                      <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-500" /> Executive Overview
+                      </h4>
+                      <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-lg font-medium">
+                        {selectedIndustry.modalContent.about}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-emerald-500" /> Recruiting Titans
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        {selectedIndustry.modalContent.companies.map((company, i) => (
+                          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 group hover:border-emerald-500/30 transition-all cursor-pointer">
+                            {company.icon ? <company.icon className="w-4 h-4 text-zinc-400 group-hover:text-emerald-500 transition-colors" /> : <Building2 className="w-4 h-4 text-zinc-400" />}
+                            <span className="text-xs font-black text-zinc-800 dark:text-zinc-200 uppercase tracking-tighter">{company.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-emerald-950/80 dark:text-zinc-300 leading-relaxed">
-                    {selectedIndustry.modalContent.surviving}
-                  </p>
+
+                  <div className="space-y-10">
+                    <div className="p-8 rounded-[2.5rem] bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10">
+                      <h4 className="text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Zap className="w-4 h-4" /> Selection Strategy
+                      </h4>
+                      <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed font-bold">
+                        {selectedIndustry.modalContent.surviving}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <Map className="w-4 h-4 text-emerald-500" /> Career Roadmap
+                      </h4>
+                      <div className="space-y-4">
+                        {selectedIndustry.modalContent.pathway.map((step, i) => (
+                          <div key={i} className="flex items-center gap-4 group">
+                            <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shrink-0 transition-transform group-hover:scale-125">
+                              {i + 1}
+                            </div>
+                            <div className="h-px flex-grow bg-zinc-200 dark:bg-zinc-800 group-hover:bg-emerald-500/50 transition-colors" />
+                            <span className="text-[11px] font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>

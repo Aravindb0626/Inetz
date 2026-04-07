@@ -178,11 +178,11 @@ export default function InternshipProcess() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        className="mt-20 text-center"
+        className="mt-10 text-center"
       >
-        <p className="text-zinc-500 dark:text-zinc-500 font-medium italic">
+        {/* <p className="text-zinc-500 dark:text-zinc-500 font-medium italic">
           Join over 5,000+ students who have completed this journey.
-        </p>
+        </p> */}
       </motion.div>
     </Section>
   );

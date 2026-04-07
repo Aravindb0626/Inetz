@@ -40,23 +40,23 @@ export default function ContactPage() {
     {
       icon: <Phone className="h-6 w-6" />,
       title: "Call Us",
-      details: "+91 98402 34475",
+      details: "+91 98402 34475 / +91 98844 68682",
       description: "Mon-Sat from 9am to 6pm.",
       action: "tel:+919840234475"
     },
     {
       icon: <Mail className="h-6 w-6" />,
       title: "Email Us",
-      details: "info@inetztechnologies.com",
+      details: "info@inetztech.com",
       description: "Our friendly team is here to help.",
-      action: "mailto:info@inetztechnologies.com"
+      action: "mailto:info@inetztech.com"
     },
     {
       icon: <MapPin className="h-6 w-6" />,
       title: "Visit Us",
-      details: "Chennai, Tamil Nadu",
+      details: "Vadapalani, Chennai",
       description: "Come say hello at our headquarters.",
-      action: "https://maps.google.com/?q=Chennai+Tamil+Nadu"
+      action: "https://maps.google.com/?q=KP+Towers+Vadapalani+Chennai"
     }
   ];
 
@@ -102,90 +102,91 @@ export default function ContactPage() {
          {/* Location Section */}
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-28 grid gap-12 lg:grid-cols-2 lg:gap-16 items-center"
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="mt-28 grid gap-10 md:grid-cols-2 lg:gap-16 items-stretch"
         >
           {/* ───── LEFT IMAGE ───── */}
-          <div className="relative h-full min-h-[450px]">
+          <div className="relative h-full min-h-[350px]">
             <img
-              src="/tidel-park.jpg"
-              alt="TIDEL Park Chennai"
-              className="absolute inset-0 w-full h-full object-cover rounded-[2.5rem] shadow-2xl"
+              src="/office.jpg"
+              alt="Our Office"
+              className="absolute inset-0 w-full h-full object-cover rounded-3xl shadow-xl"
             />
             {/* Dark gradient overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-[2.5rem]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-3xl" />
 
             {/* Label */}
-            <div className="absolute bottom-6 left-6 right-6 sm:right-auto bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md rounded-2xl px-5 py-3 shadow-xl flex items-center gap-3 border border-zinc-200/50 dark:border-zinc-800/50">
-              <MapPin className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                TIDEL Park, Chennai
+            <div className="absolute bottom-5 left-5 right-5 sm:right-auto bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md rounded-xl px-4 py-2 shadow-lg flex items-center gap-2 border border-zinc-200/50 dark:border-zinc-800/50">
+              <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                Vadapalani, Chennai
               </span>
             </div>
           </div>
 
           {/* ───── RIGHT CONTENT ───── */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Top Card */}
-            <div className="flex flex-col sm:flex-row gap-5 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-6 shadow-lg">
-              <div className="flex shrink-0 h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-inner">
-                <MapPin className="h-7 w-7" />
+            <div className="flex flex-col sm:flex-row gap-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-5 shadow-sm">
+              <div className="flex shrink-0 h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-inner">
+                <MapPin className="h-6 w-6" />
               </div>
 
               <div>
-                <h3 className="font-bold text-xl text-zinc-900 dark:text-zinc-100 mb-1">
-                  📍 TIDEL Park, Tharamani, Chennai
+                <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-0.5">
+                  📍 KP Towers, Vadapalani, Chennai
                 </h3>
-                <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  Train daily inside a <span className="font-bold text-emerald-600 dark:text-emerald-400">real IT ecosystem</span> – not classrooms in commercial buildings.
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  Located opposite Nexus Vijaya Mall, our center provides a <span className="font-bold text-emerald-600 dark:text-emerald-400">professional ecosystem</span> for your career growth.
                 </p>
               </div>
             </div>
 
             {/* Feature Grid */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {/* Card 1 */}
-              <div className="rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <Layers className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-4" />
-                <h4 className="font-bold text-zinc-900 dark:text-zinc-100 mb-1">
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mb-2" />
+                <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 mb-0.5">
                   Professional Environment
                 </h4>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Experience working in India&apos;s top IT park
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  Experience working in a premium office space
                 </p>
               </div>
 
               {/* Card 2 */}
-              <div className="rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <Clock className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-4" />
-                <h4 className="font-bold text-zinc-900 dark:text-zinc-100 mb-1">
-                  Industry Exposure
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <Clock className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mb-2" />
+                <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 mb-0.5">
+                  Fulltime Guidance
                 </h4>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Network with professionals and companies
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  Direct interaction with industry experts
                 </p>
               </div>
 
               {/* Card 3 */}
-              <div className="rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <MapPin className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-4" />
-                <h4 className="font-bold text-zinc-900 dark:text-zinc-100 mb-1">
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <MapPin className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mb-2" />
+                <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 mb-0.5">
                   Prime Location
                 </h4>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Easy access via metro and public transport
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  Accessible via Vadapalani Metro Station
                 </p>
               </div>
 
               {/* Card 4 */}
-              <div className="rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <Building2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-4" />
-                <h4 className="font-bold text-zinc-900 dark:text-zinc-100 mb-1">
-                  Modern Facilities
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <Building2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mb-2" />
+                <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 mb-0.5">
+                  Premium Infrastructure
                 </h4>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  State-of-the-art infrastructure and amenities
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  State-of-the-art labs and meeting rooms
                 </p>
               </div>
             </div>
@@ -197,8 +198,9 @@ export default function ContactPage() {
           
           {/* Left Column - Contact Info */}
           <motion.div 
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
             transition={{ delay: 0.3 }}
             className="space-y-10"
           >
@@ -223,12 +225,12 @@ export default function ContactPage() {
             ))}
 
             {/* Support Box */}
-            <div className="mt-12 p-8 rounded-[2rem] bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800">
-              <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-3">Looking for Enterprise Training?</h4>
-              <p className="text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+            <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800">
+              <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">Looking for Enterprise Training?</h4>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 leading-relaxed">
                 We also provide customized corporate training solutions for businesses looking to upskill their teams.
               </p>
-              <a href="mailto:corporate@inetztechnologies.com" className="inline-flex items-center text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">
+              <a href="mailto:info@inetztech.com" className="inline-flex items-center text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">
                 Contact Corporate Team &rarr;
               </a>
             </div>
@@ -236,12 +238,13 @@ export default function ContactPage() {
 
           {/* Right Column - Contact Form */}
           <motion.div 
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             transition={{ delay: 0.4 }}
           >
-            <div className="bg-white dark:bg-zinc-900/50 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-8 md:p-12 shadow-2xl shadow-zinc-200/50 dark:shadow-none">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-8">Send us a message</h3>
+            <div className="bg-white dark:bg-zinc-900/50 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 md:p-10 shadow-xl shadow-zinc-200/50 dark:shadow-none">
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-6">Send us a message</h3>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
