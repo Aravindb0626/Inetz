@@ -1,3 +1,5 @@
+"use client"
+
 import IndustrySectors from "@/components/IndustrySectors";
 
 export default function IndustryPage() {
