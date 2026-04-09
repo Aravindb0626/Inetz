@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -12,7 +12,8 @@ import {
 import { cn } from "@/lib/utils";
 import { programData, type TechStack, type Duration } from "@/lib/program-data";
 
-export default function ReviewAndPay() {
+// 1. Move the main logic into a sub-component
+function ReviewAndPayContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -37,6 +38,7 @@ export default function ReviewAndPay() {
   const originalFee = currentProgram?.originalPrice || 2000;
 
   const [customAmount, setCustomAmount] = useState<number>(discountedFee);
+  
   useEffect(() => {
     setCustomAmount(discountedFee);
   }, [discountedFee]);
@@ -47,7 +49,6 @@ export default function ReviewAndPay() {
 
     setIsProcessing(true);
     try {
-      // 1. Create Order & Pending Records
       const res = await fetch("/api/apply", {
         method: "POST",
         body: JSON.stringify({ ...formData, amountToPay: customAmount }),
@@ -60,7 +61,6 @@ export default function ReviewAndPay() {
         currency: "INR",
         name: "INetZ Academy",
         order_id: data.orderId,
-        // 2. SUCCESS HANDSHAKE (Verify with Backend)
         handler: async (response: any) => {
           try {
             const verifyRes = await fetch("/api/verify", {
@@ -91,9 +91,16 @@ export default function ReviewAndPay() {
           email: formData.email,
           contact: formData.phone,
         },
-        theme: { color: "#A6056F" }, 
+        theme: { color: "#A6056F" },
         modal: { ondismiss: () => setIsProcessing(false) },
       };
+      
+      if (!(window as any).Razorpay) {
+        alert("Razorpay SDK not loaded. Please check your internet connection.");
+        setIsProcessing(false);
+        return;
+      }
+
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } catch (err) {
@@ -118,7 +125,6 @@ export default function ReviewAndPay() {
           <h1 className="text-2xl font-black tracking-tight text-[#632450] uppercase">Review & Apply</h1>
 
           <div className="space-y-5">
-            {/* Step 1: Contact Information */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <span className="w-5 h-5 rounded bg-[#ECCC6E]/20 text-[#632450] flex items-center justify-center text-[10px] font-black">1</span>
@@ -133,7 +139,6 @@ export default function ReviewAndPay() {
               </div>
             </div>
 
-            {/* Step 2: Academic Information */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <span className="w-5 h-5 rounded bg-[#ECCC6E]/20 text-[#632450] flex items-center justify-center text-[10px] font-black">2</span>
@@ -148,7 +153,6 @@ export default function ReviewAndPay() {
               </div>
             </div>
 
-            {/* Step 3: Selection */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <span className="w-5 h-5 rounded bg-[#ECCC6E]/20 text-[#632450] flex items-center justify-center text-[10px] font-black">3</span>
@@ -187,7 +191,6 @@ export default function ReviewAndPay() {
                   <span>-₹{(originalFee - discountedFee).toLocaleString()}</span>
                 </div>
 
-                {/* COMPACT FLEX PAY */}
                 <div className="bg-[#ECCC6E]/5 border border-[#632450]/10 rounded-lg p-2.5 my-3 flex items-center justify-between gap-3">
                   <div className="flex-shrink-0">
                     <label className="text-[8px] font-black uppercase text-[#632450]/60 tracking-widest block">Payable Now</label>
@@ -221,9 +224,21 @@ export default function ReviewAndPay() {
             </div>
           </div>
         </div>
-
       </main>
     </div>
+  );
+}
+
+// 2. Wrap the logic in a Suspense boundary for the build to pass
+export default function ReviewAndPay() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#A6056F]" />
+      </div>
+    }>
+      <ReviewAndPayContent />
+    </Suspense>
   );
 }
 
