@@ -10,9 +10,13 @@ export interface IApplication extends Document {
   year?: string;
   domain: string;
   mode: string;
-  duration : string;
   status: string;
   createdAt: Date;
+  track: String,      // Added
+  duration: String,   // Added
+  amount: Number,
+  razorpayOrderId: String,
+  paymentStatus: String,
 }
 
 const ApplicationSchema = new Schema({
@@ -22,10 +26,14 @@ const ApplicationSchema = new Schema({
   college: { type: String },
   department: { type: String },
   year: { type: String },
+  track: { type: String },      // Added   // Added
+  amount: { type: Number },
   domain: { type: String, default: "MERN Stack" },
   duration : {type : String,},
   mode: { type: String, default: "Online" },
-  status: { type: String, default: "pending" },
+  razorpayOrderId: { type: String },
+  status: { type: String, default: 'pending' },
+  paymentStatus: { type: String, default: 'unpaid' },
   createdAt: { type: Date, default: Date.now },
 });
 

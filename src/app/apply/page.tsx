@@ -1,302 +1,25 @@
-// "use client";
-
-// import React, { useState } from "react";
-// import Script from "next/script";
-// import { useRouter } from "next/navigation";
-// import { motion, AnimatePresence } from "framer-motion";
-// import { 
-//   User, Phone, GraduationCap, 
-//   ChevronDown, CheckCircle2, 
-//   Loader2, ShieldCheck, CreditCard,
-//   ArrowLeft, Building2, Briefcase,
-//   AlertCircle
-// } from "lucide-react";
-// import { cn } from "@/lib/utils";
-
-// const ApplyAndPayPage = () => {
-//   const router = useRouter();
-//   const [isProcessing, setIsProcessing] = useState(false);
-//   const [paymentSuccess, setPaymentSuccess] = useState(false);
-//   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
-//   const [formData, setFormData] = useState({
-//     fullName: "",
-//     email: "",
-//     phone: "",
-//     college: "",
-//     department: "",
-//     year: "1st Year",
-//     domain: "MERN Stack",
-//     duration: "1 Month",
-//     mode: "Online",
-//   });
-
-//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-//     if (errorMessage) setErrorMessage(null); // Clear error when user types
-//     setFormData({ ...formData, [e.target.name]: e.target.value });
-//   };
-
-//   // --- FORM VALIDATION LOGIC ---
-//   const validateForm = () => {
-//     const { fullName, email, phone, college, department } = formData;
-    
-//     if (!fullName.trim() || !email.trim() || !phone.trim() || !college.trim() || !department.trim()) {
-//       setErrorMessage("Please fill in all required fields.");
-//       return false;
-//     }
-
-//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     if (!emailRegex.test(email)) {
-//       setErrorMessage("Please enter a valid email address.");
-//       return false;
-//     }
-
-//     if (phone.length < 10) {
-//       setErrorMessage("Please enter a valid 10-digit phone number.");
-//       return false;
-//     }
-
-//     return true;
-//   };
-
-//   const handleApplyAndPay = async (e: React.FormEvent) => {
-//     e.preventDefault();
-    
-//     // 1. Run Validation
-//     if (!validateForm()) return;
-
-//     setIsProcessing(true);
-
-//     try {
-//       // 2. Create Order & Save Application in Backend
-//       const res = await fetch("/api/apply", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify(formData),
-//       });
-
-//       const data = await res.json();
-//       if (!data.success) throw new Error(data.error);
-
-//       // 3. Open Razorpay Checkout Modal
-//       const options = {
-//         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
-//         amount: data.amount,
-//         currency: "INR",
-//         name: "INetZ Academy",
-//         description: "Internship Registration Fee",
-//         order_id: data.orderId, 
-//         handler: function (response: any) {
-//           setPaymentSuccess(true);
-//           setIsProcessing(false);
-//           setTimeout(() => router.push("/dashboard"), 3000);
-//         },
-//         prefill: {
-//           name: formData.fullName,
-//           email: formData.email,
-//           contact: formData.phone,
-//         },
-//         theme: { color: "#10b981" },
-//         modal: { ondismiss: () => setIsProcessing(false) }
-//       };
-
-//       const rzp = (window as any).Razorpay ? new (window as any).Razorpay(options) : null;
-//       if (rzp) {
-//         rzp.open();
-//       } else {
-//         throw new Error("Razorpay SDK failed to load. Please refresh.");
-//       }
-
-//     } catch (error: any) {
-//       setErrorMessage(error.message || "Something went wrong. Try again.");
-//       setIsProcessing(false);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-emerald-50">
-//       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-      
-//       {/* SUCCESS OVERLAY */}
-//       <AnimatePresence>
-//         {paymentSuccess && (
-//           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-white/95 backdrop-blur-sm text-center p-6">
-//             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="space-y-4 max-w-xs">
-//               <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
-//                 <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-//               </div>
-//               <h2 className="text-xl font-bold">Payment Successful</h2>
-//               <p className="text-zinc-500 text-xs leading-relaxed">Welcome to the cohort, {formData.fullName}. Check your email for onboarding details.</p>
-//             </motion.div>
-//           </motion.div>
-//         )}
-//       </AnimatePresence>
-
-//       <div className="max-w-5xl mx-auto px-6 py-12">
-//         <header className="flex items-center justify-between mb-16">
-//            <button onClick={() => router.back()} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all">
-//               <ArrowLeft className="w-3.5 h-3.5" /> Back
-//            </button>
-//            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Registration Portal 2026</p>
-//         </header>
-
-//         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          
-//           <div className="lg:col-span-7">
-//             <div className="mb-10">
-//               <h1 className="text-3xl font-bold tracking-tight mb-2">Complete Application</h1>
-//               <p className="text-zinc-400 text-sm font-medium">Verify your details for the internship certificate.</p>
-//             </div>
-
-//             {/* ERROR NOTIFICATION */}
-//             <AnimatePresence>
-//               {errorMessage && (
-//                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-xs font-semibold">
-//                   <AlertCircle className="w-4 h-4" />
-//                   {errorMessage}
-//                 </motion.div>
-//               )}
-//             </AnimatePresence>
-
-//             <form onSubmit={handleApplyAndPay} className="space-y-12">
-//               <section className="space-y-6">
-//                 <div className="flex items-center gap-2 border-b border-zinc-50 pb-2">
-//                     <User className="w-3.5 h-3.5 text-zinc-400" />
-//                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Personal Identity</span>
-//                 </div>
-//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-//                   <InputField label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Enter your full name" />
-//                   <InputField label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="name@example.com" />
-//                   <div className="md:col-span-2">
-//                     <InputField label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} placeholder="10-digit mobile number" icon={<Phone className="w-3.5 h-3.5" />} />
-//                   </div>
-//                 </div>
-//               </section>
-
-//               <section className="space-y-6">
-//                 <div className="flex items-center gap-2 border-b border-zinc-50 pb-2">
-//                     <Building2 className="w-3.5 h-3.5 text-zinc-400" />
-//                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Academic Background</span>
-//                 </div>
-//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-//                   <div className="md:col-span-2">
-//                     <InputField label="College / University" name="college" value={formData.college} onChange={handleChange} placeholder="Full Institution Name" />
-//                   </div>
-//                   <InputField label="Department" name="department" value={formData.department} onChange={handleChange} placeholder="e.g. CSE / IT" />
-//                   <SelectField label="Year of Study" name="year" value={formData.year} onChange={handleChange} options={["1st Year", "2nd Year", "3rd Year", "4th Year", "Graduate"]} />
-//                 </div>
-//               </section>
-
-//               <section className="space-y-6">
-//                 <div className="flex items-center gap-2 border-b border-zinc-50 pb-2">
-//                     <Briefcase className="w-3.5 h-3.5 text-zinc-400" />
-//                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Program Preference</span>
-//                 </div>
-//                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-//                   <SelectField label="Domain" name="domain" value={formData.domain} onChange={handleChange} options={["MERN Stack", "Python / AI", "Java Spring Boot"]} />
-//                   <SelectField label="Duration" name="duration" value={formData.duration} onChange={handleChange} options={["1 Month", "3 Months"]} />
-//                   <SelectField label="Mode" name="mode" value={formData.mode} onChange={handleChange} options={["Online", "Offline"]} />
-//                 </div>
-//               </section>
-//             </form>
-//           </div>
-
-//           <aside className="lg:col-span-5">
-//             <div className="sticky top-12 bg-zinc-50 border border-zinc-100 rounded-2xl p-8">
-//               <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400 mb-6">Order Summary</h3>
-//               <div className="space-y-4 mb-8">
-//                 <SummaryItem label="Program" value={formData.domain} />
-//                 <SummaryItem label="Duration" value={formData.duration} />
-//                 <SummaryItem label="Mode" value={formData.mode} />
-//                 <div className="h-px bg-zinc-200/50 my-4" />
-//                 <div className="flex justify-between items-end">
-//                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Total Fee</span>
-//                   <span className="text-3xl font-bold tracking-tighter text-emerald-600">₹500</span>
-//                 </div>
-//               </div>
-
-//               <button 
-//                 type="button"
-//                 onClick={handleApplyAndPay}
-//                 disabled={isProcessing}
-//                 className="w-full py-4 bg-zinc-900 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all active:scale-[0.99] disabled:opacity-50"
-//               >
-//                 {isProcessing ? <Loader2 className="animate-spin w-3.5 h-3.5" /> : <CreditCard className="w-3.5 h-3.5" />}
-//                 {isProcessing ? "Initialising..." : "Secure Payment • ₹500"}
-//               </button>
-
-//               <div className="mt-6 flex flex-col items-center gap-3">
-//                 <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-//                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> SSL Encrypted Gateway
-//                 </div>
-//               </div>
-//             </div>
-//           </aside>
-
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// // Helper Components
-// const InputField = ({ label, name, value, onChange, placeholder, type = "text", icon }: any) => (
-//   <div className="space-y-1.5">
-//     <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest ml-1">{label}</label>
-//     <div className="relative">
-//       {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300">{icon}</div>}
-//       <input 
-//         name={name} type={type} value={value} onChange={onChange} required 
-//         className={cn(
-//           "w-full bg-white border border-zinc-200 rounded-lg py-3 px-4 text-xs outline-none focus:border-zinc-900 transition-all font-medium",
-//           icon && "pl-11"
-//         )} 
-//         placeholder={placeholder} 
-//       />
-//     </div>
-//   </div>
-// );
-
-// const SelectField = ({ label, name, value, onChange, options }: any) => (
-//   <div className="space-y-1.5">
-//     <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest ml-1">{label}</label>
-//     <div className="relative">
-//       <select name={name} value={value} onChange={onChange} className="w-full bg-white border border-zinc-200 rounded-lg py-3 px-4 text-xs outline-none focus:border-zinc-900 transition-all appearance-none font-medium cursor-pointer">
-//         {options.map((opt: string) => <option key={opt}>{opt}</option>)}
-//       </select>
-//       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-300 pointer-events-none" />
-//     </div>
-//   </div>
-// );
-
-// const SummaryItem = ({ label, value }: { label: string, value: string }) => (
-//   <div className="flex justify-between text-xs">
-//     <span className="text-zinc-500 font-medium">{label}</span>
-//     <span className="font-bold text-zinc-900">{value}</span>
-//   </div>
-// );
-
-// export default ApplyAndPayPage;
-
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  User, Phone, ChevronDown, CheckCircle2, 
-  Loader2, ShieldCheck, UserCheck,
+import React, { useState, useEffect } from "react";
+import Script from "next/script";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  User, Phone, ChevronDown, CheckCircle2,
+  Loader2, ShieldCheck, CreditCard,
   ArrowLeft, Building2, Briefcase,
-  AlertCircle
+  AlertCircle, IndianRupee, Lock, ShoppingCart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { programData, type TechStack, type Duration } from "@/lib/program-data";
 
-const ApplyPage = () => {
+export default function ReviewAndPay() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const urlTrack = (searchParams.get("track") as TechStack) || "Python";
+  const urlDuration = (searchParams.get("duration") as Duration) || "1 Month";
+
   const [isProcessing, setIsProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -304,225 +27,232 @@ const ApplyPage = () => {
     college: "",
     department: "",
     year: "1st Year",
-    domain: "MERN Stack",
-    duration: "1 Month",
+    track: urlTrack,
+    duration: urlDuration,
     mode: "Online",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    if (errorMessage) setErrorMessage(null);
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const currentProgram = programData[formData.track]?.[formData.duration];
+  const discountedFee = currentProgram?.price || 500;
+  const originalFee = currentProgram?.originalPrice || 2000;
 
-  const validateForm = () => {
-    const { fullName, email, phone, college, department } = formData;
-    
-    if (!fullName.trim() || !email.trim() || !phone.trim() || !college.trim() || !department.trim()) {
-      setErrorMessage("Please fill in all required fields.");
-      return false;
-    }
+  const [customAmount, setCustomAmount] = useState<number>(discountedFee);
+  useEffect(() => {
+    setCustomAmount(discountedFee);
+  }, [discountedFee]);
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setErrorMessage("Please enter a valid email address.");
-      return false;
-    }
-
-    if (phone.length < 10) {
-      setErrorMessage("Please enter a valid 10-digit phone number.");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleApply = async (e: React.FormEvent) => {
+  const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (customAmount < 500) return alert("Min payment is ₹500");
 
     setIsProcessing(true);
-
     try {
+      // 1. Create Order & Pending Records
       const res = await fetch("/api/apply", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, amountToPay: customAmount }),
       });
-
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Submission failed");
 
-      // Direct success flow
-      setSuccess(true);
-      setIsProcessing(false);
-      setTimeout(() => router.push("/dashboard"), 3000);
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: "INR",
+        name: "INetZ Academy",
+        order_id: data.orderId,
+        // 2. SUCCESS HANDSHAKE (Verify with Backend)
+        handler: async (response: any) => {
+          try {
+            const verifyRes = await fetch("/api/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
 
-    } catch (error: any) {
-      setErrorMessage(error.message || "Something went wrong. Try again.");
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+              router.push("/dashboard?status=success");
+            } else {
+              alert("Verification failed. Please contact support.");
+              setIsProcessing(false);
+            }
+          } catch (err) {
+            console.error("Verification error:", err);
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: { color: "#A6056F" }, 
+        modal: { ondismiss: () => setIsProcessing(false) },
+      };
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (err) {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-emerald-50">
-      
-      {/* SUCCESS OVERLAY */}
-      <AnimatePresence>
-        {success && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-white/95 backdrop-blur-sm text-center p-6">
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="space-y-4 max-w-xs">
-              <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+
+      <main className="max-w-5xl mx-auto px-6 py-8 md:py-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* LEFT: REGISTRATION FORM */}
+        <div className="lg:col-span-7 space-y-6">
+          <button
+            onClick={() => router.back()}
+            className="text-[10px] font-black uppercase flex items-center gap-1.5 text-slate-400 hover:text-[#A6056F] transition-all tracking-widest"
+          >
+            <ArrowLeft className="w-3 h-3" /> Back
+          </button>
+          <h1 className="text-2xl font-black tracking-tight text-[#632450] uppercase">Review & Apply</h1>
+
+          <div className="space-y-5">
+            {/* Step 1: Contact Information */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-5 h-5 rounded bg-[#ECCC6E]/20 text-[#632450] flex items-center justify-center text-[10px] font-black">1</span>
+                <h2 className="font-black text-[11px] text-slate-800 uppercase tracking-widest">Contact Information</h2>
               </div>
-              <h2 className="text-xl font-bold">Application Sent</h2>
-              <p className="text-zinc-500 text-xs leading-relaxed">
-                Thank you, {formData.fullName}. Your application has been received. Redirecting to dashboard...
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        <header className="flex items-center justify-between mb-16">
-           <button onClick={() => router.back()} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
-           </button>
-           <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Registration Portal 2026</p>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          
-          <div className="lg:col-span-7">
-            <div className="mb-10">
-              <h1 className="text-3xl font-bold tracking-tight mb-2">Complete Application</h1>
-              <p className="text-zinc-400 text-sm font-medium">Verify your details for the internship certificate.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Input label="Full Name" value={formData.fullName} onChange={(v: any) => setFormData({ ...formData, fullName: v })} placeholder="Name" />
+                <Input label="Email" value={formData.email} onChange={(v: any) => setFormData({ ...formData, email: v })} placeholder="Email" />
+                <div className="md:col-span-2">
+                  <Input label="Phone Number" value={formData.phone} onChange={(v: any) => setFormData({ ...formData, phone: v })} placeholder="Mobile" />
+                </div>
+              </div>
             </div>
 
-            {/* ERROR NOTIFICATION */}
-            <AnimatePresence>
-              {errorMessage && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-xs font-semibold">
-                  <AlertCircle className="w-4 h-4" />
-                  {errorMessage}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Step 2: Academic Information */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-5 h-5 rounded bg-[#ECCC6E]/20 text-[#632450] flex items-center justify-center text-[10px] font-black">2</span>
+                <h2 className="font-black text-[11px] text-slate-800 uppercase tracking-widest">Education Details</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="md:col-span-2">
+                  <Input label="College" value={formData.college} onChange={(v: any) => setFormData({ ...formData, college: v })} placeholder="Institution" />
+                </div>
+                <Input label="Department" value={formData.department} onChange={(v: any) => setFormData({ ...formData, department: v })} placeholder="CSE / IT" />
+                <Select label="Year" value={formData.year} options={["1st Year", "2nd Year", "3rd Year", "4th Year"]} onChange={(v: any) => setFormData({ ...formData, year: v })} />
+              </div>
+            </div>
 
-            <form onSubmit={handleApply} className="space-y-12">
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 border-b border-zinc-50 pb-2">
-                    <User className="w-3.5 h-3.5 text-zinc-400" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Personal Identity</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <InputField label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Enter your full name" />
-                  <InputField label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="name@example.com" />
-                  <div className="md:col-span-2">
-                    <InputField label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} placeholder="10-digit mobile number" icon={<Phone className="w-3.5 h-3.5" />} />
-                  </div>
-                </div>
-              </section>
-
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 border-b border-zinc-50 pb-2">
-                    <Building2 className="w-3.5 h-3.5 text-zinc-400" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Academic Background</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="md:col-span-2">
-                    <InputField label="College / University" name="college" value={formData.college} onChange={handleChange} placeholder="Full Institution Name" />
-                  </div>
-                  <InputField label="Department" name="department" value={formData.department} onChange={handleChange} placeholder="e.g. CSE / IT" />
-                  <SelectField label="Year of Study" name="year" value={formData.year} onChange={handleChange} options={["1st Year", "2nd Year", "3rd Year", "4th Year", "Graduate"]} />
-                </div>
-              </section>
-
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 border-b border-zinc-50 pb-2">
-                    <Briefcase className="w-3.5 h-3.5 text-zinc-400" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Program Preference</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <SelectField label="Domain" name="domain" value={formData.domain} onChange={handleChange} options={["MERN Stack", "Python / AI", "Java Spring Boot"]} />
-                  <SelectField label="Duration" name="duration" value={formData.duration} onChange={handleChange} options={["1 Month", "3 Months"]} />
-                  <SelectField label="Mode" name="mode" value={formData.mode} onChange={handleChange} options={["Online", "Offline"]} />
-                </div>
-              </section>
-            </form>
+            {/* Step 3: Selection */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-5 h-5 rounded bg-[#ECCC6E]/20 text-[#632450] flex items-center justify-center text-[10px] font-black">3</span>
+                <h2 className="font-black text-[11px] text-slate-800 uppercase tracking-widest">Program</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Select label="Track" value={formData.track} options={["Python", "MERN", "Java", "Data"]} onChange={(v: any) => setFormData({ ...formData, track: v })} />
+                <Select label="Duration" value={formData.duration} options={["1 Week", "1 Month", "3 Months"]} onChange={(v: any) => setFormData({ ...formData, duration: v })} />
+                <Select label="Mode" value={formData.mode} options={["Online", "Offline"]} onChange={(v: any) => setFormData({ ...formData, mode: v })} />
+              </div>
+            </div>
           </div>
+        </div>
 
-          <aside className="lg:col-span-5">
-            <div className="sticky top-12 bg-zinc-50 border border-zinc-100 rounded-2xl p-8">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400 mb-6">Application Summary</h3>
-              <div className="space-y-4 mb-8">
-                <SummaryItem label="Program" value={formData.domain} />
-                <SummaryItem label="Duration" value={formData.duration} />
-                <SummaryItem label="Mode" value={formData.mode} />
-                <div className="h-px bg-zinc-200/50 my-4" />
-                <p className="text-[10px] text-zinc-400 font-medium leading-relaxed">
-                  By clicking submit, you agree to the internship terms and code of conduct.
-                </p>
+        {/* RIGHT: COMPACT ORDER SUMMARY */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm sticky top-20">
+            <div className="p-3 border-b border-slate-100 flex items-center gap-2 font-black text-[9px] uppercase tracking-widest text-slate-400">
+              <ShoppingCart className="w-3.5 h-3.5 text-[#A6056F]" /> Order Summary
+            </div>
+            <div className="p-4">
+              <div className="rounded-lg overflow-hidden mb-3 h-32 bg-slate-100">
+                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600" className="w-full h-full object-cover" alt="Program" />
               </div>
+              <h3 className="font-black text-sm leading-tight text-slate-800 uppercase tracking-tighter">
+                {formData.duration} {formData.track} Internship
+              </h3>
+              
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase">
+                  <span>Standard Fee</span>
+                  <span className="line-through decoration-slate-300">₹{originalFee.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-[10px] text-[#A6056F] font-black uppercase">
+                  <span>Scholarship</span>
+                  <span>-₹{(originalFee - discountedFee).toLocaleString()}</span>
+                </div>
 
-              <button 
-                type="button"
-                onClick={handleApply}
-                disabled={isProcessing}
-                className="w-full py-4 bg-zinc-900 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all active:scale-[0.99] disabled:opacity-50"
-              >
-                {isProcessing ? <Loader2 className="animate-spin w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-                {isProcessing ? "Submitting..." : "Submit Application"}
-              </button>
+                {/* COMPACT FLEX PAY */}
+                <div className="bg-[#ECCC6E]/5 border border-[#632450]/10 rounded-lg p-2.5 my-3 flex items-center justify-between gap-3">
+                  <div className="flex-shrink-0">
+                    <label className="text-[8px] font-black uppercase text-[#632450]/60 tracking-widest block">Payable Now</label>
+                    <p className="text-[7px] font-bold text-slate-400 italic">(Min ₹500)</p>
+                  </div>
+                  <div className="relative flex-1 max-w-[110px]">
+                    <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-[#632450]/50" />
+                    <input
+                      type="number"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(parseInt(e.target.value) || 0)}
+                      className="w-full pl-6 pr-2 py-1.5 bg-white border border-[#632450]/20 rounded text-sm font-black text-slate-800 outline-none text-right"
+                    />
+                  </div>
+                </div>
 
-              <div className="mt-6 flex flex-col items-center gap-3">
-                <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure Data Encryption
+                <div className="pt-2 border-t border-dashed border-slate-200 flex justify-between items-baseline">
+                  <span className="font-black text-[10px] text-slate-400 uppercase tracking-widest">Grand Total</span>
+                  <span className="font-black text-xl text-[#632450] tracking-tighter">₹{customAmount.toLocaleString()}</span>
                 </div>
               </div>
+
+              <button
+                onClick={handlePay}
+                disabled={isProcessing}
+                className="w-full mt-5 py-3.5 bg-[#A6056F] hover:bg-[#850459] text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-[#A6056F]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isProcessing ? <Loader2 className="animate-spin size-3" /> : <Lock className="size-3" />}
+                Enroll Now
+              </button>
             </div>
-          </aside>
+          </div>
         </div>
+
+      </main>
+    </div>
+  );
+}
+
+// Compact UI Components
+function Input({ label, ...props }: any) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+      <input
+        {...props} onChange={(e) => props.onChange(e.target.value)} required
+        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold focus:bg-white focus:border-[#A6056F] outline-none transition-all placeholder:text-slate-300"
+      />
+    </div>
+  );
+}
+
+function Select({ label, options, ...props }: any) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+      <div className="relative">
+        <select
+          {...props} onChange={(e) => props.onChange(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold focus:bg-white focus:border-[#A6056F] outline-none appearance-none cursor-pointer"
+        >
+          {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-3 text-slate-400 pointer-events-none" />
       </div>
     </div>
   );
-};
-
-// Helper Components
-const InputField = ({ label, name, value, onChange, placeholder, type = "text", icon }: any) => (
-  <div className="space-y-1.5">
-    <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest ml-1">{label}</label>
-    <div className="relative">
-      {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300">{icon}</div>}
-      <input 
-        name={name} type={type} value={value} onChange={onChange} required 
-        className={cn(
-          "w-full bg-white border border-zinc-200 rounded-lg py-3 px-4 text-xs outline-none focus:border-zinc-900 transition-all font-medium",
-          icon && "pl-11"
-        )} 
-        placeholder={placeholder} 
-      />
-    </div>
-  </div>
-);
-
-const SelectField = ({ label, name, value, onChange, options }: any) => (
-  <div className="space-y-1.5">
-    <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest ml-1">{label}</label>
-    <div className="relative">
-      <select name={name} value={value} onChange={onChange} className="w-full bg-white border border-zinc-200 rounded-lg py-3 px-4 text-xs outline-none focus:border-zinc-900 transition-all appearance-none font-medium cursor-pointer">
-        {options.map((opt: string) => <option key={opt}>{opt}</option>)}
-      </select>
-      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-300 pointer-events-none" />
-    </div>
-  </div>
-);
-
-const SummaryItem = ({ label, value }: { label: string, value: string }) => (
-  <div className="flex justify-between text-xs">
-    <span className="text-zinc-500 font-medium">{label}</span>
-    <span className="font-bold text-zinc-900">{value}</span>
-  </div>
-);
-
-export default ApplyPage;
+}

@@ -120,17 +120,6 @@ const ProgramsMainPage = () => {
             className="relative"
           >
             {/* Overlay Back Button */}
-            <div className="fixed top-6 left-6 lg:left-10 z-[100]">
-              <motion.button
-                initial={{ x: -10, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                onClick={() => setSelectedStack(null)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-white shadow-2xl hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all group"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-                Back to Catalogue
-              </motion.button>
-            </div>
 
             <InternshipPrograms
               initialStack={selectedStack}
