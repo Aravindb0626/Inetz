@@ -13,7 +13,7 @@ const testimonials = [
     role: "Software Engineer",
     company: "Zoho",
     text: "The real-time project experience at Inetz helped me clear my technical rounds at Zoho effortlessly. Highly recommended!",
-    image: "/student.jpeg",
+    image: "/thumbImg2.jpeg",
     border: "border-amber-500/40",
     roleColor: "text-amber-600",
   },
@@ -22,7 +22,7 @@ const testimonials = [
     role: "Full Stack Architect",
     company: "Infosys",
     text: "Excellent mentors who explain concepts with real-world scenarios. The placement support is genuine and active.",
-    image: "/student.jpeg",
+    image: "/thunbImg3.jpeg",
     border: "border-indigo-500/40",
     roleColor: "text-indigo-600",
   },
@@ -112,9 +112,8 @@ export default function SuccessStories() {
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full hidden dark:block" />
 
       <div className="flex flex-col gap-6 mb-16 px-6 max-w-[1400px] mx-auto relative z-10">
-        {/* Centered Badge + Heading */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
             Success Stories
           </div>
           <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-zinc-100 mb-4">
@@ -122,10 +121,9 @@ export default function SuccessStories() {
           </h2>
         </div>
 
-        {/* Description + Nav Buttons row */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium max-w-2xl">
-            Join 5000+ professionals who transformed their careers with Inetz Technologies.
+          <p className="text-zinc-600 dark:text-zinc-400 text-lg font-medium max-w-2xl">
+            Join 5000+ professionals who transformed their careers with Inetz Technologies. Explore their journeys and envision your future.
           </p>
           <div className="flex gap-4 shrink-0">
             <button

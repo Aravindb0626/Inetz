@@ -104,9 +104,9 @@ export default function ProblemSolution() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest mb-6">
               How iNetz Solves It
             </div>
-            <h2 className="text-balance text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-6">
+            <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-white mb-6">
               How iNetz Solves It <br className="hidden md:block" />
-              <span className="text-emerald-500 dark:text-emerald-400">A real internship training system.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500 font-bold">A real internship training system.</span>
             </h2>
           </div>
 
@@ -146,14 +146,14 @@ export default function ProblemSolution() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               href="/programs" 
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-zinc-200 text-zinc-950 font-bold text-lg hover:bg-zinc-200 hover:shadow-[0_0_30px_rgba(255,255,25,0.4)] transition-all cursor-pointer group"
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500 text-white font-black uppercase tracking-widest text-sm hover:shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] transition-all cursor-pointer group"
             >
               Explore Our Programs 
               <motion.div
                 animate={{ x: [0, 5, 0] }}
                 transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
               >
-                <MoveRight className="w-5 h-5 group-hover:text-emerald-600 transition-colors" />
+                <MoveRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </motion.div>
             </motion.a>
           </motion.div>

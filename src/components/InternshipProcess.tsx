@@ -131,9 +131,9 @@ export default function InternshipProcess() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
             >
-              <Card 
-                variant="glass" 
-                hover="lift" 
+              <Card
+                variant="glass"
+                hover="lift"
                 className="group relative flex flex-col items-center text-center h-full border-zinc-200/50 dark:border-zinc-800/50 p-6 sm:p-8 overflow-hidden"
               >
                 {/* Step Number */}
@@ -173,9 +173,9 @@ export default function InternshipProcess() {
           );
         })}
       </div>
-      
+
       {/* CTA Footer for this section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         className="mt-10 text-center"
