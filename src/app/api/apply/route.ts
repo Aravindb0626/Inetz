@@ -69,15 +69,12 @@ import { connectToDatabase } from "@/lib/db";
 import Application from "@/models/Application";
 import Transaction from "@/models/Transaction"; // 1. Import the model
 import { NextResponse } from "next/server";
-<<<<<<< HEAD
-=======
 import Razorpay from "razorpay";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!, 
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
->>>>>>> b0fdbc39ce9a57996abc53c7ddef3342db98ffce
 
 export async function POST(req: Request) {
   try {
@@ -86,30 +83,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { fullName, email, phone, amountToPay, track } = body;
 
-<<<<<<< HEAD
-    // 1. Validate essential fields
-    const { fullName, email, phone } = body;
-    if (!fullName || !email || !phone) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" }, 
-        { status: 400 }
-      );
-    }
-
-    // 2. Save Application directly to the database
-    // We removed razorpayOrderId and updated statuses to reflect a direct submission
-    const newApplication = await Application.create({
-      ...body,
-      status: "received",      // Changed from "pending"
-      paymentStatus: "n/a",    // Since there is no payment flow now
-      appliedAt: new Date(),
-    });
-
-    // 3. Return success response immediately
-    return NextResponse.json({
-      success: true,
-      message: "Application submitted successfully",
-=======
     // 1. Validation
     if (!fullName || !email || !phone) {
       return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
@@ -143,7 +116,6 @@ export async function POST(req: Request) {
     // This logs that the student ATTEMPTED to pay.
     await Transaction.create({
       studentEmail: email,
->>>>>>> b0fdbc39ce9a57996abc53c7ddef3342db98ffce
       applicationId: newApplication._id,
       razorpayOrderId: order.id,
       amount: amountToPay,
@@ -166,11 +138,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("APPLICATION_SUBMISSION_ERROR:", error.message);
     return NextResponse.json(
-<<<<<<< HEAD
-      { success: false, error: "Could not process application. Try again." }, 
-=======
       { success: false, error: "Process failed. Try again." },
->>>>>>> b0fdbc39ce9a57996abc53c7ddef3342db98ffce
       { status: 500 }
     );
   }
