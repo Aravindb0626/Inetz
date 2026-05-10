@@ -44,7 +44,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB] dark:bg-zinc-950 flex flex-col justify-center py-10 px-4">
+    <div id="contact" className="min-h-screen bg-[#FBFBFB] dark:bg-zinc-950 flex flex-col justify-center py-10 px-4">
       
       {/* Compact Navigation */}
       <div className="fixed top-6 left-6">

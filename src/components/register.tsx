@@ -85,7 +85,7 @@ export function EnrollmentActionSection() {
   };
 
   return (
-    <Section className="relative bg-[#f8fafc] dark:bg-[#020617] py-10 md:py-16">
+    <Section id="contact" className="relative bg-[#f8fafc] dark:bg-[#020617] py-10 md:py-16">
       <div className="max-w-5xl mx-auto px-6 grid lg:grid-cols-2 gap-10 md:gap-16 items-center">
 
         {/* LEFT SIDE: STEPS */}

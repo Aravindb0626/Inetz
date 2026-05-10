@@ -381,21 +381,22 @@ export default function AboutPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { name: "Senthil Kumar", role: "Founder & CEO", exp: "10+ Years", img: "/senthilkumar.jpg"},
-              { name: "Vigneshwaran", role: "Industry Expert", exp: "5+ Years", img: "/vigneshwaran.jpg" },
-              { name: "Amal", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/amal.jpeg" },
-              { name: "Preethi", role: "Front End Trainer", exp: "5+ Years", img: "/preethi.png" },
-              { name: "Aravind", role: "Mern Stack Trainer", exp: "3+ Years", img: "/aravindh.png" },
-              { name: "Boomika", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/boomika.png" },
-              { name: "Sri", role: "Data Analytics Trainer", exp: "3+ Years", img: "/sridhanalakshmi.png" },
-              { name: "Anbu", role: "Project Developer", exp: "3+ Years", img: "/anbu.png" }
+              { name: "Senthil Kumar", role: "Founder & CEO", exp: "10+ Years", img: "/staffs/senthilkumar.jpg"},
+              { name: "Vigneshwaran", role: "Industry Expert", exp: "5+ Years", img: "/staffs/vigneshwaran.jpg" },
+              { name: "Amal", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/staffs/amal.jpeg" },
+              { name: "Anbu", role: "Project Developer", exp: "3+ Years", img: "/staffs/anbu.png" },
+              { name: "Boomika", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/staffs/boomika.png" },
+              { name: "Preethi", role: "Front End Trainer", exp: "5+ Years", img: "/staffs/preethi.png" },
+              { name: "Aravind", role: "MERN Stack Trainer", exp: "3+ Years", img: "/staffs/aravindh.png" },
+              { name: "Sri", role: "Data Analytics Trainer", exp: "3+ Years", img: "/staffs/sridhanalakshmi.png" },
+              { name: "Naresh", role: "MERN Stack Trainer", exp: "5+ Years", img: "/staffs/Naresh.png" },
             ].map((member, i) => (
               <motion.div key={i} className="group relative">
                 <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl relative">
                   <img src={member.img} alt={member.name} className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100" />
                   <div className="absolute bottom-8 left-8 right-8">
                     <h3 className="text-white text-2xl font-bold mb-1">{member.name}</h3>
                     <p className="text-zinc-300 font-medium">{member.role}</p>

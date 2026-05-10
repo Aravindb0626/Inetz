@@ -7,11 +7,11 @@ import { Counter } from "@/components/ui/Counter";
 
 const slides = [
   {
-    type: "video",
+    type: "image",
     title: "Stop Learning Only in Theory. Start Building",
     highlight: "Real Projects",
     desc: "Join a project-driven internship program where students code daily, complete real tasks, work on practical applications, and gain the confidence to attend interviews.",
-    media: "/intro-vdo.mp4",
+    media: "/home/hero1.png",
   },
   {
     type: "image",
@@ -108,7 +108,7 @@ export function HeroInternship() {
                 </p>
                 <div className="flex flex-wrap gap-4 pt-16">
                   <a href="/programs" className="inline-flex h-12 items-center justify-center rounded-full bg-zinc-900 px-8 text-sm font-bold text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white shadow-lg hover:scale-105 active:scale-95">View all courses</a>
-                  <a href="/contact" className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-200 bg-white px-8 text-sm font-bold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/30 shadow-md hover:scale-105 active:scale-95">Request a call</a>
+                  <a href="#contact" className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-200 bg-white px-8 text-sm font-bold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/30 shadow-md hover:scale-105 active:scale-95">Request a call</a>
                 </div>
               </motion.div>
             </AnimatePresence>

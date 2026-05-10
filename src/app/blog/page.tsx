@@ -10,7 +10,7 @@ const featuredStory = {
   id: "featured-1",
   title: "The Genesis of INetz: Transforming Internship Experiences",
   excerpt: "Discover how we started INetz Technologies with a vision to bridge the gap between academic learning and industry requirements. Our journey from a small idea to a robust platform.",
-  author: "Aravind B",
+  author: "Steve",
   date: "Oct 24, 2026",
   readTime: "8 min read",
   category: "Company Story",

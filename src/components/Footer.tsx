@@ -63,7 +63,7 @@ export default function Footer() {
               {[
                 {
                   icon: FaFacebook,
-                  href: "#",
+                  href: "https://www.facebook.com/iNetzTechnologies/",
                   hover: "hover:bg-[#1877F2] hover:border-[#1877F2]",
                 },
                 {
@@ -78,7 +78,7 @@ export default function Footer() {
                 },
                 {
                   icon: FaInstagram,
-                  href: "#",
+                  href: "https://www.instagram.com/inetz_technologies_vadapalani/reels/",
                   hover:
                     "hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] hover:border-[#dc2743]",
                 },
