@@ -15,7 +15,7 @@ export async function GET() {
     const formattedPrograms = programs.map(p => {
       // Logic to determine tech stack key for icon rendering
       let stackKey: any = "Python"; 
-      const lowerTitle = p.title.toLowerCase();
+      const lowerTitle = (p.title || "").toLowerCase();
       if (lowerTitle.includes("mern")) stackKey = "MERN";
       else if (lowerTitle.includes("java")) stackKey = "Java";
 
