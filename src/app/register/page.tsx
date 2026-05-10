@@ -61,7 +61,7 @@ export default function RegisterPage() {
         {/* Scaled Down Logo */}
         <div className="flex justify-center mb-6">
           <Link href="/" className="relative h-10 w-32 transition-opacity hover:opacity-80">
-            <Image src="/logo.png" alt="Inetz Logo" fill className="object-contain" priority />
+            <Image src="/icon.jpeg" alt="Inetz Logo" fill className="object-contain" priority />
           </Link>
         </div>
 

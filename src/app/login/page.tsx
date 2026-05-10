@@ -89,7 +89,7 @@
           <div className="flex justify-center mb-4">
             <Link href="/" className="relative h-10 w-32">
               <Image
-                src="/logo.png"
+                src="/icon.jpeg"
                 alt="Inetz Logo"
                 fill
                 className="object-contain"
