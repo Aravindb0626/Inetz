@@ -464,7 +464,7 @@ const AdminPage = () => {
                   </button>
                 </div>
                 {reviews.map((r, i) => (
-                  <div key={i} className="mb-4 p-5 bg-zinc-50 rounded-2xl space-y-2 relative group border border-transparent hover:border-zinc-200 transition-all">
+                  <div key={i} className="p-5 bg-zinc-50 rounded-2xl space-y-2 relative group border border-transparent hover:border-zinc-200 transition-all">
                     <input placeholder="Student Name" value={r.name}
                       onChange={e => updateItem(setReviews, reviews, i, "name", e.target.value)}
                       className="w-full font-bold text-xs bg-transparent outline-none" />
