@@ -325,7 +325,7 @@ const AdminPage = () => {
             </div>
           </div>
           <button onClick={handleSave} disabled={uploading}
-            className="bg-zinc-900 text-white px-10 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl flex items-center gap-2 disabled:opacity-60">
+            className="bg-zinc-900 text-white px-10 py-4 rounded-2xl text-[10px] tracking-widest hover:bg-emerald-600 transition-all shadow-xl flex items-center gap-2 disabled:opacity-60">
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={16} />}
             {uploading ? "Saving..." : editingId ? "Update Track" : "Publish Track"}
           </button>
