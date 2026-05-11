@@ -7,6 +7,8 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: string;
+  image: String ,
+  provider: String,
   createdAt: Date;
   comparePassword(password: string): Promise<boolean>;
 }
@@ -15,8 +17,10 @@ export interface IUser extends Document {
 const UserSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false },
   role: { type: String, default: "student" },
+  image: { type: String },
+  provider: { type: String, default: "credentials" },
   createdAt: { type: Date, default: Date.now },
 });
 

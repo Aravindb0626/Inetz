@@ -122,6 +122,7 @@ import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { Toaster } from "sonner";
+import Providers from "./providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -187,6 +188,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${inter.className} min-h-full flex flex-col bg-white text-zinc-900`}>
+        <Providers>
         <ThemeProvider forcedTheme="light">
           <Navbar />
           <main className="flex-1">{children}</main>
@@ -234,6 +236,7 @@ export default function RootLayout({
             }}
           />
         </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

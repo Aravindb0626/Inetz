@@ -1,39 +1,45 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-// Note: We use 'jose' because 'jsonwebtoken' is not compatible with Edge Runtime
 import { jwtVerify } from 'jose'; 
 
 const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get('token')?.value;
+  // 1. Get both possible tokens
+  const customToken = req.cookies.get('token')?.value;
+  const nextAuthToken = req.cookies.get('next-auth.session-token')?.value || 
+                        req.cookies.get('__Secure-next-auth.session-token')?.value;
+
   const { pathname } = req.nextUrl;
 
-  // 1. Define your Route Groups
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register');
   const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding');
 
-  // 2. Logic: User is trying to access a protected page without a token
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL('/login', req.url));
+  // 2. Logic: If trying to access protected route
+  if (isProtectedRoute) {
+    // If neither token exists, go to login
+    if (!customToken && !nextAuthToken) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+
+    // If custom token exists but NextAuth doesn't, verify the custom one
+    if (customToken && !nextAuthToken) {
+      try {
+        await jwtVerify(customToken, SECRET);
+      } catch (err) {
+        return NextResponse.redirect(new URL('/login', req.url));
+      }
+    }
   }
 
-  // 3. Logic: User is already logged in, so don't show them Login/Register pages
-  if (isAuthRoute && token) {
-    try {
-      // Verify token is valid before redirecting
-      await jwtVerify(token, SECRET);
-      return NextResponse.redirect(new URL('/', req.url));
-    } catch (err) {
-      // If token is expired/invalid, let them stay on the login page
-      return NextResponse.next();
-    }
+  // 3. Logic: If already logged in, prevent access to login/register
+  if (isAuthRoute && (customToken || nextAuthToken)) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return NextResponse.next();
 }
 
-// 4. IMPORTANT: The Matcher config tells Next.js exactly where to run this
 export const config = {
   matcher: [
     '/dashboard/:path*',

@@ -8,6 +8,7 @@ import { Menu, X, LogOut, LayoutDashboard, User, ShieldCheck } from "lucide-reac
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { signOut, useSession } from "next-auth/react";
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -19,9 +20,7 @@ const navItems = [
 
 function InetzLogo({ className }: { className?: string }) {
   return (
-    <div
-      className={cn("relative h-14 w-45 flex items-center group", className)}
-    >
+    <div className={cn("relative h-14 w-45 flex items-center group", className)}>
       <Image
         src="/Inetz-logo-removebg1.png"
         alt="Inetz Technologies Logo" 
@@ -36,62 +35,21 @@ function InetzLogo({ className }: { className?: string }) {
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // 1. Fetch from session storage
-        const storedUser = sessionStorage.getItem("user");
-        
-        if (storedUser) {
-          // 2. Parse the JSON string to access the .role property
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser.user);
-          setIsLoggedIn(true);
-          console.log(parsedUser)
-        } else {
-          // 3. Fallback to API if session storage is empty
-          const res = await fetch("/api/auth/me");
-          if (res.ok) {
-            const data = await res.json();
-            setIsLoggedIn(true);
-            setUser(data.user);
-            console.log(data.user)
-          } else {
-            setIsLoggedIn(false);
-            setUser(null);
-          }
-        }
-      } catch (err) {
-        setIsLoggedIn(false);
-        setUser(null);
-      }
-    };
-    checkAuth();
-  }, [pathname]);
+  // Status flags
+  const isLoggedIn = status === "authenticated";
+  const user = session?.user as any; 
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch("/api/auth/logout", { method: "POST" });
-      if (response.ok) {
-        sessionStorage.removeItem("user"); // Clear session storage on logout
-        setIsLoggedIn(false);
-        router.push("/");
-        router.refresh();
-      }
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+    await signOut({ callbackUrl: "/" });
   };
 
   const activeHref = useMemo(() => {
     const exact = navItems.find((i) => i.href === pathname)?.href;
     if (exact) return exact;
-    return navItems.find((i) => pathname?.startsWith(i.href) && i.href !== "/")
-      ?.href;
+    return navItems.find((i) => pathname?.startsWith(i.href) && i.href !== "/")?.href;
   }, [pathname]);
 
   useEffect(() => {
@@ -109,27 +67,22 @@ export function Navbar() {
         <nav className="hidden items-center gap-2 lg:flex p-1 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-full border border-zinc-100/50 dark:border-zinc-800/50">
           {navItems.map((item) => {
             const isActive = item.href === activeHref;
-
             return (
               <div key={item.href} className="relative">
                 <Link
                   href={item.href}
                   className={cn(
                     "relative flex items-center gap-1 rounded-full px-6 py-2 text-sm font-bold transition-all duration-300",
-                    isActive
-                      ? "text-white dark:text-zinc-900"
-                      : "text-zinc-500 hover:text-orange-500 dark:text-zinc-400 dark:hover:text-orange-400",
+                    isActive 
+                      ? "text-white dark:text-zinc-900" 
+                      : "text-zinc-500 hover:text-orange-500 dark:text-zinc-400 dark:hover:text-orange-400"
                   )}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="navbar-active"
-                      className="absolute inset-0 bg-orange-500 dark:bg-orange-500 rounded-full -z-10 shadow-lg shadow-orange-500/20"
-                      transition={{
-                        type: "spring",
-                        bounce: 0.25,
-                        duration: 0.5,
-                      }}
+                      className="absolute inset-0 bg-orange-500 rounded-full -z-10 shadow-lg shadow-orange-500/20"
+                      transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
                     />
                   )}
                   {item.label}
@@ -142,28 +95,16 @@ export function Navbar() {
         {/* Action Controls */}
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-3">
-            {!isLoggedIn ? (
+            {status === "loading" ? (
+              <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+            ) : !isLoggedIn ? (
               <>
-                <Button
-                  href="/login"
-                  variant="ghost"
-                  size="sm"
-                  className="font-semibold"
-                >
-                  Login
-                </Button>
-                <Button
-                  href="/register"
-                  variant="primary"
-                  size="sm"
-                  className="px-6 rounded-full font-bold shadow-lg shadow-orange-500/20"
-                >
-                  Register
-                </Button>
+                <Button href="/login" variant="ghost" size="sm" className="font-semibold">Login</Button>
+                <Button href="/register" variant="primary" size="sm" className="px-6 rounded-full font-bold shadow-lg shadow-orange-500/20">Register</Button>
               </>
             ) : (
               <div className="flex items-center gap-3">
-                {/* Admin Button - Only shown if role is admin */}
+                {/* Admin Access Point - High contrast emerald color */}
                 {user?.role === "admin" && (
                   <Button
                     href="/admin"
@@ -171,29 +112,33 @@ export function Navbar() {
                     size="sm"
                     className="font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/20"
                   >
-                    <ShieldCheck className="w-4 h-4 mr-2" />
-                    Admin
+                    <ShieldCheck className="w-4 h-4 mr-2" /> Admin
                   </Button>
                 )}
 
-                <div className="h-9 w-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => router.push(user?.role === "admin" ? "/admin" : "/dashboard")}
-                    className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-95"
-                    title="Go to Dashboard"
+                    className="relative w-9 h-9 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-700 hover:ring-2 hover:ring-orange-500 transition-all shadow-sm"
+                    title="Dashboard"
                   >
-                    <User className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+                    {user?.image ? (
+                      <Image src={user.image} alt="User" fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                        <User className="w-5 h-5 text-zinc-500" />
+                      </div>
+                    )}
                   </button>
+                  <Button
+                    onClick={handleLogout}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full font-bold border-zinc-200 dark:border-zinc-700 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" /> Logout
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full font-bold border-zinc-200 dark:border-zinc-700 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 transition-colors"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
               </div>
             )}
           </div>
@@ -204,11 +149,7 @@ export function Navbar() {
             className="lg:hidden p-2 rounded-full h-10 w-10"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
       </div>
@@ -223,82 +164,43 @@ export function Navbar() {
             className="lg:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden shadow-2xl"
           >
             <div className="flex flex-col p-4 gap-2">
-              {navItems.map((item) => {
-                const isActive = item.href === activeHref;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center justify-between p-4 rounded-2xl text-lg font-semibold transition-all",
-                      isActive
-                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                        : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
-                    )}
-                  >
-                    {item.label}
-                    {isActive && (
-                      <motion.div
-                        animate={{ x: [0, 5, 0] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                        className="w-2 h-2 rounded-full bg-orange-500"
-                      />
-                    )}
-                  </Link>
-                );
-              })}
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center justify-between p-4 rounded-2xl text-lg font-semibold transition-all",
+                    item.href === activeHref 
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" 
+                      : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
 
               {isLoggedIn && (
                 <>
                   {user?.role === "admin" && (
-                    <Link
-                      href="/admin"
-                      className="flex items-center gap-3 p-4 rounded-2xl text-lg font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
-                    >
-                      <ShieldCheck className="w-5 h-5" />
-                      Admin Dashboard
+                    <Link href="/admin" className="flex items-center gap-3 p-4 rounded-2xl text-lg font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
+                      <ShieldCheck className="w-5 h-5" /> Admin Dashboard
                     </Link>
                   )}
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-3 p-4 rounded-2xl text-lg font-semibold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/20"
-                  >
-                    <LayoutDashboard className="w-5 h-5" />
-                    {user?.role === "admin" ? "Admin Settings" : "Dashboard"}
+                  <Link href="/dashboard" className="flex items-center gap-3 p-4 rounded-2xl text-lg font-semibold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/20">
+                    <LayoutDashboard className="w-5 h-5" /> Dashboard
                   </Link>
                 </>
               )}
 
-              <div className="grid grid-cols-1 gap-3 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 {!isLoggedIn ? (
                   <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      href="/login"
-                      variant="outline"
-                      size="lg"
-                      className="rounded-2xl"
-                    >
-                      Login
-                    </Button>
-                    <Button
-                      href="/register"
-                      variant="primary"
-                      size="lg"
-                      className="rounded-2xl"
-                    >
-                      Register
-                    </Button>
+                    <Button href="/login" variant="outline" size="lg" className="rounded-2xl">Login</Button>
+                    <Button href="/register" variant="primary" size="lg" className="rounded-2xl">Register</Button>
                   </div>
                 ) : (
-                  <Button
-                    onClick={handleLogout}
-                    variant="primary"
-                    size="lg"
-                    className="rounded-2xl bg-red-600 hover:bg-red-700 border-none"
-                  >
-                    <LogOut className="w-5 h-5 mr-2" />
-                    Logout
+                  <Button onClick={handleLogout} variant="primary" size="lg" className="rounded-2xl bg-red-600 hover:bg-red-700 border-none text-white">
+                    <LogOut className="w-5 h-5 mr-2" /> Logout
                   </Button>
                 )}
               </div>

@@ -52,7 +52,6 @@ export async function POST(req: Request) {
       },
       { status: 200 }
     );
-
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
