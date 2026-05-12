@@ -27,8 +27,8 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # .env is in .dockerignore so it is not copied into the Docker image.
-      - name: Download .env from S3
-        run: aws s3 cp s3://inetz-internship/.env .
+      # - name: Download .env from S3
+      #   run: aws s3 cp s3://inetz-internship/.env .
 
       - name: Login to Amazon ECR
         id: login-ecr
