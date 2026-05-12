@@ -8,24 +8,24 @@ import { Counter } from "@/components/ui/Counter";
 const slides = [
   {
     type: "video",
-    title: "Stop Learning Only in Theory. Start Building",
-    highlight: "Real Projects",
+    title: "Best Internship Training in Chennai with",
+    highlight: "Real-Time Projects",
     desc: "Join a project-driven internship program where students code daily, complete real tasks, work on practical applications, and gain the confidence to attend interviews.",
     media: "/intro-vdo.mp4",
   },
   {
     type: "image",
-    title: "Learn. Practice. Build. ",
-    highlight: "Get Ready for Your Career",
-    desc: "Internship programs designed for students to gain hands-on technical skills with real-time project exposure.",
-    media: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&q=80&w=1200", // Student with laptop/tablet vibe
+    title: "Full Stack Training Chennai for",
+    highlight: "High-Growth Careers",
+    desc: "Internship programs designed for students to gain hands-on technical skills with real-time project exposure and guaranteed placement support.",
+    media: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&q=80&w=1200",
   },
   {
     type: "image",
-    title: "Learn Beyond the Classroom.",
-    highlight: "positive thoughts",
-    desc: "Get real-world development experience through project-based internship programs built for future software professionals.",
-    media: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&q=80&w=1200", // Another student portrait
+    title: "MERN & Java Full Stack Internship",
+    highlight: "in Chennai",
+    desc: "Get real-world development experience through project-based internship programs built for future software professionals at Inetz Technologies.",
+    media: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&q=80&w=1200",
   }
 ];
 

@@ -54,8 +54,8 @@ export default function HiringPartners() {
         </motion.h2>
       </div>
       <p className="text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto text-sm sm:text-base leading-relaxed text-center mb-16">
-        We place candidates with trusted companies across diverse industries.
-        Our network of 200+ partner organizations ensures relevant job opportunities.
+        Our elite placement network connects talented students with top-tier product companies and IT service firms in Chennai. 
+        With over 200+ active hiring partners, we ensure our graduates secure high-paying roles in the modern software ecosystem.
       </p>
 
       {/* Scroller Container */}
