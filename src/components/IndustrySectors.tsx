@@ -261,13 +261,14 @@ export default function IndustrySectors() {
               transition={{ duration: 0.6 }}
               className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-zinc-100 mb-4"
             >
-              Industry Specialized <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Global Sectors</span>
+              High-Growth <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Tech Job Sectors</span>
             </motion.h2>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <p className="text-zinc-600 dark:text-zinc-400 text-lg font-medium max-w-2xl">
-              Select any sector card to explore career opportunities our graduates have seized across the tech ecosystem.
+              Our internship training in Chennai prepares you for elite roles across these high-impact industries.
+              Explore career guides for the most in-demand tech sectors today.
             </p>
             <div className="flex gap-4 shrink-0">
               <button
@@ -297,9 +298,9 @@ export default function IndustrySectors() {
                 key={i}
                 layout
                 onClick={() => setActive(isActive ? null : i)}
-                animate={{ 
-                  width: isActive ? (isMobile ? "90vw" : 520) : (isMobile ? "70vw" : 270), 
-                  minWidth: isActive ? (isMobile ? "90vw" : 520) : (isMobile ? "70vw" : 270) 
+                animate={{
+                  width: isActive ? (isMobile ? "90vw" : 520) : (isMobile ? "70vw" : 270),
+                  minWidth: isActive ? (isMobile ? "90vw" : 520) : (isMobile ? "70vw" : 270)
                 }}
                 transition={{ type: "spring", stiffness: 280, damping: 30 }}
                 className="relative rounded-3xl overflow-hidden cursor-pointer snap-start shrink-0 select-none group"

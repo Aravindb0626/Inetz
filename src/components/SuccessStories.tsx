@@ -92,6 +92,11 @@ export default function SuccessStories() {
             Future Talent. <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Proven Results.</span>
           </motion.h2>
 
+          <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto mb-10 font-medium">
+            Join the elite circle of Inetz alumni who have secured high-impact software roles in Chennai's top product companies and global IT services. 
+            Our graduates don't just find jobs; they build careers at industry leaders like Zoho, Brightstack, and more.
+          </p>
+
           {/* <div className="flex gap-4">
             <button
               onClick={() => scroll("left")}

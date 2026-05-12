@@ -114,7 +114,7 @@ export default function InternshipProcess() {
         transition={{ duration: 0.6, delay: 0.1 }}
         className="text-lg text-zinc-600 dark:text-zinc-400 w-full mb-12 max-w-2xl mx-auto text-center"
       >
-        The content makes students feel that they are joining a structured career-focused system, not just another ordinary class.
+        The Inetz roadmap is a structured, career-focused system designed to bridge the gap between academic learning and industrial expectations in the Chennai tech job market.
       </motion.p>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 relative">
@@ -180,7 +180,7 @@ export default function InternshipProcess() {
         whileInView={{ opacity: 1, y: 0 }}
         className="mt-10 text-center"
       >
-    
+
       </motion.div>
     </Section>
   );
