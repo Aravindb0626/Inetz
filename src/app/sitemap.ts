@@ -17,6 +17,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/terms',
     '/refund',
     '/help',
+    '/internships/mern-stack-chennai',
+    '/internships/python-chennai',
+    '/internships/java-chennai',
+    '/internships/ai-ml-chennai',
   ];
 
   return routes.map((route) => ({

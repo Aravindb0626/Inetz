@@ -17,19 +17,17 @@ const slides = [
   },
   {
     type: "image",
-    title: "Learn. Practice. Build.",
-    highlight: "Get Ready for Your Career",
-    desc: "Internship programs designed for students to gain hands-on technical skills with real-time project exposure.",
-    // OPTIMIZATION: Added width and quality params to Unsplash URL
-    media: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&q=75&w=1000",
+    title: "Full Stack Training Chennai for",
+    highlight: "High-Growth Careers",
+    desc: "Internship programs designed for students to gain hands-on technical skills with real-time project exposure and guaranteed placement support.",
+    media: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&q=80&w=1200",
   },
   {
     type: "image",
-    title: "Learn Beyond the Classroom.",
-    highlight: "Positive Thoughts",
-    desc: "Get real-world development experience through project-based internship programs built for future software professionals.",
-    // OPTIMIZATION: Added width and quality params to Unsplash URL
-    media: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&q=75&w=1000",
+    title: "MERN & Java Full Stack Internship",
+    highlight: "in Chennai",
+    desc: "Get real-world development experience through project-based internship programs built for future software professionals at Inetz Technologies.",
+    media: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&q=80&w=1200",
   }
 ];
 

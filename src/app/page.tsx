@@ -12,6 +12,27 @@ import StudentProjects from "@/components/StudentProjects";
 import VideoTestimonials from "@/components/VideoTestimonials";
 import Quotes from "@/components/Quotes";
 import { EnrollmentActionSection } from "@/components/register";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Best Internship Training in Chennai with Placement | Inetz Technologies",
+  description: "Accelerate your career with industry-leading internship training in Chennai. Full stack, MERN, Java, AI, and Data Science courses with 100% placement support.",
+  keywords: [
+    "Internship training in Chennai",
+    "Full stack training Chennai",
+    "MERN stack internship Chennai",
+    "Java full stack course Chennai",
+    "AI internship Chennai",
+    "Data science internship Chennai",
+    "Placement training Chennai",
+    "Best software training institute in Chennai"
+  ],
+  alternates: {
+    canonical: "https://inetztech.com",
+  },
+};
+
+import HomeSEOContent from "@/components/HomeSEOContent";
 
 export default function Home() {
   return (
@@ -30,6 +51,7 @@ export default function Home() {
       <VideoTestimonials />
       <CertificateSection/>
       <SuccessStories/>
+      <HomeSEOContent />
       <EnrollmentActionSection/>
     </div>
   );
