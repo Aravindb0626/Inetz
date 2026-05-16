@@ -44,41 +44,51 @@ function LoginContent() {
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccessMsg("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setSuccessMsg("");
 
-    const rawCallback = searchParams.get("callback");
-    
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+  const rawCallback = searchParams.get("callback");
+  
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-      const data = await res.json();
+    const result = await res.json();
 
-      if (res.ok) {
-        // Determine destination based on role
-        // If a callback URL exists (like from a protected link), use it.
-        // Otherwise, route based on the user's role.
-        const roleBasedDestination = data.user.role === "admin" ? "/admin" : "/dashboard";
-        const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : roleBasedDestination;
+    if (res.ok) {
+      // 1. Correct destructuring: The API returns { success: true, data: { ... } }
+      // or { user: { ... } } based on your earlier snippets. 
+      // Most of your dashboard logic expects 'user' key.
+      const userData = result.data || result.user;
 
-        // Force a clean navigation to ensure the token is recognized
-        window.location.href = finalDestination;
-      } else {
-        setError(data.error || "Authentication failed. Check your credentials.");
-        setLoading(false);
-      }
-    } catch (err) {
-      setError("Network error. The server is unreachable.");
+      // 2. CRITICAL: Save to sessionStorage BEFORE redirecting
+      // Dashboard looks for sessionStorage.getItem("user")
+      sessionStorage.setItem("user", JSON.stringify(userData));
+
+      setSuccessMsg("Authentication Successful. Initializing...");
+
+      // 3. Role-Based Navigation
+      const roleBasedDestination = userData.role === "admin" ? "/admin" : "/dashboard";
+      const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : roleBasedDestination;
+
+      // Use window.location.href to ensure a full refresh so 
+      // the browser picks up the new 'token' cookie.
+      window.location.href = finalDestination;
+      
+    } else {
+      setError(result.error || "Authentication failed. Check your credentials.");
       setLoading(false);
     }
-  };
-
+  } catch (err) {
+    setError("Network error. The server is unreachable.");
+    setLoading(false);
+  }
+};
   
   if (!mounted) {
     return (

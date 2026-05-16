@@ -10,25 +10,25 @@ const SLIDER_SLIDES = [
   {
     url: "colleges/peri-college.png",
     title: "PERI Institute of Technology",
-    desc: "Formalizing our partnership to deliver high-end technical training and placement support.",
+    desc: "Collaborating to provide industry-standard software training and placement support for engineering students in Chennai.",
     tag: "MOE Signing",
   },
   {
     url: "colleges/fx-college.png",
     title: "Francis Xavier Engineering College",
-    desc: "Strategic collaboration for advanced skill development and industry-ready internships.",
+    desc: "Empowering future engineers with advanced technical skills and real-time internship programs through strategic academic partnership.",
     tag: "Partnership",
   },
   {
     url: "colleges/clg-moe1.png",
     title: "St. Joseph's College of Engineering",
-    desc: "Embedding our specialized curriculum into the academic framework for student success.",
+    desc: "Integrating our specialized full-stack and data science curriculum into academic frameworks to ensure high-impact career growth.",
     tag: "MOU Signing",
   },
   {
     url: "colleges/clg-moe.png",
     title: "SDNB Vaishnav College for Women",
-    desc: "Co-creating a future-ready workforce through on-campus expert-led training sessions.",
+    desc: "Delivering expert-led on-campus training sessions to bridge the gap between classroom theory and modern IT industry requirements.",
     tag: "Training",
   },
 ] as const;

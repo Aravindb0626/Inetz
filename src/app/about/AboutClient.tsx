@@ -1,23 +1,28 @@
-import AboutPageClient from "./AboutClient";
-import { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "About Us | Inetz Technologies - Leading Tech Training Institute in Chennai",
-  description: "Learn about Inetz Technologies, our mission to bridge the skill gap, and our expert team providing top-tier software training and internships in Chennai.",
-  keywords: [
-    "About Inetz Technologies", 
-    "Software training institute Vadapalani", 
-    "Best internship training Chennai", 
-    "Inetz Technologies team", 
-    "Tech education Chennai"
-  ],
-  alternates: {
-    canonical: "https://inetztech.com/about",
-  },
-};
+import { motion } from "framer-motion";
+import {
+  Users,
+  Target,
+  Award,
+  BookOpen,
+  Rocket,
+  CheckCircle2,
+  Code2,
+  Laptop,
+  Sparkles,
+  Star,
+  Quote,
+  ArrowRight,
+  MonitorPlay,
+  Building2,
+  Users2,
+  Layers
+} from "lucide-react";
+import { Section } from "@/components/ui/Section";
+import { Counter } from "@/components/ui/Counter";
 
 export default function AboutPage() {
-<<<<<<< HEAD
   const features = [
     {
       icon: BookOpen,
@@ -131,14 +136,14 @@ export default function AboutPage() {
 
   return (
     <div className="bg-white dark:bg-zinc-950 min-h-screen">
-      
+
       {/* ─── HERO SECTION - REDUCED TOP PADDING ─── */}
       <section className="relative pt-8 pb-16 md:pt-12 md:pb-24 bg-white dark:bg-zinc-950 overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-16">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-            
+
             <div className="w-full lg:w-1/2 space-y-8">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -146,14 +151,14 @@ export default function AboutPage() {
                 className="space-y-6"
               >
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-[1.15]">
-                  The Gold Standard in  
-                  <span className="text-emerald-600 dark:text-emerald-500"> Software Training</span>
+                  Best Software Training &
+                  <span className="text-emerald-600 dark:text-emerald-500"> Internship in Chennai</span>
                 </h1>
-                
+
                 <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-xl">
-                  Empower your career with Chennai's premier software training edtech company. 
-                  We provide industry-aligned curriculum designed to transform your professional future 
-                  and bridge the skills gap in today's tech landscape.
+                  Inetz Technologies is Chennai's premier software training institute and internship provider.
+                  We offer industry-aligned programs in MERN Stack, Java Full Stack, Python, and AI/ML,
+                  designed to bridge the gap between academic education and corporate expectations.
                 </p>
 
                 <div className="flex flex-wrap gap-4 pt-4">
@@ -167,7 +172,7 @@ export default function AboutPage() {
               </motion.div>
             </div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               whileInView={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7 }}
@@ -177,9 +182,9 @@ export default function AboutPage() {
               <div className="relative group">
                 <div className="absolute inset-0 bg-emerald-500/5 blur-[100px] rounded-full -z-10" />
                 <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100">
-                  <img 
-                    src="/about.jpeg" 
-                    alt="Professional Software Training" 
+                  <img
+                    src="/about.jpeg"
+                    alt="Professional Software Training"
                     className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
                   />
                 </div>
@@ -220,9 +225,9 @@ export default function AboutPage() {
             >
               <div className="absolute -top-10 -left-10 w-40 h-40 bg-emerald-500/10 blur-[60px] rounded-full" />
               <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-200 dark:border-zinc-800 aspect-square lg:aspect-[4/5] group">
-                <img 
-                  src="/office.png" 
-                  alt="Inetz Technologies HQ" 
+                <img
+                  src="/office.png"
+                  alt="Inetz Technologies HQ"
                   className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -239,18 +244,18 @@ export default function AboutPage() {
               viewport={{ once: true }}
             >
               <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-8 tracking-tight">
-                Beyond Conventional <br/>
-                <span className="text-emerald-500">Corporate Training</span>
+                Empowering the Next Generation of <br />
+                <span className="text-emerald-500">Tech Professionals in Chennai</span>
               </h2>
               <div className="space-y-6 text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
                 <p>
-                  At <span className="text-zinc-900 dark:text-white font-bold">Inetz Technologies</span>, we believe that education is most effective when it mirrors reality. Founded by industry veterans, our center was established to solve a critical problem: the massive skill gap between academic graduates and industry expectations.
+                  At <span className="text-zinc-900 dark:text-white font-bold">Inetz Technologies</span>, we believe that software education is most effective when it mirrors reality. Founded by industry veterans, our Chennai-based training center was established to solve the critical skill gap between academic graduates and industry expectations.
                 </p>
                 <p>
-                  Based in the tech hub of <span className="text-emerald-500 font-bold">Vadapalani, Chennai</span>, we provide a high-end, boutique learning environment where students aren't treated like numbers, but like associates in a modern software firm.
+                  Located in the vibrant tech hub of <span className="text-emerald-500 font-bold">Vadapalani, Chennai</span>, we provide a premium, boutique learning environment. Our students are trained like software associates, working on live projects and mastering modern tech stacks that are in high demand across the globe.
                 </p>
                 <p>
-                  Our unique approach combines rigorous task-based training with personalized mentorship, ensuring that every student who walks through our doors leaves with the confidence and portfolio to compete at the highest level.
+                  Our unique approach combines rigorous internship training with personalized mentorship, ensuring that every student who completes our programs walks away with a powerful portfolio and the confidence to excel in top-tier product and service companies.
                 </p>
               </div>
             </motion.div>
@@ -266,7 +271,7 @@ export default function AboutPage() {
             The Inetz Way
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-8 tracking-tight">
-            Building Engineers, <br/>
+            Building Engineers, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-400">Not Just Coders</span>
           </h2>
           <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto font-medium">
@@ -306,7 +311,7 @@ export default function AboutPage() {
           <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-zinc-100 mb-6">Master Every Skill</h2>
           <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto text-sm leading-6 font-medium uppercase tracking-widest">The gold standard in tech education and aspiring developer growth.</p>
         </div>
-        
+
         <div className="relative max-w-5xl mx-auto z-10 flex flex-col gap-16 md:gap-8">
           <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-emerald-500/40 to-transparent md:-translate-x-1/2 pointer-events-none" />
           {features.map((feature, i) => {
@@ -376,24 +381,24 @@ export default function AboutPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { name: "Senthil Kumar", role: "Founder & CEO", exp: "10+ Years", img: "/staffs/senthilkumar.jpg"},
-              { name: "Vigneshwaran", role: "Industry Expert", exp: "5+ Years", img: "/staffs/vigneshwaran.jpg" },
-              { name: "Amal", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/staffs/amal.jpeg" },
-              { name: "Anbu", role: "Project Developer", exp: "3+ Years", img: "/staffs/anbu.png" },
-              { name: "Boomika", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/staffs/boomika.png" },
-              { name: "Preethi", role: "Front End Trainer", exp: "5+ Years", img: "/staffs/preethi.png" },
-              { name: "Aravind", role: "MERN Stack Trainer", exp: "3+ Years", img: "/staffs/aravindh.png" },
-              { name: "Sri", role: "Data Analytics Trainer", exp: "3+ Years", img: "/staffs/sridhanalakshmi.png" },
-              { name: "Naresh", role: "MERN Stack Trainer", exp: "5+ Years", img: "/staffs/Naresh.png" },
+              { name: "Senthil Kumar", role: "Founder & CEO", exp: "10+ Years", img: "/senthilkumar.jpg" },
+              { name: "Vigneshwaran", role: "Industry Expert", exp: "5+ Years", img: "/vigneshwaran.jpg" },
+              { name: "Amal", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/amal.jpeg" },
+              { name: "Preethi", role: "Front End Trainer", exp: "5+ Years", img: "/preethi.png" },
+              { name: "Aravindh", role: "Mern Stack Trainer", exp: "3+ Years", img: "/aravindh.png" },
+              { name: "Boomika", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/boomika.png" },
+              { name: "Sri Dhanalakshmi", role: "Data Analytics Trainer", exp: "3+ Years", img: "/sridhanalakshmi.png" },
+              { name: "Anbu", role: "Project Developer", exp: "3+ Years", img: "/anbu.png" }
             ].map((member, i) => (
               <motion.div key={i} className="group relative">
                 <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl relative">
                   <img src={member.img} alt={member.name} className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
                   <div className="absolute bottom-8 left-8 right-8">
-                    <h3 className="text-white text-2xl font-bold mb-1">{member.name}</h3>
+                    <div className="text-orange-400 font-bold text-[10px] tracking-widest mb-2 px-2 py-1 rounded bg-orange-500/10 border border-orange-500/20 w-fit">{member.exp} EXP</div>
+                    <h3 className="text-white text-3xl font-bold mb-1">{member.name}</h3>
                     <p className="text-zinc-300 font-medium">{member.role}</p>
                   </div>
                 </div>
@@ -422,7 +427,3 @@ export default function AboutPage() {
     </div>
   );
 }
-=======
-  return <AboutPageClient />;
-}
->>>>>>> 6392879e197902a29bfcef1056f2659bdb896730
