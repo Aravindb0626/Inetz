@@ -32,7 +32,6 @@ export const metadata: Metadata = {
   },
 };
 
-import HomeSEOContent from "@/components/HomeSEOContent";
 
 export default function Home() {
   return (
@@ -51,7 +50,6 @@ export default function Home() {
       <VideoTestimonials />
       <CertificateSection/>
       <SuccessStories/>
-      <HomeSEOContent />
       <EnrollmentActionSection/>
     </div>
   );

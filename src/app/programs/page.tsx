@@ -123,18 +123,17 @@ const ProgramsMainPage = () => {
                 {/* Main Header */}
                 <div className="space-y-1">
                   <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 leading-none">
-                    Master Modern <br />
-                    <span className="text-blue-600">Engineering.</span>
+                    Best Software Training <br />
+                    <span className="text-blue-600">Institute in Chennai.</span>
                   </h1>
                   <p className="text-base md:text-lg text-zinc-500 font-medium tracking-tight">
-                    Professional training for real-world systems.
+                    Professional internship training in Vadapalani.
                   </p>
                 </div>
 
                 {/* Description */}
                 <p className="text-sm md:text-base text-zinc-600 max-w-sm leading-relaxed">
-                  Go beyond basic code. Learn to build, scale, and manage
-                  production apps with help from industry experts.
+                  Join the best software training institute in Chennai. We offer specialized 1 month and 15 days internship programs for college students in Python, Java, AI, and Hadoop.
                 </p>
 
                 {/* Small Details */}
