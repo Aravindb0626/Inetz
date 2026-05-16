@@ -104,7 +104,7 @@ export default function InternshipProcess() {
           transition={{ duration: 0.6 }}
           className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-zinc-100"
         >
-          Your Journey to <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Excellence</span>
+          Best Software Training <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Institute in Chennai</span> - Internship Training
         </motion.h2>
       </div>
 
@@ -114,7 +114,7 @@ export default function InternshipProcess() {
         transition={{ duration: 0.6, delay: 0.1 }}
         className="text-lg text-zinc-600 dark:text-zinc-400 w-full mb-12 max-w-2xl mx-auto text-center"
       >
-        The Inetz roadmap is a structured, career-focused system designed to bridge the gap between academic learning and industrial expectations in the Chennai tech job market.
+        The Inetz roadmap is a structured, career-focused system designed to bridge the gap between academic learning and industrial expectations in the Chennai tech job market, centered in our Vadapalani training hub. From Hadoop training to AI and Full Stack development, we provide industry-ready expertise.
       </motion.p>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 relative">

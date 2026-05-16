@@ -9,7 +9,13 @@ export const metadata: Metadata = {
     "Software training institute Vadapalani", 
     "Best internship training Chennai", 
     "Inetz Technologies team", 
-    "Tech education Chennai"
+    "Tech education Chennai",
+    "internship in chennai for freshers",
+    "best companies for internship in chennai",
+    "it companies in chennai for internship",
+    "vadapalani internship company",
+    "best software training institute in chennai",
+    "internship near me"
   ],
   alternates: {
     canonical: "https://inetztech.com/about",

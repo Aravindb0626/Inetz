@@ -5,19 +5,19 @@ import { XCircle, CheckCircle2, ArrowDown, MoveRight } from "lucide-react";
 
 export default function ProblemSolution() {
   const problems = [
-    "Struggling with technical rounds despite knowing the syntax? You need real-world placement training in Chennai.",
-    "Watching endless tutorials but unable to build industry-scale projects from scratch? Theoretical learning has limits.",
-    "Paying high fees for degrees and courses that don't teach modern tech stacks like MERN or Java Full Stack?",
-    "Your portfolio lacks original, production-ready projects. Generic clones don't impress top tech recruiters anymore."
+    "Watching endless tutorials but unable to write code from scratch.",
+    "Paying lakhs for degrees that don't teach modern industry tech stacks.",
+    "Projects are strictly cloned from YouTube, lacking original architecture.",
+    "Struggling to clear technical rounds even after learning language syntax."
   ];
 
   const solutions = [
-    "100% Guaranteed 'Build-from-Scratch' methodology for real internship training in Chennai.",
-    "Direct 1-on-1 mentorship from Senior SDEs currently working in top-tier product companies.",
-    "Master Full Stack Development by architecting scalable systems and dynamic user interfaces.",
-    "Get your hands dirty with live deployments, cloud hosting (AWS/Azure), and CI/CD pipelines.",
-    "Personalized career support, resume building, and placement training to bridge the corporate gap.",
-    "Exclusive referral network to our hiring partners for high-paying software jobs in Chennai."
+    "100% Guaranteed Build-from-Scratch engineering methodology",
+    "Direct continuous mentorship from actual industry Senior Engineers",
+    "Architecting highly scalable backend & dynamic frontend systems",
+    "Live server deployments, cloud hosting, and robust CI/CD pipelines",
+    "Personalized engineering resume & elite GitHub portfolio building",
+    "Exclusive Hiring-partner referral network and placement assistance"
   ];
 
   return (
@@ -115,7 +115,7 @@ export default function ProblemSolution() {
               transition={{ duration: 0.6 }}
               className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-white mb-4"
             >
-              A real <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">internship training system.</span>
+              A real <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">internship training system in Chennai.</span>
             </motion.h2>
           </div>
 

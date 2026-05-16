@@ -73,10 +73,10 @@ export default function PremiumCoursesSection() {
           transition={{ duration: 0.6 }}
           className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-white mb-2"
         >
-          Industry Specialized <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Learning Programs</span>
+          Best Software Training <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Institute in Chennai</span>
         </motion.h2>
         <p className="text-sm md:text-base text-blue-200/80 max-w-xl mx-auto leading-relaxed">
-          Get from basics to professional level with industry-designed tracks and real-time projects.
+          From Hadoop training to AI and MERN stack, we offer the most comprehensive software internship programs in Chennai for college students and freshers.
         </p>
       </div>
 
