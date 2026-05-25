@@ -11,22 +11,22 @@ const slides = [
     type: "video",
     title: "Stop Learning Only in Theory. Start Building ",
     highlight: "Real-Time Projects",
-    desc: "Join a project-driven internship program where students code daily, complete real tasks, work on practical applications, and gain the confidence to attend interviews.",
+    desc: "Join a project-driven internship in Chennai where students code daily, complete real tasks, work on practical applications, and gain the confidence to attend interviews at top internship companies in Chennai.",
     // OPTIMIZATION: Ensure local images are in Public folder
-    media: "/home/hero1.png", 
+    media: "/home/hero1.png",
   },
   {
     type: "image",
     title: "Learn. Practice. Build.",
     highlight: "Get Ready for Your Career",
-    desc: "Inetz Technologies is the best software training institute in Chennai, offering specialized internship programs for freshers and college students.",
+    desc: "Inetz Technologies is the best software training  in Chennai, offering specialized 1 month and 15 days internship programs for freshers and college students in Vadapalani.",
     media: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&q=80&w=1200",
   },
   {
     type: "image",
     title: "Learn Beyond the Classroom.",
     highlight: "Positive Thoughts",
-    desc: "Get real-world development experience through project-based internship programs built for future software professionals at Inetz Technologies.",
+    desc: "Get real-world development experience through project-based internship training in Chennai built for future software professionals at our Vadapalani training center.",
     media: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&q=80&w=1200",
   }
 ];

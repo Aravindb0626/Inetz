@@ -124,7 +124,7 @@ const ProgramsMainPage = () => {
                 <div className="space-y-1">
                   <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 leading-none">
                     Best Software Training <br />
-                    <span className="text-blue-600">Institute in Chennai.</span>
+                    <span className="text-blue-600"> in Chennai.</span>
                   </h1>
                   <p className="text-base md:text-lg text-zinc-500 font-medium tracking-tight">
                     Professional internship training in Vadapalani.
@@ -133,7 +133,7 @@ const ProgramsMainPage = () => {
 
                 {/* Description */}
                 <p className="text-sm md:text-base text-zinc-600 max-w-sm leading-relaxed">
-                  Join the best software training institute in Chennai. We offer specialized 1 month and 15 days internship programs for college students in Python, Java, AI, and Hadoop.
+                  Join the best software training  in Chennai. We offer specialized 1 month and 15 days internship programs for college students in Python, Java, AI, and Hadoop.
                 </p>
 
                 {/* Small Details */}
@@ -204,6 +204,13 @@ const ProgramsMainPage = () => {
                     />
                   ))
                 )}
+              </div>
+
+              {/* SEO Summary Footer */}
+              <div className="pt-16 border-t border-zinc-100">
+                <p className="text-[9px] text-zinc-400 font-medium leading-relaxed opacity-70">
+                  Looking for the best internship companies in Chennai? Inetz Technologies provides it companies in Chennai for internship opportunities for freshers and college students. Whether you need a 1 month internship in Chennai with a certificate or a 15 days technical program in Vadapalani, our training center near Nexus Vijaya Mall is the top choice. We specialize in MERN, Java, Python, AI, and Hadoop training in Chennai.
+                </p>
               </div>
             </div>
           </motion.div>

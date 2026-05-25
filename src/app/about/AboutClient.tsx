@@ -156,7 +156,7 @@ export default function AboutPage() {
                 </h1>
 
                 <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-xl">
-                  Inetz Technologies is Chennai's premier software training institute and internship provider.
+                  Inetz Technologies is Chennai's premier software training  and internship provider.
                   We offer industry-aligned programs in MERN Stack, Java Full Stack, Python, and AI/ML,
                   designed to bridge the gap between academic education and corporate expectations.
                 </p>
