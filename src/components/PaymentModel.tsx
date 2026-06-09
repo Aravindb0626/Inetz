@@ -89,7 +89,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
   const [receiptNo, setReceiptNo] = useState("");
   const [currentTimestamp, setCurrentTimestamp] = useState<Date | null>(null);
 
-  // REPLACE THIS STRING WITH YOUR ACTUAL GOOGLE APPS SCRIPT WEB APP DEPLOYMENT URL
   const webAppUrl = "https://script.google.com/macros/s/AKfycbzILhUcumhC-1aKA3fQwL5O8IZ4AJ_lKEo0WBaLua5NYCnQHso6gM6_gy6JtI6sRRqpbg/exec";
 
   useEffect(() => {
@@ -105,7 +104,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
       String(now.getMinutes()).padStart(2, "0") +
       String(now.getSeconds()).padStart(2, "0");
 
-    setReceiptNo(`IT-${sequentialSerial}`);
+    setReceiptNo(`IA-${sequentialSerial}`);
   }, []);
 
   const numTotal = Number(form.total) || 0;
@@ -113,7 +112,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
   const numPaid = Number(form.paid) || 0;
   const rawBalance = Math.max(0, numTotal - (numAlreadyPaid + numPaid));
 
-  // Auto-fill calculations for absolute checkout balances
   useEffect(() => {
     if (form.type === "Full Payment" && form.total) {
       const remainder = Math.max(0, numTotal - numAlreadyPaid);
@@ -121,7 +119,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   }, [form.type, form.total, form.alreadyPaid, numTotal, numAlreadyPaid]);
 
-  // Triggered on phone field focus exit (onBlur) to fetch user profile details
   const checkPhoneExistence = async () => {
     const cleanPhone = form.phone.trim();
     if (cleanPhone.length < 10) return;
@@ -134,17 +131,15 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
       setPhoneExists(data.exists);
       
       if (data.exists) {
-        // Dynamically populate all historical fields found in the sheet database row safely
         setForm(f => ({
           ...f,
           name: data.name || f.name,
           college: data.college || f.college,
           courseName: data.courseName || f.courseName,
           alreadyPaid: data.totalAccumulatedPaid > 0 ? data.totalAccumulatedPaid.toString() : "",
-          type: "Part Payment" // Preset context configuration to installment view
+          type: "Part Payment"
         }));
       } else {
-        // Clear only the contextual payment memory fields if phone is a completely clean registry
         setForm(f => ({ ...f, alreadyPaid: "" }));
       }
     } catch (error) {
@@ -192,17 +187,30 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
+  // Mobile Friendly Frame-based Print Implementation
   const handlePrint = () => {
     if (!form.name.trim() || !form.courseName) {
       return alert("Verify core Student Name and targeted course selection.");
     }
-    const pWin = window.open("", "_blank");
-    if (!pWin) return alert("Pop-up window was blocked by the browser.");
+
+    // 1. Create a hidden iframe element
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (!doc) return alert("Printing engine failed to initialize.");
 
     const displayDate = currentTimestamp ? currentTimestamp.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
     const displayTime = currentTimestamp ? currentTimestamp.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "";
 
-    pWin.document.write(`
+    // 2. Inject raw markup context cleanly into the isolated frame body
+    doc.write(`
       <html>
       <head>
         <title>Receipt_${receiptNo}</title>
@@ -268,18 +276,23 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
             </div>
           </div>
         </div>
-        <script>
-          window.onload = function() {
-            setTimeout(() => {
-              window.print();
-              setTimeout(() => window.close(), 500);
-            }, 300);
-          };
-        </script>
       </body>
       </html>
     `);
-    pWin.document.close();
+    doc.close();
+
+    // 3. Trigger native print handler as soon as the inner iframe elements finish loading
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        
+        // 4. Safely discard the dummy node after print window closes
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 500);
+    };
   };
 
   return (
@@ -310,7 +323,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
             <SectionHeader label="Student Details" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              {/* Phone Field Input - Placed first to act as the form loader */}
+              {/* Phone Field Input */}
               <div className="relative flex flex-col justify-center">
                 <AdminInput 
                   placeholder="Mobile Phone Number" 
@@ -394,10 +407,8 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
               <AdminInput 
                 placeholder="Already Paid Amount" 
                 type="number" 
-                disabled
                 value={form.alreadyPaid} 
-                className="w-full px-4 py-3 bg-zinc-100 border border-zinc-200 rounded-xl text-sm text-zinc-400 font-medium cursor-not-allowed outline-none h-[46px]"
-                onChangeText={() => {}}
+                onChangeText={(v) => setForm(f => ({ ...f, alreadyPaid: v }))} 
               />
               <AdminInput 
                 placeholder="Amount Paid Now" 
