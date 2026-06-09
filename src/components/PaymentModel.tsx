@@ -46,7 +46,7 @@ const BILLING_STAFF = [
 ] as const;
 
 const SectionHeader = ({ label }: { label: string }) => (
-  <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4">
+  <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 select-none">
     {label}
   </h3>
 );
@@ -187,349 +187,297 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  // Completely Re-engineered Mobile Responsive Print Handler
+  // Direct Global Window DOM Print Handler (100% stable across mobile sizing shifts)
   const handlePrint = () => {
     if (!form.name.trim() || !form.courseName) {
       return alert("Verify core Student Name and targeted course selection.");
     }
-
-    const iframe = document.createElement("iframe");
-    iframe.id = "print-iframe-target";
-    // Render out of visibility scope but keep in DOM hierarchy
-    iframe.style.position = "absolute";
-    iframe.style.top = "-9999px";
-    iframe.style.left = "-9999px";
-    iframe.style.width = "100%"; 
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document || iframe.contentDocument;
-    if (!doc) return alert("Printing engine failed to initialize.");
-
-    const displayDate = currentTimestamp ? currentTimestamp.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-    const displayTime = currentTimestamp ? currentTimestamp.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "";
-
-    doc.write(`
-      <html>
-      <head>
-        <title>Receipt_${receiptNo}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          /* 1. Standard Page Size Configurations */
-          @page { size: portrait; margin: 0; }
-          
-          * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-          
-          body { 
-            margin: 0; 
-            padding: 10px; 
-            color: #1e293b; 
-            background: #fff; 
-            width: 100%;
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact;
-          }
-
-          /* 2. Responsive Container Box Styles */
-          .box { 
-            border: 1.5px solid #cbd5e1; 
-            border-radius: 12px; 
-            padding: 16px; 
-            width: 100%;
-            max-width: 480px; /* Locked to perfect thermal/A5 mobile reading width */
-            margin: 0 auto;
-            background: #fff;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-          }
-
-          .h { 
-            display: flex; 
-            flex-direction: column;
-            border-bottom: 2px solid #1e293b; 
-            padding-bottom: 8px; 
-            gap: 6px;
-          }
-          
-          .logo-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-
-          .logo-img { height: 32px; width: auto; object-fit: contain; }
-          .receipt-title { font-size: 13px; font-weight: 800; text-transform: uppercase; text-align: right; color: #1e293b; }
-          .receipt-id { font-family: monospace; color: #64748b; font-weight: bold; font-size: 10px; text-align: right; }
-          .office-details { font-size: 8px; color: #475569; line-height: 1.4; font-weight: 500; }
-          
-          /* 3. Grid Adjustments for Mobile Single Column Compatibility */
-          .g { display: flex; flex-direction: column; gap: 12px; }
-          .col { display: flex; flex-direction: column; gap: 8px; }
-          .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; }
-          .field-label { font-size: 8.5px; text-transform: uppercase; color: #64748b; font-weight: 700; }
-          .field-value { font-size: 11.5px; font-weight: 600; color: #1e293b; margin-top: 1px; }
-          
-          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; width: 100%; }
-          .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 11px; }
-          .row:last-of-type { border-bottom: none; }
-          .tot { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 8px; border-top: 1.5px solid #1e293b; font-weight: 800; font-size: 12px; }
-          
-          .disclaimer-box { background: #fff5f5; border: 1px solid #fee2e2; border-radius: 6px; padding: 8px; font-size: 8px; color: #991b1b; font-weight: 600; text-align: center; text-transform: uppercase; line-height: 1.3; }
-          
-          .f { border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 8px; color: #94a3b8; }
-          .sig-container { text-align: right; }
-          .sig-line { border-top: 1px solid #475569; width: 100px; padding-top: 3px; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 7.5px; margin-top: 25px; }
-
-          /* 4. Strict Mobile Print Media Rule Overrides */
-          @media print {
-            body, html { width: 100%; background: #fff; padding: 5mm; }
-            .box { max-width: 100%; border: 1px solid #cbd5e1; }
-            #print-iframe-target { display: block !important; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="box">
-          <div class="h">
-            <div class="logo-row">
-              <img src="/Inetz-logo-removebg1.png" alt="iNetz Technologies" class="logo-img" />
-              <div>
-                <div class="receipt-title">Official Fee Receipt</div>
-                <div class="receipt-id">ID: ${receiptNo}</div>
-              </div>
-            </div>
-            <div class="office-details">
-              3rd Floor, K.P Towers, No-159, Arcot Rd, Opp. Nexus Vijaya Mall, Vadapalani, Chennai - 600026<br/>
-              <b>Mob:</b> 9884441984 | <b>Email:</b> info@inetztech.com
-            </div>
-          </div>
-          
-          <div class="g">
-            <div class="col">
-              <div class="field-group"><div class="field-label">Student Participant</div><div class="field-value">${form.name} (${form.phone})</div></div>
-              <div class="field-group"><div class="field-label">Affiliated Institution</div><div class="field-value">${form.college}</div></div>
-              <div class="field-group"><div class="field-label">Enrolled Specialization</div><div class="field-value">${form.courseName}</div></div>
-            </div>
-            
-            <div class="card">
-              <div class="row"><span>Total Course Fee</span><span style="font-weight:600;">₹${numTotal.toLocaleString("en-IN")}</span></div>
-              ${numAlreadyPaid > 0 ? `<div class="row"><span>Previously Paid</span><span style="font-weight: 600; color: #64748b;">₹${numAlreadyPaid.toLocaleString("en-IN")}</span></div>` : ""}
-              <div class="row"><span>Payment Channel</span><span style="font-weight:600;">${form.method} ${form.method === "GPay" && form.txn ? `(${form.txn})` : ""}</span></div>
-              <div class="tot"><span>Current Paid Amount</span><span style="color:#059669;">₹${numPaid.toLocaleString("en-IN")}</span></div>
-            </div>
-            
-            <div class="disclaimer-box">
-              Important Note: Payment once processed is strictly non-refundable and non-transferable under any circumstances.
-            </div>
-          </div>
-          
-          <div class="f">
-            <div>Timestamp: ${displayDate} @ ${displayTime}<br/>Gate: ${form.billing || "SYSTEM"}</div>
-            <div class="sig-container">
-              <div class="sig-line">Authorized Signatory</div>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `);
-    doc.close();
-
-    // 5. Safe native print handling execution loop
-    iframe.onload = () => {
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        
-        // Clean up node references from root body
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 1500);
-      }, 300);
-    };
+    window.print();
   };
 
+  const displayDate = currentTimestamp ? currentTimestamp.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+  const displayTime = currentTimestamp ? currentTimestamp.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "";
+
   return (
-    <div className="fixed inset-0 z-[999] bg-zinc-950/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-2xl rounded-3xl border border-zinc-100 shadow-2xl flex flex-col max-h-[90vh]">
-        
-        {/* Modal Header */}
-        <div className="px-8 py-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50 rounded-t-3xl">
-          <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <CreditCard size={16} />
-            </span>
-            <h2 className="text-base font-bold text-zinc-900">Fee Registration Dashboard</h2>
-          </div>
-          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Modal Content */}
-        <div className="p-8 overflow-y-auto space-y-6 flex-1">
-          <div className="text-right text-xs font-mono text-zinc-400 tracking-tight">
-            Assigned Bill ID: <span className="font-semibold text-zinc-700">{receiptNo || "Generating..."}</span>
-          </div>
-
-          {/* Section: Student Details */}
-          <div>
-            <SectionHeader label="Student Details" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              {/* Phone Field Input */}
-              <div className="relative flex flex-col justify-center">
-                <AdminInput 
-                  placeholder="Mobile Phone Number" 
-                  type="tel"
-                  value={form.phone} 
-                  onChangeText={(v) => {
-                    setPhoneExists(null);
-                    setForm(f => ({ ...f, phone: v }));
-                  }} 
-                  onBlur={checkPhoneExistence}
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
-                  {isCheckingPhone && <Loader2 size={16} className="animate-spin text-zinc-400" />}
-                  {!isCheckingPhone && phoneExists === true && (
-                    <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
-                      <AlertCircle size={12} /> Auto-filled
-                    </span>
-                  )}
-                  {!isCheckingPhone && phoneExists === false && (
-                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                      <CheckCircle2 size={12} /> New Profile
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <AdminInput 
-                placeholder="Student Full Name" 
-                value={form.name} 
-                onChangeText={(v) => setForm(f => ({ ...f, name: v }))} 
-              />
-
-              <div className="md:col-span-2">
-                <AdminInput 
-                  placeholder="College / University" 
-                  value={form.college} 
-                  onChangeText={(v) => setForm(f => ({ ...f, college: v }))} 
-                />
-              </div>
-              
-              <div className="space-y-1">
-                <select 
-                  value={form.courseName} 
-                  onChange={e => setForm(f => ({ ...f, courseName: e.target.value }))}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none"
-                >
-                  <option value="">-- Choose Course Specialization --</option>
-                  {COURSE_OPTIONS.map(course => (
-                    <option key={course} value={course}>{course}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <select 
-                  value={form.billing} 
-                  onChange={e => setForm(f => ({ ...f, billing: e.target.value }))}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none"
-                >
-                  <option value="">-- Allocated Billing Authority --</option>
-                  {BILLING_STAFF.map(staff => (
-                    <option key={staff} value={staff}>{staff}</option>
-                  ))}
-                </select>
-              </div>
+    <>
+      {/* ─── EXTRACTION CONTAINER 1: SCREEN-ONLY VIEW INTERFACE ─── */}
+      <div className="fixed inset-0 z-[999] bg-zinc-950/40 backdrop-blur-sm flex items-center justify-center p-4 print:hidden">
+        <div className="bg-white w-full max-w-2xl rounded-3xl border border-zinc-100 shadow-2xl flex flex-col max-h-[90vh]">
+          
+          {/* Modal Header */}
+          <div className="px-8 py-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50 rounded-t-3xl">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                <CreditCard size={16} />
+              </span>
+              <h2 className="text-base font-bold text-zinc-900">Fee Registration Dashboard</h2>
             </div>
+            <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors">
+              <X size={18} />
+            </button>
           </div>
 
-          <hr className="border-zinc-100" />
-
-          {/* Section: Payment Specifications */}
-          <div>
-            <SectionHeader label="Payment Specifications" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <AdminInput 
-                placeholder="Total Cost" 
-                type="number" 
-                value={form.total} 
-                onChangeText={(v) => setForm(f => ({ ...f, total: v }))} 
-              />
-              <AdminInput 
-                placeholder="Already Paid Amount" 
-                type="number" 
-                value={form.alreadyPaid} 
-                onChangeText={(v) => setForm(f => ({ ...f, alreadyPaid: v }))} 
-              />
-              <AdminInput 
-                placeholder="Amount Paid Now" 
-                type="number" 
-                value={form.paid} 
-                onChangeText={(v) => setForm(f => ({ ...f, paid: v }))} 
-              />
+          {/* Modal Content */}
+          <div className="p-8 overflow-y-auto space-y-6 flex-1">
+            <div className="text-right text-xs font-mono text-zinc-400 tracking-tight">
+              Assigned Bill ID: <span className="font-semibold text-zinc-700">{receiptNo || "Generating..."}</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              {([
-                { l: "Classification", k: "type", o: ["Full Payment", "Part Payment"] }, 
-                { l: "Channel Engine", k: "method", o: ["Cash", "GPay"] }
-              ] as const).map((cfg, i) => (
-                <div key={i} className="bg-zinc-50/50 p-4 rounded-xl border border-zinc-100 space-y-2">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{cfg.l}</span>
-                  <div className="flex gap-6 mt-1">
-                    {cfg.o.map(opt => (
-                      <label key={opt} className="flex items-center gap-2 text-sm font-medium text-zinc-700 cursor-pointer select-none">
-                        <input 
-                          type="radio" 
-                          checked={form[cfg.k] === opt} 
-                          onChange={() => setForm(f => ({ ...f, [cfg.k]: opt }))} 
-                          className="w-4 h-4 text-emerald-600 border-zinc-300 focus:ring-emerald-500 accent-emerald-600" 
-                        />
-                        {opt}
-                      </label>
-                    ))}
+            {/* Section: Student Details */}
+            <div>
+              <SectionHeader label="Student Details" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Phone Field Input */}
+                <div className="relative flex flex-col justify-center">
+                  <AdminInput 
+                    placeholder="Mobile Phone Number" 
+                    type="tel"
+                    value={form.phone} 
+                    onChangeText={(v) => {
+                      setPhoneExists(null);
+                      setForm(f => ({ ...f, phone: v }));
+                    }} 
+                    onBlur={checkPhoneExistence}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
+                    {isCheckingPhone && <Loader2 size={16} className="animate-spin text-zinc-400" />}
+                    {!isCheckingPhone && phoneExists === true && (
+                      <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+                        <AlertCircle size={12} /> Auto-filled
+                      </span>
+                    )}
+                    {!isCheckingPhone && phoneExists === false && (
+                      <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                        <CheckCircle2 size={12} /> New Profile
+                      </span>
+                    )}
                   </div>
                 </div>
-              ))}
+
+                <AdminInput 
+                  placeholder="Student Full Name" 
+                  value={form.name} 
+                  onChangeText={(v) => setForm(f => ({ ...f, name: v }))} 
+                />
+
+                <div className="md:col-span-2">
+                  <AdminInput 
+                    placeholder="College / University" 
+                    value={form.college} 
+                    onChangeText={(v) => setForm(f => ({ ...f, college: v }))} 
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <select 
+                    value={form.courseName} 
+                    onChange={e => setForm(f => ({ ...f, courseName: e.target.value }))}
+                    className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none"
+                  >
+                    <option value="">-- Choose Course Specialization --</option>
+                    {COURSE_OPTIONS.map(course => (
+                      <option key={course} value={course}>{course}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <select 
+                    value={form.billing} 
+                    onChange={e => setForm(f => ({ ...f, billing: e.target.value }))}
+                    className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none"
+                  >
+                    <option value="">-- Allocated Billing Authority --</option>
+                    {BILLING_STAFF.map(staff => (
+                      <option key={staff} value={staff}>{staff}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
-            {form.method === "GPay" && (
-              <div className="mt-4 p-4 bg-emerald-50/10 border border-emerald-100/50 rounded-xl space-y-1.5 animate-in fade-in duration-200">
-                <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider pl-1">
-                  UPI/GPay Transaction Token Reference
-                </label>
+            <hr className="border-zinc-100" />
+
+            {/* Section: Payment Specifications */}
+            <div>
+              <SectionHeader label="Payment Specifications" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <AdminInput 
-                  placeholder="Enter TXN ID / Reference Token" 
-                  value={form.txn} 
-                  onChangeText={(v) => setForm(f => ({ ...f, txn: v }))} 
+                  placeholder="Total Cost" 
+                  type="number" 
+                  value={form.total} 
+                  onChangeText={(v) => setForm(f => ({ ...f, total: v }))} 
+                />
+                <AdminInput 
+                  placeholder="Already Paid Amount" 
+                  type="number" 
+                  value={form.alreadyPaid} 
+                  onChangeText={(v) => setForm(f => ({ ...f, alreadyPaid: v }))} 
+                />
+                <AdminInput 
+                  placeholder="Amount Paid Now" 
+                  type="number" 
+                  value={form.paid} 
+                  onChangeText={(v) => setForm(f => ({ ...f, paid: v }))} 
                 />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {([
+                  { l: "Classification", k: "type", o: ["Full Payment", "Part Payment"] }, 
+                  { l: "Channel Engine", k: "method", o: ["Cash", "GPay"] }
+                ] as const).map((cfg, i) => (
+                  <div key={i} className="bg-zinc-50/50 p-4 rounded-xl border border-zinc-100 space-y-2">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{cfg.l}</span>
+                    <div className="flex gap-6 mt-1">
+                      {cfg.o.map(opt => (
+                        <label key={opt} className="flex items-center gap-2 text-sm font-medium text-zinc-700 cursor-pointer select-none">
+                          <input 
+                            type="radio" 
+                            checked={form[cfg.k] === opt} 
+                            onChange={() => setForm(f => ({ ...f, [cfg.k]: opt }))} 
+                            className="w-4 h-4 text-emerald-600 border-zinc-300 focus:ring-emerald-500 accent-emerald-600" 
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {form.method === "GPay" && (
+                <div className="mt-4 p-4 bg-emerald-50/10 border border-emerald-100/50 rounded-xl space-y-1.5 animate-in fade-in duration-200">
+                  <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider pl-1">
+                    UPI/GPay Transaction Token Reference
+                  </label>
+                  <AdminInput 
+                    placeholder="Enter TXN ID / Reference Token" 
+                    value={form.txn} 
+                    onChangeText={(v) => setForm(f => ({ ...f, txn: v }))} 
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="px-8 py-4 border-t border-zinc-100 bg-zinc-50 flex gap-3 justify-end items-center rounded-b-3xl">
+            <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors">
+              Cancel
+            </button>
+            <button onClick={handlePrint} className="px-5 py-2.5 border border-zinc-200 bg-white text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-zinc-50 active:bg-zinc-100 transition-colors">
+              <Printer size={14} /> Print Receipt
+            </button>
+            <button 
+              onClick={handleSave} 
+              disabled={isSaving || isCheckingPhone} 
+              className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
+              Save Payment
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ─── EXTRACTION CONTAINER 2: PURE STABLE PRINT-ONLY ELEMENT ─── */}
+      <div className="hidden print:block fixed inset-0 bg-white z-[99999] p-4 text-zinc-800 selection:bg-transparent">
+        <style>{`
+          @page { size: auto; margin: 6mm 10mm; }
+          body { background: #fff !important; }
+          #print-root-element-box {
+            border: 1.5px solid #cbd5e1 !important;
+            border-radius: 16px !important;
+            padding: 20px !important;
+            width: 100% !important;
+            max-width: 520px !important;
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            background: #fff !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        `}</style>
+        
+        <div id="print-root-element-box">
+          {/* Receipt Header Section */}
+          <div className="flex justify-between items-start border-b-2 border-zinc-800 pb-2 gap-4">
+            <div>
+              <img src="/Inetz-logo-removebg1.png" alt="iNetz Technologies" className="h-9 w-auto object-contain block mb-1" />
+              <div className="text-[9px] text-zinc-600 font-medium leading-relaxed max-w-[320px]">
+                3rd Floor, K.P Towers, No-159, Arcot Rd, Opp. Nexus Vijaya Mall, Vadapalani, Chennai - 600026<br/>
+                <strong>Mob:</strong> 9884441984 | <strong>Email:</strong> info@inetztech.com
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-black uppercase tracking-wider text-zinc-800">Official Fee Receipt</div>
+              <div className="text-xs font-bold font-mono text-zinc-500 mt-0.5">ID: {receiptNo}</div>
+            </div>
+          </div>
+
+          {/* Student Profile Information Grid */}
+          <div className="flex flex-col gap-3">
+            <div className="border-b border-dashed border-zinc-200 pb-1">
+              <div className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Student Participant</div>
+              <div className="text-sm font-semibold text-zinc-800 mt-0.5">{form.name || "N/A"} ({form.phone || "N/A"})</div>
+            </div>
+            <div className="border-b border-dashed border-zinc-200 pb-1">
+              <div className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Affiliated Institution</div>
+              <div className="text-sm font-semibold text-zinc-800 mt-0.5">{form.college || "N/A"}</div>
+            </div>
+            <div className="border-b border-dashed border-zinc-200 pb-1">
+              <div className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Enrolled Specialization</div>
+              <div className="text-sm font-semibold text-zinc-800 mt-0.5">{form.courseName || "N/A"}</div>
+            </div>
+          </div>
+
+          {/* Ledger Calculation Specifications Summary Box */}
+          <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-2">
+            <div className="flex justify-between text-xs text-zinc-600 border-b border-dashed border-zinc-200 pb-1.5">
+              <span>Total Course Fee</span>
+              <span className="font-semibold text-zinc-800">₹{numTotal.toLocaleString("en-IN")}</span>
+            </div>
+            {numAlreadyPaid > 0 && (
+              <div className="flex justify-between text-xs text-zinc-500 border-b border-dashed border-zinc-200 pb-1.5">
+                <span>Previously Paid Balance</span>
+                <span className="font-semibold text-zinc-700">₹{numAlreadyPaid.toLocaleString("en-IN")}</span>
+              </div>
             )}
+            <div className="flex justify-between text-xs text-zinc-600 border-b border-dashed border-zinc-200 pb-1.5">
+              <span>Payment Processing Mode</span>
+              <span className="font-semibold text-zinc-800">{form.method} {form.method === "GPay" && form.txn ? `(${form.txn})` : ""}</span>
+            </div>
+            <div className="flex justify-between items-center pt-1 font-bold text-zinc-900">
+              <span className="text-xs">Current Amount Paid Now</span>
+              <span className="text-lg text-emerald-600">₹{numPaid.toLocaleString("en-IN")}</span>
+            </div>
+          </div>
+
+          {/* Corporate Clauses Disclaimer Warning */}
+          <div className="bg-red-50/50 border border-red-100 rounded-lg p-2 text-center text-[8.5px] uppercase font-bold text-red-800 tracking-wide line-height-[1.4]">
+            Important Note: Payment once processed is strictly non-refundable and non-transferable under any circumstances.
+          </div>
+
+          {/* Footer Auditing Metadata Columns */}
+          <div className="flex justify-between items-end text-[9px] text-zinc-400 border-t border-zinc-100 pt-3 mt-2">
+            <div className="leading-relaxed">
+              <strong>Timestamp:</strong> {displayDate} @ {displayTime}<br/>
+              <strong>Gate Auth:</strong> {form.billing || "SYSTEM"}
+            </div>
+            <div className="text-center">
+              <div className="border-t border-zinc-400 w-28 pt-1 text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
+                Authorized Signatory
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Modal Footer */}
-        <div className="px-8 py-4 border-t border-zinc-100 bg-zinc-50 flex gap-3 justify-end items-center rounded-b-3xl">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors">
-            Cancel
-          </button>
-          <button onClick={handlePrint} className="px-5 py-2.5 border border-zinc-200 bg-white text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-zinc-50 active:bg-zinc-100 transition-colors">
-            <Printer size={14} /> Print Receipt
-          </button>
-          <button 
-            onClick={handleSave} 
-            disabled={isSaving || isCheckingPhone} 
-            className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
-            Save Payment
-          </button>
-        </div>
-
       </div>
-    </div>
+    </>
   );
 }
