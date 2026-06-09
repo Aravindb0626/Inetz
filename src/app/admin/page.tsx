@@ -524,6 +524,10 @@ export default function AdminPage() {
     );
   }
 
+  function updateItem(setModules: React.Dispatch<React.SetStateAction<{ label: string; title: string; topics: string; tools: string; }[]>>, modules: { label: string; title: string; topics: string; tools: string; }[], i: number, arg3: string, value: string): void {
+    throw new Error("Function not implemented.");
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 p-6 md:p-12 pb-40">
       <div className="max-w-6xl mx-auto space-y-10">
