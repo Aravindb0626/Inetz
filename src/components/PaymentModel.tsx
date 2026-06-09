@@ -187,20 +187,19 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  // Mobile Friendly Frame-based Print Implementation
+  // Completely Re-engineered Mobile Responsive Print Handler
   const handlePrint = () => {
     if (!form.name.trim() || !form.courseName) {
       return alert("Verify core Student Name and targeted course selection.");
     }
 
-    // 1. Create a hidden iframe element
     const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
+    iframe.id = "print-iframe-target";
+    // Render out of visibility scope but keep in DOM hierarchy
+    iframe.style.position = "absolute";
+    iframe.style.top = "-9999px";
+    iframe.style.left = "-9999px";
+    iframe.style.width = "100%"; 
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow?.document || iframe.contentDocument;
@@ -209,59 +208,114 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     const displayDate = currentTimestamp ? currentTimestamp.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
     const displayTime = currentTimestamp ? currentTimestamp.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "";
 
-    // 2. Inject raw markup context cleanly into the isolated frame body
     doc.write(`
       <html>
       <head>
         <title>Receipt_${receiptNo}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          @page { size: A5 landscape; margin: 4mm 8mm; }
+          /* 1. Standard Page Size Configurations */
+          @page { size: portrait; margin: 0; }
+          
           * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-          body { margin: 0; padding: 0; color: #1e293b; background: #fff; position: relative; min-height: 100%; -webkit-print-color-adjust: exact; }
-          .watermark { position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%) rotate(-14deg); font-size: 110px; font-weight: 900; color: #f8fafc; z-index: -10; text-transform: lowercase; pointer-events: none; user-select: none; }
-          .box { border: 1.5px solid #cbd5e1; border-radius: 16px; padding: 14px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; background: transparent; position: relative; z-index: 10; }
-          .h { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding-bottom: 6px; margin-bottom: 10px; }
-          .logo-img { height: 36px; width: auto; object-fit: contain; display: block; margin-bottom: 2px; }
-          .office-details { font-size: 8px; color: #475569; max-width: 290px; line-height: 1.3; font-weight: 500; }
-          .g { display: grid; grid-template-cols: 1.1fr 1fr; gap: 20px; font-size: 11px; align-items: start; }
-          .col { display: flex; flex-direction: column; gap: 7px; }
-          .card { background: rgba(248, 250, 252, 0.9); border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; }
-          .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e2e8f0; }
-          .tot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1.5px solid #1e293b; font-weight: 800; }
-          .disclaimer-box { grid-column: span 2; background: #fff5f5; border: 1px solid #fee2e2; border-radius: 8px; padding: 6px 10px; font-size: 8.5px; color: #991b1b; font-weight: 600; text-align: center; text-transform: uppercase; letter-spacing: 0.2px; margin-top: -2px; }
-          .f { border-top: 1px solid #e2e8f0; padding-top: 6px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 8.5px; color: #94a3b8; }
-          .sig-container { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-          .sig-line { border-top: 1px solid #475569; width: 130px; padding-top: 3px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; font-size: 8px; }
+          
+          body { 
+            margin: 0; 
+            padding: 10px; 
+            color: #1e293b; 
+            background: #fff; 
+            width: 100%;
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact;
+          }
+
+          /* 2. Responsive Container Box Styles */
+          .box { 
+            border: 1.5px solid #cbd5e1; 
+            border-radius: 12px; 
+            padding: 16px; 
+            width: 100%;
+            max-width: 480px; /* Locked to perfect thermal/A5 mobile reading width */
+            margin: 0 auto;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+          }
+
+          .h { 
+            display: flex; 
+            flex-direction: column;
+            border-bottom: 2px solid #1e293b; 
+            padding-bottom: 8px; 
+            gap: 6px;
+          }
+          
+          .logo-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          .logo-img { height: 32px; width: auto; object-fit: contain; }
+          .receipt-title { font-size: 13px; font-weight: 800; text-transform: uppercase; text-align: right; color: #1e293b; }
+          .receipt-id { font-family: monospace; color: #64748b; font-weight: bold; font-size: 10px; text-align: right; }
+          .office-details { font-size: 8px; color: #475569; line-height: 1.4; font-weight: 500; }
+          
+          /* 3. Grid Adjustments for Mobile Single Column Compatibility */
+          .g { display: flex; flex-direction: column; gap: 12px; }
+          .col { display: flex; flex-direction: column; gap: 8px; }
+          .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; }
+          .field-label { font-size: 8.5px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+          .field-value { font-size: 11.5px; font-weight: 600; color: #1e293b; margin-top: 1px; }
+          
+          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; width: 100%; }
+          .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 11px; }
+          .row:last-of-type { border-bottom: none; }
+          .tot { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 8px; border-top: 1.5px solid #1e293b; font-weight: 800; font-size: 12px; }
+          
+          .disclaimer-box { background: #fff5f5; border: 1px solid #fee2e2; border-radius: 6px; padding: 8px; font-size: 8px; color: #991b1b; font-weight: 600; text-align: center; text-transform: uppercase; line-height: 1.3; }
+          
+          .f { border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 8px; color: #94a3b8; }
+          .sig-container { text-align: right; }
+          .sig-line { border-top: 1px solid #475569; width: 100px; padding-top: 3px; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 7.5px; margin-top: 25px; }
+
+          /* 4. Strict Mobile Print Media Rule Overrides */
+          @media print {
+            body, html { width: 100%; background: #fff; padding: 5mm; }
+            .box { max-width: 100%; border: 1px solid #cbd5e1; }
+            #print-iframe-target { display: block !important; }
+          }
         </style>
       </head>
       <body>
-        <div class="watermark">inetz</div>
         <div class="box">
           <div class="h">
-            <div>
+            <div class="logo-row">
               <img src="/Inetz-logo-removebg1.png" alt="iNetz Technologies" class="logo-img" />
-              <div class="office-details">
-                3rd Floor, K.P Towers, No-159, Arcot Rd, Opp. Nexus Vijaya Mall, Ottagapalayam, A-Block, Vadapalani, Chennai - 600026<br/>
-                <b>Mob:</b> 9884441984 | <b>Email:</b> info@inetztech.com
+              <div>
+                <div class="receipt-title">Official Fee Receipt</div>
+                <div class="receipt-id">ID: ${receiptNo}</div>
               </div>
             </div>
-            <div style="text-align:right; margin-top: 2px;">
-              <div style="font-size:14px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#1e293b;">Official Fee Receipt</div>
-              <div style="font-family:monospace; color:#64748b; font-weight:bold; margin-top:2px; font-size:10px;">ID: ${receiptNo}</div>
+            <div class="office-details">
+              3rd Floor, K.P Towers, No-159, Arcot Rd, Opp. Nexus Vijaya Mall, Vadapalani, Chennai - 600026<br/>
+              <b>Mob:</b> 9884441984 | <b>Email:</b> info@inetztech.com
             </div>
           </div>
           
           <div class="g">
             <div class="col">
-              <div><div style="font-size:8.5px; text-transform:uppercase; color:#64748b; font-weight:700;">Student Participant</div><div style="font-size:12px; font-weight:600; color:#1e293b; margin-top:1px;">${form.name} (${form.phone})</div></div>
-              <div style="margin-top:4px;"><div style="font-size:8.5px; text-transform:uppercase; color:#64748b; font-weight:700;">Affiliated Institution</div><div style="font-size:12px; font-weight:600; color:#1e293b; margin-top:1px;">${form.college}</div></div>
-              <div style="margin-top:4px;"><div style="font-size:8.5px; text-transform:uppercase; color:#64748b; font-weight:700;">Enrolled Specialization</div><div style="font-size:12px; font-weight:600; color:#1e293b; margin-top:1px;">${form.courseName}</div></div>
+              <div class="field-group"><div class="field-label">Student Participant</div><div class="field-value">${form.name} (${form.phone})</div></div>
+              <div class="field-group"><div class="field-label">Affiliated Institution</div><div class="field-value">${form.college}</div></div>
+              <div class="field-group"><div class="field-label">Enrolled Specialization</div><div class="field-value">${form.courseName}</div></div>
             </div>
+            
             <div class="card">
               <div class="row"><span>Total Course Fee</span><span style="font-weight:600;">₹${numTotal.toLocaleString("en-IN")}</span></div>
               ${numAlreadyPaid > 0 ? `<div class="row"><span>Previously Paid</span><span style="font-weight: 600; color: #64748b;">₹${numAlreadyPaid.toLocaleString("en-IN")}</span></div>` : ""}
               <div class="row"><span>Payment Channel</span><span style="font-weight:600;">${form.method} ${form.method === "GPay" && form.txn ? `(${form.txn})` : ""}</span></div>
-              <div class="tot"><span>Current Paid Amount</span><span style="font-size:15px; color:#059669;">₹${numPaid.toLocaleString("en-IN")}</span></div>
+              <div class="tot"><span>Current Paid Amount</span><span style="color:#059669;">₹${numPaid.toLocaleString("en-IN")}</span></div>
             </div>
             
             <div class="disclaimer-box">
@@ -270,7 +324,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
           </div>
           
           <div class="f">
-            <div>Timestamp: ${displayDate} @ ${displayTime} | Gate: ${form.billing || "SYSTEM"}</div>
+            <div>Timestamp: ${displayDate} @ ${displayTime}<br/>Gate: ${form.billing || "SYSTEM"}</div>
             <div class="sig-container">
               <div class="sig-line">Authorized Signatory</div>
             </div>
@@ -281,17 +335,17 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     `);
     doc.close();
 
-    // 3. Trigger native print handler as soon as the inner iframe elements finish loading
+    // 5. Safe native print handling execution loop
     iframe.onload = () => {
       setTimeout(() => {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
         
-        // 4. Safely discard the dummy node after print window closes
+        // Clean up node references from root body
         setTimeout(() => {
           document.body.removeChild(iframe);
-        }, 1000);
-      }, 500);
+        }, 1500);
+      }, 300);
     };
   };
 
