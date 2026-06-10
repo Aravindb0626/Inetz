@@ -1,132 +1,77 @@
-// import { NextResponse } from "next/server";
-// import { google } from "googleapis";
+import { NextRequest, NextResponse } from "next/server";// Ensure you have your standard mongoose connection utility here
+import { Student } from "@/models/Student";
 
-// export async function POST(request: Request) {
-//   try {
-//     const body = await request.json();
-//     const {
-//       name,
-//       college,
-//       courseName,
-//       totalCoursePayment,
-//       paidAmount,
-//       balanceAmount,
-//       paymentType,
-//       paymentMethod,
-//       transactionId,
-//       billingBy,
-//       dateTime,
-//     } = body;
-
-//     // 1. Initialize Server-to-Sheet Authentication Credentials
-//     // Replace newlines encoded in service account environment strings safely
-//     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-//     const auth = new google.auth.JWT(
-//       process.env.GOOGLE_CLIENT_EMAIL,
-//       undefined,
-//       privateKey,
-//       ["https://www.googleapis.com/auth/spreadsheets"]
-//     );
-
-//     const sheets = google.sheets({ version: "v4", auth });
-
-//     // 2. Append incoming records as a new single structural row matrix
-//     await sheets.spreadsheets.values.append({
-//       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-//       range: "Sheet1!A:K", // Maps to the first 11 columns (A through K)
-//       valueInputOption: "USER_ENTERED",
-//       requestBody: {
-//         values: [
-//           [
-//             name,
-//             college,
-//             courseName,
-//             totalCoursePayment,
-//             paidAmount,
-//             balanceAmount,
-//             paymentType,
-//             paymentMethod,
-//             transactionId,
-//             billingBy,
-//             dateTime,
-//           ],
-//         ],
-//       },
-//     });
-
-//     return NextResponse.json({ success: true }, { status: 200 });
-//   } catch (error: any) {
-//     console.error("Google Sheets Sync Engine Exception:", error);
-//     return NextResponse.json(
-//       { success: false, error: error.message || "Internal Server Error" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-import { NextResponse } from "next/server";
-import { google } from "googleapis";
-
-export async function POST(request: Request) {
+// ─── GET: LOOKUP BY PHONE (CHANNELS INITIATED ONBLUR) ───
+export async function GET(req: NextRequest) {
   try {
-    const body = await request.json();
-    const {
-      name,
-      college,
-      courseName,
-      totalCoursePayment,
-      paidAmount,
-      balanceAmount,
-      paymentType,
-      paymentMethod,
-      transactionId,
-      billingBy,
-      dateTime,
-    } = body;
+    const { searchParams } = new URL(req.url);
+    const phone = searchParams.get("phone")?.trim();
 
-    // 1. Initialize Server-to-Sheet Authentication Credentials
-    // Replace newlines encoded in service account environment strings safely
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+    if (!phone) return NextResponse.json({ error: "Phone number required" }, { status: 400 });
 
-    const auth = new google.auth.JWT({
-      email: process.env.GOOGLE_CLIENT_EMAIL,
-      key: privateKey,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    const student = await Student.findOne({ phone });
+
+    if (!student) {
+      return NextResponse.json({ exists: false });
+    }
+
+    return NextResponse.json({
+      exists: true,
+      name: student.name,
+      college: student.college,
+      domain: student.domain,
+      courseName: student.duration, // Mapped to match dashboard state
+      totalBilling: student.totalBilling,
+      totalAccumulatedPaid: student.totalCollection
     });
-
-    const sheets = google.sheets({ version: "v4", auth });
-
-    // 2. Append incoming records as a new single structural row matrix
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "Sheet1!A:K", // Maps to the first 11 columns (A through K)
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [
-          [
-            name,
-            college,
-            courseName,
-            totalCoursePayment,
-            paidAmount,
-            balanceAmount,
-            paymentType,
-            paymentMethod,
-            transactionId,
-            billingBy,
-            dateTime,
-          ],
-        ],
-      },
-    });
-
-    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    console.error("Google Sheets Sync Engine Exception:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// ─── POST: SAVE PAYMENT (HANDLES CREATION & NESTED INSTALLMENT APPENDS) ───
+export async function POST(req: NextRequest) {
+  try {
+    const data = await req.json();
+
+    const currentPaid = Number(data.paidAmount) || 0;
+    const newInstallment = {
+      receiptNo: data.receiptNo,
+      date: data.displayDate,
+      paidAmount: currentPaid,
+      paymentMethod: data.paymentMethod,
+      transactionId: data.transactionId,
+      billingBy: data.billingBy
+    };
+
+    // Attempt to locate student and cleanly push installment atomically
+    let student = await Student.findOne({ phone: data.phone.trim() });
+
+    if (student) {
+      student.installments.push(newInstallment);
+      await student.save(); // pre-save recalculates values automatically
+    } else {
+      // Setup total count index sequence for a fresh S.No
+      const count = await Student.countDocuments();
+      
+      student = new Student({
+        sNo: count + 1,
+        doj: data.displayDate,
+        name: data.name.trim(),
+        phone: data.phone.trim(),
+        college: data.college.trim(),
+        domain: data.domain,
+        duration: data.courseName, // maps dashboard state
+        totalBilling: Number(data.totalCoursePayment) || 0,
+        installments: [newInstallment],
+        pendingAmount: (Number(data.totalCoursePayment) || 0) - currentPaid
+      });
+      
+      await student.save();
+    }
+
+    return NextResponse.json({ success: true, receiptNo: data.receiptNo });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

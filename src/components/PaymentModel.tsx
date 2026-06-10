@@ -13,8 +13,8 @@ interface FormState {
   phone: string;
   college: string;
   billing: string;
-  courseName: string; // Used for Duration selection (1 Week, 2 Weeks, etc.)
-  domain: string;     // Added back for Course Specialization tracking
+  courseName: string; // Program Duration Selector
+  domain: string;     // Specialized Domain Selector
   total: string;
   alreadyPaid: string;
   paid: string;
@@ -23,35 +23,9 @@ interface FormState {
   txn: string;
 }
 
-const DURATION_OPTIONS = [
-  "1 Week",
-  "2 Weeks",
-  "1 Month",
-  "3 Months"
-] as const;
-
-const DOMAIN_OPTIONS = [
-  "Web development",
-  "Java Full Stack",
-  "Python full stack",
-  "Data analytics",
-  "Data science",
-  "AI & ML",
-  "Digital Marketing",
-  "HR"
-] as const;
-
-const BILLING_STAFF = [
-  "Preethi",
-  "Senthil Sir",
-  "Amal",
-  "Naresh",
-  "boomika",
-  "Anbu",
-  "Aravindh",
-  "Dhanalakshmi",
-  "Esther",
-] as const;
+const DURATION_OPTIONS = ["1 Week", "2 Weeks", "1 Month", "3 Months"] as const;
+const DOMAIN_OPTIONS = ["Web development", "Java Full Stack", "Python full stack", "Data analytics", "Data science", "AI & ML", "Digital Marketing", "HR"] as const;
+const BILLING_STAFF = ["Preethi", "Senthil Sir", "Amal", "Naresh", "boomika", "Anbu", "Aravindh", "Dhanalakshmi", "Esther"] as const;
 
 const SectionHeader = ({ label }: { label: string }) => (
   <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 select-none">
@@ -98,7 +72,8 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
   const [receiptNo, setReceiptNo] = useState("");
   const [currentTimestamp, setCurrentTimestamp] = useState<Date | null>(null);
 
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbwqpPObtai3-9nhCKem1sxzR3AvYnYpMGonUUtqJpLGVbx-sbSyY8n5QiQ2x4RnNstxog/exec";
+  // Targets your high-speed unified database api routing engine
+  const apiRouteUrl = "/api/payments";
 
   useEffect(() => {
     const now = new Date();
@@ -134,15 +109,8 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
 
     setIsCheckingPhone(true);
     try {
-      const response = await fetch(`${webAppUrl}?action=checkPhone&phone=${encodeURIComponent(cleanPhone)}`, {
-        method: "GET",
-        mode: "cors",
-        credentials: "omit"
-      });
-      
-      if (!response.ok) throw new Error("CORS or Server Handshake Dropped.");
+      const response = await fetch(`${apiRouteUrl}?phone=${encodeURIComponent(cleanPhone)}`);
       const data = await response.json();
-      
       setPhoneExists(data.exists);
       
       if (data.exists) {
@@ -150,8 +118,9 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
           ...f,
           name: data.name || f.name,
           college: data.college || f.college,
+          domain: data.domain || f.domain,
           courseName: data.courseName || f.courseName,
-          total: data.totalBilling || f.total, 
+          total: data.totalBilling ? data.totalBilling.toString() : f.total, 
           alreadyPaid: data.totalAccumulatedPaid > 0 ? data.totalAccumulatedPaid.toString() : "",
           type: "Part Payment"
         }));
@@ -159,7 +128,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
         setForm(f => ({ ...f, alreadyPaid: "" }));
       }
     } catch (error) {
-      console.error("Error communicating with data lookup engine api:", error);
+      console.error("MongoDB aggregate connection failed:", error);
       setPhoneExists(null); 
     } finally {
       setIsCheckingPhone(false);
@@ -176,16 +145,15 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     setIsSaving(true);
 
     try {
-      await fetch(webAppUrl, {
+      const response = await fetch(apiRouteUrl, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           receiptNo,
           name: form.name.trim(),
           phone: form.phone.trim(),
           college: form.college.trim(),
-          courseName: form.courseName,
+          courseName: form.courseName, 
           domain: form.domain,
           totalCoursePayment: numTotal,
           alreadyPaidAmount: numAlreadyPaid,
@@ -196,11 +164,15 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
           transactionId: form.method === "GPay" ? form.txn.trim() : "N/A",
           billingBy: form.billing,
           displayDate: displayDate.replace(/\\s+/g, ' '), 
-          dateTime: currentTimestamp ? currentTimestamp.toLocaleString("en-IN") : new Date().toLocaleString("en-IN"),
         }),
       });
-      alert(`Payment metrics safely configured under Bill No: ${receiptNo}`);
-      onClose();
+      const result = await response.json();
+      if(result.success) {
+        alert(`Payment metrics safely configured under Bill No: ${receiptNo}`);
+        onClose();
+      } else {
+        alert(`Database write dropped: ${result.error}`);
+      }
     } catch {
       alert("Network exception occurred.");
     } finally {
@@ -237,30 +209,22 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
             justify-content: space-between !important;
             min-height: 132mm;
           }
-
           .header-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
           .office-details { font-size: 8px; color: #475569; line-height: 1.4; font-weight: 500; }
-          .receipt-title { font-size: 14px; font-weight: 900; uppercase tracking-wider text-zinc-800; text-transform: uppercase; letter-spacing: 0.5px; }
+          .receipt-title { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; }
           .receipt-id { font-size: 10px; font-weight: bold; font-family: monospace; color: #64748b; margin-top: 2px; }
-          
           .main-split { display: grid; grid-template-cols: 1.1fr 0.9fr; gap: 16px; margin-top: 10px; align-items: start; }
-          
           .details-list { display: flex; flex-direction: column; gap: 6px; }
           .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; }
           .field-label { font-size: 8px; text-transform: uppercase; color: #a1a1aa; font-weight: 700; tracking-wider; }
           .field-value { font-size: 11px; font-weight: 600; color: #1e293b; margin-top: 1px; }
-          
           .ledger-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-          .ledger-row { display: flex; justify-content: space-between; text-xs text-zinc-600 border-b border-dashed border-zinc-200 pb-1; font-size: 11px; }
-          .ledger-row:last-of-type { border-b: none; }
+          .ledger-row { display: flex; justify-content: space-between; text-xs text-zinc-600 border-b border-dashed border-zinc-200 pb-1; font-size: 11px; color: #475569; }
           .ledger-row-last { display: flex; justify-content: space-between; items-center pt-1 font-bold text-zinc-900; font-size: 12px; border-top: 1.5px solid #1e293b; padding-top: 4px; }
           .paid-accent { font-size: 16px; color: #059669; font-weight: 800; }
-          
           .footer-row { display: flex; justify-content: space-between; font-size: 8.5px; color: #94a3b8; border-top: 1px solid #f4f4f5; padding-top: 6px; align-items: flex-end; margin-top: auto; }
           .sig-line { border-top: 1px solid #475569; width: 125px; padding-top: 2px; font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; text-align: center; margin-top: 35px; }
-          
-          /* Disclaimer shifted strictly to the very bottom under the signature tracks */
-          .disclaimer-box { border: 1px solid #fee2e2; background: #fff5f5; border-radius: 6px; padding: 5px; text-align: center; font-size: 7.5px; color: #991b1b; font-weight: 700; text-transform: uppercase; tracking-wider; margin-top: 8px; }
+          .disclaimer-box { border: 1px solid #fee2e2; background: #fff5f5; border-radius: 6px; padding: 5px; text-align: center; font-size: 7.5px; color: #991b1b; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
         </style>
       </head>
       <body>
@@ -316,18 +280,20 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
             </div>
           </div>
 
-          <div class="footer-row">
-            <div style="line-height: 1.4;">
-              <strong>Timestamp:</strong> ${displayDate} @ ${displayTime}<br/>
-              <strong>Gate Auth:</strong> ${form.billing || "SYSTEM"}
+          <div class="print-footer-container" style="display: flex; flex-direction: column; margin-top: auto;">
+            <div class="footer-row">
+              <div style="line-height: 1.4;">
+                <strong>Timestamp:</strong> ${displayDate} @ ${displayTime}<br/>
+                <strong>Gate Auth:</strong> ${form.billing || "SYSTEM"}
+              </div>
+              <div>
+                <div class="sig-line">Authorized Signatory</div>
+              </div>
             </div>
-            <div>
-              <div class="sig-line">Authorized Signatory</div>
+            
+            <div class="disclaimer-box">
+              Important Note: Payment once processed is strictly non-refundable and non-transferable under any circumstances.
             </div>
-          </div>
-          
-          <div class="disclaimer-box">
-            Important Note: Payment once processed is strictly non-refundable and non-transferable under any circumstances.
           </div>
         </div>
 
@@ -351,14 +317,10 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
         
         <div className="px-8 py-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50 rounded-t-3xl">
           <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <CreditCard size={16} />
-            </span>
+            <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><CreditCard size={16} /></span>
             <h2 className="text-base font-bold text-zinc-900">Fee Registration Dashboard</h2>
           </div>
-          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors">
-            <X size={18} />
-          </button>
+          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors"><X size={18} /></button>
         </div>
 
         <div className="p-8 overflow-y-auto space-y-6 flex-1">
@@ -396,56 +358,30 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
                 </div>
               </div>
 
-              <AdminInput 
-                placeholder="Student Full Name" 
-                value={form.name} 
-                onChangeText={(v) => setForm(f => ({ ...f, name: v }))} 
-              />
+              <AdminInput placeholder="Student Full Name" value={form.name} onChangeText={(v) => setForm(f => ({ ...f, name: v }))} />
 
               <div className="md:col-span-2">
-                <AdminInput 
-                  placeholder="College / University" 
-                  value={form.college} 
-                  onChangeText={(v) => setForm(f => ({ ...f, college: v }))} 
-                />
+                <AdminInput placeholder="College / University" value={form.college} onChangeText={(v) => setForm(f => ({ ...f, college: v }))} />
               </div>
               
               <div className="space-y-1">
-                <select 
-                  value={form.domain} 
-                  onChange={e => setForm(f => ({ ...f, domain: e.target.value }))}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none"
-                >
+                <select value={form.domain} onChange={e => setForm(f => ({ ...f, domain: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none">
                   <option value="">-- Choose Course Domain --</option>
-                  {DOMAIN_OPTIONS.map(dom => (
-                    <option key={dom} value={dom}>{dom}</option>
-                  ))}
+                  {DOMAIN_OPTIONS.map(dom => <option key={dom} value={dom}>{dom}</option>)}
                 </select>
               </div>
 
               <div className="space-y-1">
-                <select 
-                  value={form.courseName} 
-                  onChange={e => setForm(f => ({ ...f, courseName: e.target.value }))}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none"
-                >
+                <select value={form.courseName} onChange={e => setForm(f => ({ ...f, courseName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none">
                   <option value="">-- Choose Course Duration --</option>
-                  {DURATION_OPTIONS.map(course => (
-                    <option key={course} value={course}>{course}</option>
-                  ))}
+                  {DURATION_OPTIONS.map(course => <option key={course} value={course}>{course}</option>)}
                 </select>
               </div>
 
               <div className="md:col-span-2 space-y-1">
-                <select 
-                  value={form.billing} 
-                  onChange={e => setForm(f => ({ ...f, billing: e.target.value }))}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none"
-                >
+                <select value={form.billing} onChange={e => setForm(f => ({ ...f, billing: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 outline-none focus:border-emerald-500 focus:bg-white transition-all h-[46px] appearance-none">
                   <option value="">-- Allocated Billing Authority --</option>
-                  {BILLING_STAFF.map(staff => (
-                    <option key={staff} value={staff}>{staff}</option>
-                  ))}
+                  {BILLING_STAFF.map(staff => <option key={staff} value={staff}>{staff}</option>)}
                 </select>
               </div>
             </div>
@@ -456,24 +392,9 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
           <div>
             <SectionHeader label="Payment Specifications" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <AdminInput 
-                placeholder="Total Cost" 
-                type="number" 
-                value={form.total} 
-                onChangeText={(v) => setForm(f => ({ ...f, total: v }))} 
-              />
-              <AdminInput 
-                placeholder="Already Paid Amount" 
-                type="number" 
-                value={form.alreadyPaid} 
-                onChangeText={(v) => setForm(f => ({ ...f, alreadyPaid: v }))} 
-              />
-              <AdminInput 
-                placeholder="Amount Paid Now" 
-                type="number" 
-                value={form.paid} 
-                onChangeText={(v) => setForm(f => ({ ...f, paid: v }))} 
-              />
+              <AdminInput placeholder="Total Cost" type="number" value={form.total} onChangeText={(v) => setForm(f => ({ ...f, total: v }))} />
+              <AdminInput placeholder="Already Paid Amount" type="number" value={form.alreadyPaid} onChangeText={(v) => setForm(f => ({ ...f, alreadyPaid: v }))} />
+              <AdminInput placeholder="Amount Paid Now" type="number" value={form.paid} onChangeText={(v) => setForm(f => ({ ...f, paid: v }))} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -486,12 +407,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
                   <div className="flex gap-4 mt-1">
                     {cfg.o.map(opt => (
                       <label key={opt} className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer select-none">
-                        <input 
-                          type="radio" 
-                          checked={form[cfg.k] === opt} 
-                          onChange={() => setForm(f => ({ ...f, [cfg.k]: opt }))} 
-                          className="w-4 h-4 text-emerald-600 border-zinc-300 focus:ring-emerald-500 accent-emerald-600" 
-                        />
+                        <input type="radio" checked={form[cfg.k] === opt} onChange={() => setForm(f => ({ ...f, [cfg.k]: opt }))} className="w-4 h-4 text-emerald-600 border-zinc-300 focus:ring-emerald-500 accent-emerald-600" />
                         {opt}
                       </label>
                     ))}
@@ -502,33 +418,22 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
 
             {form.method === "GPay" && (
               <div className="mt-4 p-4 bg-emerald-50/10 border border-emerald-100/50 rounded-xl space-y-1.5 animate-in fade-in duration-200">
-                <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider pl-1">
-                  UPI/GPay Transaction Token Reference
-                </label>
-                <AdminInput 
-                  placeholder="Enter TXN ID / Reference Token" 
-                  value={form.txn} 
-                  onChangeText={(v) => setForm(f => ({ ...f, txn: v }))} 
-                />
+                <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider pl-1">UPI/GPay Transaction Token Reference</label>
+                <AdminInput placeholder="Enter TXN ID / Reference Token" value={form.txn} onChangeText={(v) => setForm(f => ({ ...f, txn: v }))} />
               </div>
             )}
           </div>
         </div>
 
         <div className="px-8 py-4 border-t border-zinc-100 bg-zinc-50 flex gap-3 justify-end items-center rounded-b-3xl">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors">
-            Cancel
-          </button>
-          <button onClick={handlePrint} className="px-5 py-2.5 border border-zinc-200 bg-white text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-zinc-50 active:bg-zinc-100 transition-colors">
-            <Printer size={14} /> Print Receipt
-          </button>
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors">Cancel</button>
+          <button onClick={handlePrint} className="px-5 py-2.5 border border-zinc-200 bg-white text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"><Printer size={14} /> Print Receipt</button>
           <button 
             onClick={handleSave} 
             disabled={isSaving || isCheckingPhone} 
             className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
-            Save Payment
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Payment
           </button>
         </div>
 
