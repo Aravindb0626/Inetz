@@ -179,52 +179,62 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  // HTML Raw Layout Builder 
   const getReceiptHtmlContent = () => {
+    const parsedPreviousBalanceRow = numAlreadyPaid > 0 ? `
+      <div class="ledger-row" style="color: #64748b;">
+        <span>Previously Paid Balance</span>
+        <span style="font-weight: 600;">₹${numAlreadyPaid.toLocaleString("en-IN")}</span>
+      </div>` : "";
+
+    const parsedMethodInfo = `${form.method} ${form.method === "GPay" && form.txn ? `(${form.txn})` : ""}`;
+
     return `
       <html>
       <head>
         <title>Receipt_${receiptNo}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          @page { size: A5 landscape; margin: 4mm 6mm; }
-          * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-          body { margin: 0; padding: 5px; color: #1e293b; background: #fff; width: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          
-          #print-root-element-box {
-            border: 1.5px solid #cbd5e1 !important;
-            border-radius: 12px !important;
-            padding: 14px !important;
-            width: 100% !important;
-            background: #fff !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            min-height: 132mm;
+          @media print, screen {
+            @page { size: A5 landscape; margin: 4mm 6mm; }
+            * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+            html, body { margin: 0; padding: 0; width: 210mm; height: 148mm; background: #fff; }
+            body { padding: 8px; color: #1e293b; display: flex; align-items: center; justify-content: center; }
+            
+            #print-root-element-box {
+              border: 1.5px solid #cbd5e1 !important;
+              border-radius: 12px !important;
+              padding: 16px !important;
+              width: 100% !important;
+              height: 100% !important;
+              background: #fff !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
+            }
+            .header-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding-bottom: 8px; }
+            .office-details { font-size: 8.5px; color: #475569; line-height: 1.4; font-weight: 500; }
+            .receipt-title { font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; }
+            .receipt-id { font-size: 10.5px; font-weight: bold; font-family: monospace; color: #64748b; margin-top: 2px; }
+            .main-split { display: grid; grid-template-cols: 1.1fr 0.9fr; gap: 20px; margin-top: 12px; align-items: start; }
+            .details-list { display: flex; flex-direction: column; gap: 8px; }
+            .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; }
+            .field-label { font-size: 8.5px; text-transform: uppercase; color: #a1a1aa; font-weight: 700; tracking-wider; }
+            .field-value { font-size: 12px; font-weight: 600; color: #1e293b; margin-top: 1px; }
+            .ledger-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+            .ledger-row { display: flex; justify-content: space-between; border-b border-dashed border-zinc-200 pb-1; font-size: 11.5px; color: #475569; }
+            .ledger-row-last { display: flex; justify-content: space-between; items-center font-bold text-zinc-900; font-size: 13px; border-top: 1.5px solid #1e293b; padding-top: 6px; }
+            .paid-accent { font-size: 17px; color: #059669; font-weight: 800; }
+            .footer-row { display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; border-top: 1px solid #f4f4f5; padding-top: 8px; align-items: flex-end; }
+            .sig-line { border-top: 1px solid #475569; width: 130px; padding-top: 3px; font-size: 8.5px; font-weight: 700; color: #475569; text-transform: uppercase; text-align: center; margin-top: 25px; }
+            .disclaimer-box { border: 1px solid #fee2e2; background: #fff5f5; border-radius: 6px; padding: 6px; text-align: center; font-size: 8px; color: #991b1b; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
           }
-          .header-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
-          .office-details { font-size: 8px; color: #475569; line-height: 1.4; font-weight: 500; }
-          .receipt-title { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; }
-          .receipt-id { font-size: 10px; font-weight: bold; font-family: monospace; color: #64748b; margin-top: 2px; }
-          .main-split { display: grid; grid-template-cols: 1.1fr 0.9fr; gap: 16px; margin-top: 10px; align-items: start; }
-          .details-list { display: flex; flex-direction: column; gap: 6px; }
-          .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; }
-          .field-label { font-size: 8px; text-transform: uppercase; color: #a1a1aa; font-weight: 700; tracking-wider; }
-          .field-value { font-size: 11px; font-weight: 600; color: #1e293b; margin-top: 1px; }
-          .ledger-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-          .ledger-row { display: flex; justify-content: space-between; text-xs text-zinc-600 border-b border-dashed border-zinc-200 pb-1; font-size: 11px; color: #475569; }
-          .ledger-row-last { display: flex; justify-content: space-between; items-center pt-1 font-bold text-zinc-900; font-size: 12px; border-top: 1.5px solid #1e293b; padding-top: 4px; }
-          .paid-accent { font-size: 16px; color: #059669; font-weight: 800; }
-          .footer-row { display: flex; justify-content: space-between; font-size: 8.5px; color: #94a3b8; border-top: 1px solid #f4f4f5; padding-top: 6px; align-items: flex-end; margin-top: auto; }
-          .sig-line { border-top: 1px solid #475569; width: 125px; padding-top: 2px; font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; text-align: center; margin-top: 35px; }
-          .disclaimer-box { border: 1px solid #fee2e2; background: #fff5f5; border-radius: 6px; padding: 5px; text-align: center; font-size: 7.5px; color: #991b1b; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
         </style>
       </head>
       <body>
         <div id="print-root-element-box">
           <div class="header-row">
             <div>
-              <img src="/Inetz-logo-removebg1.png" alt="iNetz Technologies" style="height: 32px; width: auto; display: block; margin-bottom: 2px;" />
+              <div style="font-size: 18px; font-weight: 800; color: #1e293b; text-transform: uppercase; tracking-tight; margin-bottom: 2px;">iNetz Technologies</div>
               <div class="office-details">
                 3rd Floor, K.P Towers, No-159, Arcot Rd, Opp. Nexus Vijaya Mall, Vadapalani, Chennai - 600026<br/>
                 <strong>Mob:</strong> 9884441984 | <strong>Email:</strong> info@inetztech.com
@@ -257,27 +267,23 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
                 <span>Total Course Fee</span>
                 <span style="font-weight: 600; color: #1e293b;">₹${numTotal.toLocaleString("en-IN")}</span>
               </div>
-              \${numAlreadyPaid > 0 ? \`
-              <div class="ledger-row" style="color: #64748b;">
-                <span>Previously Paid Balance</span>
-                <span style="font-weight: 600;">₹\${numAlreadyPaid.toLocaleString("en-IN")}</span>
-              </div>\` : ""}
+              ${parsedPreviousBalanceRow}
               <div class="ledger-row">
                 <span>Payment Processing Mode</span>
-                <span style="font-weight: 600; color: #1e293b;">\${form.method} \${form.method === "GPay" && form.txn ? \`(\${form.txn})\` : ""}</span>
+                <span style="font-weight: 600; color: #1e293b;">${parsedMethodInfo}</span>
               </div>
               <div class="ledger-row-last">
                 <span>Current Amount Paid Now</span>
-                <span class="paid-accent">₹\${numPaid.toLocaleString("en-IN")}</span>
+                <span class="paid-accent">₹${numPaid.toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
 
-          <div class="print-footer-container" style="display: flex; flex-direction: column; margin-top: auto;">
+          <div class="print-footer-container" style="display: flex; flex-direction: column;">
             <div class="footer-row">
               <div style="line-height: 1.4;">
-                <strong>Timestamp:</strong> \${displayDate} @ \${displayTime}<br/>
-                <strong>Gate Auth:</strong> \${form.billing || "SYSTEM"}
+                <strong>Timestamp:</strong> ${displayDate} @ ${displayTime}<br/>
+                <strong>Gate Auth:</strong> ${form.billing || "SYSTEM"}
               </div>
               <div>
                 <div class="sig-line">Authorized Signatory</div>
@@ -294,7 +300,8 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     `;
   };
 
-  // ─── OPTION 1: TRUE PRINT COMMAND ───
+  // FIXED: Removed the 'window.close()' timeout loop command line here.
+  // This completely stops mobile screens from closing prematurely while processing.
   const handlePrintReceipt = () => {
     if (!form.name.trim() || !form.courseName || !form.domain) {
       return alert("Verify Student Name, course duration, and domain specialization selection.");
@@ -309,7 +316,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
         window.onload = function() {
           setTimeout(function() {
             window.print();
-            setTimeout(function() { window.close(); }, 500);
           }, 300);
         };
       </script>
@@ -317,28 +323,8 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     pWin.document.close();
   };
 
-  // ─── OPTION 2: TRUE DOWNLOAD FILE COMMAND (Saves file directly to computer) ───
   const handleDownloadPdf = () => {
-    if (!form.name.trim() || !form.courseName || !form.domain) {
-      return alert("Verify Student Name, course duration, and domain specialization selection.");
-    }
-
-    const htmlString = getReceiptHtmlContent();
-    
-    // Convert html text payload to an absolute direct blob file configuration stream
-    const blob = new Blob([htmlString], { type: "text/html" });
-    const fileUrl = URL.createObjectURL(blob);
-    
-    // Append anchor down mock layer context link and fire simulated click event
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.href = fileUrl;
-    downloadAnchor.download = `Receipt_${receiptNo}_${form.name.replace(/\s+/g, "_")}.html`;
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    
-    // Clean memory addresses layers safely
-    document.body.removeChild(downloadAnchor);
-    URL.revokeObjectURL(fileUrl);
+    handlePrintReceipt();
   };
 
   return (
