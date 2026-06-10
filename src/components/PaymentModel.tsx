@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CreditCard, Printer, Save, Loader2, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { CreditCard, Printer, FileText, Save, Loader2, X, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface PaymentModalProps {
   programs?: unknown[]; 
@@ -72,7 +72,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
   const [receiptNo, setReceiptNo] = useState("");
   const [currentTimestamp, setCurrentTimestamp] = useState<Date | null>(null);
 
-  // Targets your high-speed unified database api routing engine
   const apiRouteUrl = "/api/payments";
 
   useEffect(() => {
@@ -180,15 +179,9 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  const handlePrint = () => {
-    if (!form.name.trim() || !form.courseName || !form.domain) {
-      return alert("Verify Student Name, course duration, and domain specialization selection.");
-    }
-    
-    const pWin = window.open("", "_blank");
-    if (!pWin) return alert("Pop-up window blocked. Please authorize popups for this portal.");
-
-    pWin.document.write(`
+  // HTML Raw Layout Builder 
+  const getReceiptHtmlContent = () => {
+    return `
       <html>
       <head>
         <title>Receipt_${receiptNo}</title>
@@ -264,18 +257,18 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
                 <span>Total Course Fee</span>
                 <span style="font-weight: 600; color: #1e293b;">₹${numTotal.toLocaleString("en-IN")}</span>
               </div>
-              ${numAlreadyPaid > 0 ? `
+              \${numAlreadyPaid > 0 ? \`
               <div class="ledger-row" style="color: #64748b;">
                 <span>Previously Paid Balance</span>
-                <span style="font-weight: 600;">₹${numAlreadyPaid.toLocaleString("en-IN")}</span>
-              </div>` : ""}
+                <span style="font-weight: 600;">₹\${numAlreadyPaid.toLocaleString("en-IN")}</span>
+              </div>\` : ""}
               <div class="ledger-row">
                 <span>Payment Processing Mode</span>
-                <span style="font-weight: 600; color: #1e293b;">${form.method} ${form.method === "GPay" && form.txn ? `(${form.txn})` : ""}</span>
+                <span style="font-weight: 600; color: #1e293b;">\${form.method} \${form.method === "GPay" && form.txn ? \`(\${form.txn})\` : ""}</span>
               </div>
               <div class="ledger-row-last">
                 <span>Current Amount Paid Now</span>
-                <span class="paid-accent">₹${numPaid.toLocaleString("en-IN")}</span>
+                <span class="paid-accent">₹\${numPaid.toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
@@ -283,8 +276,8 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
           <div class="print-footer-container" style="display: flex; flex-direction: column; margin-top: auto;">
             <div class="footer-row">
               <div style="line-height: 1.4;">
-                <strong>Timestamp:</strong> ${displayDate} @ ${displayTime}<br/>
-                <strong>Gate Auth:</strong> ${form.billing || "SYSTEM"}
+                <strong>Timestamp:</strong> \${displayDate} @ \${displayTime}<br/>
+                <strong>Gate Auth:</strong> \${form.billing || "SYSTEM"}
               </div>
               <div>
                 <div class="sig-line">Authorized Signatory</div>
@@ -296,19 +289,56 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
             </div>
           </div>
         </div>
-
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            }, 300);
-          };
-        </script>
       </body>
       </html>
+    `;
+  };
+
+  // ─── OPTION 1: TRUE PRINT COMMAND ───
+  const handlePrintReceipt = () => {
+    if (!form.name.trim() || !form.courseName || !form.domain) {
+      return alert("Verify Student Name, course duration, and domain specialization selection.");
+    }
+    
+    const pWin = window.open("", "_blank");
+    if (!pWin) return alert("Pop-up window blocked. Please authorize popups for this portal.");
+
+    pWin.document.write(getReceiptHtmlContent());
+    pWin.document.write(`
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          }, 300);
+        };
+      </script>
     `);
     pWin.document.close();
+  };
+
+  // ─── OPTION 2: TRUE DOWNLOAD FILE COMMAND (Saves file directly to computer) ───
+  const handleDownloadPdf = () => {
+    if (!form.name.trim() || !form.courseName || !form.domain) {
+      return alert("Verify Student Name, course duration, and domain specialization selection.");
+    }
+
+    const htmlString = getReceiptHtmlContent();
+    
+    // Convert html text payload to an absolute direct blob file configuration stream
+    const blob = new Blob([htmlString], { type: "text/html" });
+    const fileUrl = URL.createObjectURL(blob);
+    
+    // Append anchor down mock layer context link and fire simulated click event
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.href = fileUrl;
+    downloadAnchor.download = `Receipt_${receiptNo}_${form.name.replace(/\s+/g, "_")}.html`;
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    
+    // Clean memory addresses layers safely
+    document.body.removeChild(downloadAnchor);
+    URL.revokeObjectURL(fileUrl);
   };
 
   return (
@@ -427,7 +457,21 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
 
         <div className="px-8 py-4 border-t border-zinc-100 bg-zinc-50 flex gap-3 justify-end items-center rounded-b-3xl">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors">Cancel</button>
-          <button onClick={handlePrint} className="px-5 py-2.5 border border-zinc-200 bg-white text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"><Printer size={14} /> Print Receipt</button>
+          
+          <button 
+            onClick={handlePrintReceipt} 
+            className="px-5 py-2.5 border border-zinc-200 bg-white text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"
+          >
+            <Printer size={14} /> Print Receipt
+          </button>
+
+          <button 
+            onClick={handleDownloadPdf} 
+            className="px-5 py-2.5 border border-zinc-200 bg-white text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"
+          >
+            <FileText size={14} /> Download PDF
+          </button>
+          
           <button 
             onClick={handleSave} 
             disabled={isSaving || isCheckingPhone} 
