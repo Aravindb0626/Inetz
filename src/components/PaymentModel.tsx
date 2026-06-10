@@ -88,7 +88,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
       String(now.getMinutes()).padStart(2, "0") +
       String(now.getSeconds()).padStart(2, "0");
 
-    setReceiptNo(`IA-${sequentialSerial}`);
+    setReceiptNo(`IT-${sequentialSerial}`);
   }, []);
 
   const numTotal = Number(form.total) || 0;

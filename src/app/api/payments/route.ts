@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";// Ensure you have your standard mongoose connection utility here
 import { Student } from "@/models/Student";
+import { connectToDatabase } from "@/lib/db";
 
 // ─── GET: LOOKUP BY PHONE (CHANNELS INITIATED ONBLUR) ───
 export async function GET(req: NextRequest) {
   try {
+    await connectToDatabase();
+
     const { searchParams } = new URL(req.url);
     const phone = searchParams.get("phone")?.trim();
 
