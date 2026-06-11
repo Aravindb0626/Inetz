@@ -4,10 +4,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { 
   Plus, Trash2, Save, Layers, Pencil, RefreshCw, 
   BookOpen, Clock, IndianRupee, ArrowLeft, Loader2, 
-  CreditCard, LayoutDashboard, History, Settings, LogOut 
+  CreditCard, LayoutDashboard, History, Settings, LogOut,
+  FileSpreadsheet
 } from "lucide-react";
 import TransactionsList from "@/components/TransactionLists";
 import PaymentModal from "@/components/PaymentModel";
+
 type SidebarTab = "tracks" | "transactions";
 type FormView = "list" | "form";
 
@@ -29,11 +31,9 @@ const AdminInput = ({ placeholder, value, onChange, type = "text" }: any) => (
 );
 
 export default function AdminPage() {
-  // Navigation Layout State Drivers
   const [activeTab, setActiveTab] = useState<SidebarTab>("tracks");
   const [view, setView] = useState<FormView>("list");
   
-  // Data Matrices Registry States
   const [programs, setPrograms] = useState<any[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -42,8 +42,8 @@ export default function AdminPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [modules, setModules] = useState([{ label: "Day 01", title: "", topics: "", tools: "" }]);
   const [isPayOpen, setIsPayOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  // Fetch Tracks Data Pipeline
   const fetchPrograms = useCallback(async () => {
     setListLoading(true);
     try {
@@ -57,7 +57,6 @@ export default function AdminPage() {
     fetchPrograms(); 
   }, [fetchPrograms]);
 
-  // Form Management Actions Logic Handlers
   const handleNew = () => {
     setEditingId(null); 
     setFormData(EMPTY_FORM); 
@@ -120,7 +119,6 @@ export default function AdminPage() {
     finally { setUploading(false); }
   };
 
-  // FIXED: Implementation of the dynamic inline Curriculum content matrix compiler
   const handleUpdateModuleField = (index: number, key: string, value: string) => {
     setModules(prev => prev.map((item, idx) => {
       if (idx !== index) return item;
@@ -128,15 +126,92 @@ export default function AdminPage() {
     }));
   };
 
+  // ─── HIGH-SPEED EXCEL CONVERSION AND EXTRACTION LOGIC ENGINE ───
+  const handleExportToExcel = async () => {
+    setExporting(true);
+    try {
+      const response = await fetch("/api/payments");
+      const result = await response.json();
+      
+      // FIX: Correctly maps variables targeting the result.data layout map rules
+      const transactions = result.data || [];
+      
+      if (!transactions || transactions.length === 0) {
+        setExporting(false);
+        return alert("There are currently no audited transactions found in the database layer to export.");
+      }
+
+      const headers = [
+        "Receipt Number",
+        "Date",
+        "Student Name",
+        "Mobile Number",
+        "Institution/College",
+        "Domain Selected",
+        "Duration",
+        "Total Course Fee (INR)",
+        "Previously Paid (INR)",
+        "Current Paid Now (INR)",
+        "Outstanding Balance (INR)",
+        "Classification",
+        "Channel Mode",
+        "UPI Reference Token Id",
+        "Billing Authority"
+      ];
+
+      const rows = transactions.map((t: any) => [
+        t.receiptNo || "N/A",
+        t.date || "N/A",
+        t.name || "N/A",
+        t.phone ? `'${t.phone}` : "N/A", 
+        t.college || "N/A",
+        t.domain || "Web development",
+        t.courseName || "1 Month",
+        t.totalCoursePayment || 0,
+        t.alreadyPaidAmount || 0,
+        t.paidAmount || 0,
+        t.balanceAmount || 0,
+        t.paymentType || "Part Payment",
+        t.paymentMethod || "Cash",
+        t.transactionId || "N/A",
+        t.billingBy || "SYSTEM"
+      ]);
+
+      const matrixContent = [headers, ...rows]
+        .map((cellsArray: Array<string | number>) => cellsArray.map((cell: string | number) => {
+          const stringified = String(cell).replace(/"/g, '""');
+          return stringified.includes(",") || stringified.includes("\n") || stringified.includes('"') 
+            ? `"${stringified}"` 
+            : stringified;
+        }).join(","))
+        .join("\n");
+
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), matrixContent], { type: "text/csv;charset=utf-8;" });
+      const dlUrl = URL.createObjectURL(blob);
+      
+      const downloadAnchor = document.createElement("a");
+      const currentStamp = new Date().toISOString().split("T")[0];
+      
+      downloadAnchor.href = dlUrl;
+      downloadAnchor.download = `iNetz_Financial_Audit_Ledger_${currentStamp}.csv`;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      
+      document.body.removeChild(downloadAnchor);
+      URL.revokeObjectURL(dlUrl);
+
+    } catch (err) {
+      console.error("Excel tracking compilation exception dropped: ", err);
+      alert("Failed to build tracking report array matrices.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-zinc-50 font-sans">
-      
-      {/* =========================================================================
-          PART 1: PERSISTENT SIDEBAR NAVIGATION COMPONENT
-         ========================================================================= */}
       <aside className="w-64 bg-zinc-900 text-zinc-400 p-6 flex flex-col justify-between shrink-0 hidden md:flex border-r border-zinc-800">
         <div className="space-y-8">
-          {/* Corporate Branding Identity Wrapper Header */}
           <div className="flex items-center gap-3 px-2">
             <span className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-600/20">
               <LayoutDashboard size={20} />
@@ -147,14 +222,11 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Nav Item Actions Navigation Stream Panels */}
           <nav className="space-y-1.5">
             <button
               onClick={() => { setActiveTab("tracks"); setView("list"); }}
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                activeTab === "tracks" 
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/10" 
-                  : "hover:bg-zinc-800 hover:text-zinc-200"
+                activeTab === "tracks" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/10" : "hover:bg-zinc-800 hover:text-zinc-200"
               }`}
             >
               <BookOpen size={16} /> Track Management
@@ -163,9 +235,7 @@ export default function AdminPage() {
             <button
               onClick={() => { setActiveTab("transactions"); setView("list"); }}
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                activeTab === "transactions" 
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/10" 
-                  : "hover:bg-zinc-800 hover:text-zinc-200"
+                activeTab === "transactions" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/10" : "hover:bg-zinc-800 hover:text-zinc-200"
               }`}
             >
               <History size={16} /> Audit Collections
@@ -173,25 +243,19 @@ export default function AdminPage() {
           </nav>
         </div>
 
-        {/* Footer Meta Operations Navigation Bars */}
         <div className="space-y-4 pt-6 border-t border-zinc-800/60 text-[11px] font-medium px-2">
           <div className="flex items-center gap-2 hover:text-zinc-200 cursor-pointer transition-colors"><Settings size={14} /> System Parameters</div>
           <div className="flex items-center gap-2 text-red-400 hover:text-red-300 cursor-pointer transition-colors"><LogOut size={14} /> Kill Session</div>
         </div>
       </aside>
 
-      {/* =========================================================================
-          PART 2: INTERACTIVE DASHBOARD VIEWPORTS CONTAINER
-         ========================================================================= */}
       <main className="flex-1 overflow-y-auto h-screen p-6 md:p-12">
         <div className="max-w-6xl mx-auto">
           
-          {/* VIEWPORT CHANNEL A: TRACK MANAGEMENT TAB PANELS */}
           {activeTab === "tracks" && (
             <>
               {view === "list" ? (
                 <div className="space-y-8">
-                  {/* Tab Top Title Section Component */}
                   <div className="flex flex-wrap justify-between items-center gap-4">
                     <div>
                       <h1 className="text-3xl font-black text-zinc-900 tracking-tight">Track Management</h1>
@@ -204,7 +268,6 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Render Loader / Empty Content Cards Block */}
                   {listLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[...Array(3)].map((_, i) => <div key={i} className="h-48 bg-white rounded-[2rem] border border-zinc-100 animate-pulse" />)}
@@ -238,7 +301,6 @@ export default function AdminPage() {
                   )}
                 </div>
               ) : (
-                /* SECTION 2: NEW TRACK EDIT / CREATION CONFIGURATION FORM INTERFACE */
                 <div className="space-y-10">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -294,15 +356,24 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* VIEWPORT CHANNEL B: REAL-TIME AUDIT TRANSACTIONS REGISTER TAB */}
           {activeTab === "transactions" && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm">
+              <div className="flex flex-wrap justify-between items-center bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm gap-4">
                 <div>
                   <h1 className="text-2xl font-black text-zinc-900 tracking-tight">Financial Audit Panel</h1>
                   <p className="text-zinc-400 text-sm mt-0.5">Real-time verification ledger records</p>
                 </div>
-                <button onClick={() => setIsPayOpen(true)} className="bg-zinc-900 text-white px-5 py-3 rounded-xl text-xs font-semibold hover:bg-emerald-600 transition-all flex items-center gap-2"><Plus size={14} /> New Payment</button>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={handleExportToExcel}
+                    disabled={exporting}
+                    className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-5 py-3 rounded-xl text-xs font-semibold hover:bg-emerald-600 hover:text-white flex items-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />} 
+                    {exporting ? "Compiling Report..." : "Export Excel"}
+                  </button>
+                  <button onClick={() => setIsPayOpen(true)} className="bg-zinc-900 text-white px-5 py-3 rounded-xl text-xs font-semibold hover:bg-emerald-600 transition-all flex items-center gap-2"><Plus size={14} /> New Payment</button>
+                </div>
               </div>
               <TransactionsList />
             </div>
@@ -311,7 +382,6 @@ export default function AdminPage() {
         </div>
       </main>
 
-      {/* FEE ENTRY MODAL OVERLAY TRIGGER */}
       {isPayOpen && (
         <PaymentModal programs={programs} onClose={() => setIsPayOpen(false)} />
       )}

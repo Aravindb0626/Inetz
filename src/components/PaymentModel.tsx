@@ -25,7 +25,7 @@ interface FormState {
 
 const DURATION_OPTIONS = ["1 Week", "2 Weeks", "1 Month", "3 Months"] as const;
 const DOMAIN_OPTIONS = ["Web development", "Java Full Stack", "Python full stack", "Data analytics", "Data science", "AI & ML", "Digital Marketing", "HR"] as const;
-const BILLING_STAFF = ["Preethi", "Senthil Sir", "Amal", "Naresh", "boomika", "Anbu", "Aravindh", "Dhanalakshmi", "Esther"] as const;
+const BILLING_STAFF = ["Preethi", "Senthil Sir", "Amal", "Naresh", "Boomika", "Anbu", "Aravindh", "Dhanalakshmi", "Esther"] as const;
 
 const SectionHeader = ({ label }: { label: string }) => (
   <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 select-none">
@@ -46,7 +46,7 @@ const AdminInput = ({ placeholder, value, onChangeText, type = "text", ...props 
     placeholder={placeholder}
     value={value}
     onChange={(e) => onChangeText(e.target.value)}
-    className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 placeholder:text-zinc-300 outline-none focus:border-emerald-500 focus:bg-white transition-all duration-200"
+    className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 placeholder:text-zinc-300 outline-none focus:border-emerald-500 focus:bg-white transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
   />
 );
 
@@ -95,12 +95,17 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
   const numPaid = Number(form.paid) || 0;
   const rawBalance = Math.max(0, numTotal - (numAlreadyPaid + numPaid));
 
+  // Determine if student has cleared all dues beforehand
+  const isPaidInFull = numTotal > 0 && numAlreadyPaid >= numTotal;
+
   useEffect(() => {
-    if (form.type === "Full Payment" && form.total) {
+    if (isPaidInFull) {
+      setForm((f) => ({ ...f, paid: "0" }));
+    } else if (form.type === "Full Payment" && form.total) {
       const remainder = Math.max(0, numTotal - numAlreadyPaid);
       setForm((f) => ({ ...f, paid: remainder.toString() }));
     }
-  }, [form.type, form.total, form.alreadyPaid, numTotal, numAlreadyPaid]);
+  }, [form.type, form.total, form.alreadyPaid, numTotal, numAlreadyPaid, isPaidInFull]);
 
   const checkPhoneExistence = async () => {
     const cleanPhone = form.phone.trim();
@@ -179,7 +184,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  // FIXED: Cleared string interpolation blocks completely to avoid raw code injections
   const getReceiptHtmlContent = () => {
     const parsedPreviousBalanceRow = numAlreadyPaid > 0 ? `
       <div class="ledger-row" style="color: #64748b;">
@@ -217,13 +221,14 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
           .main-split { display: grid; grid-template-cols: 1.1fr 0.9fr; gap: 16px; margin-top: 10px; align-items: start; }
           .details-list { display: flex; flex-direction: column; gap: 6px; }
           .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; }
+          .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; }
           .field-label { font-size: 8px; text-transform: uppercase; color: #a1a1aa; font-weight: 700; tracking-wider; }
           .field-value { font-size: 11px; font-weight: 600; color: #1e293b; margin-top: 1px; }
           .ledger-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
           .ledger-row { display: flex; justify-content: space-between; text-xs text-zinc-600 border-b border-dashed border-zinc-200 pb-1; font-size: 11px; color: #475569; }
           .ledger-row-last { display: flex; justify-content: space-between; items-center pt-1 font-bold text-zinc-900; font-size: 12px; border-top: 1.5px solid #1e293b; padding-top: 4px; }
           .paid-accent { font-size: 16px; color: #059669; font-weight: 800; }
-          .footer-row { display: flex; justify-content: space-between; font-size: 8.5px; color: #94a3b8; border-top: 1px solid #f4f4f5; padding-top: 6px; align-items: flex-end; margin-top: auto; }
+          .footer-row { display: flex; justify-content: space-between; font-size: 8.5px; color: #94a3b8; border-top: 1px solid #f4f4f5; padding-top: 6px; items-center; margin-top: auto; }
           .sig-line { border-top: 1px solid #475569; width: 125px; padding-top: 2px; font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; text-align: center; margin-top: 35px; }
           .disclaimer-box { border: 1px solid #fee2e2; background: #fff5f5; border-radius: 6px; padding: 5px; text-align: center; font-size: 7.5px; color: #991b1b; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
         </style>
@@ -293,12 +298,20 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
             </div>
           </div>
         </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }, 300);
+          };
+        </script>
       </body>
       </html>
     `;
   };
 
-  // Option 1: Launches Standard Print Dialog
   const handlePrintReceipt = () => {
     if (!form.name.trim() || !form.courseName || !form.domain) {
       return alert("Verify Student Name, course duration, and domain specialization selection.");
@@ -308,20 +321,9 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     if (!pWin) return alert("Pop-up window blocked. Please authorize popups for this portal.");
 
     pWin.document.write(getReceiptHtmlContent());
-    pWin.document.write(`
-      <script>
-        window.onload = function() {
-          setTimeout(function() {
-            window.print();
-            setTimeout(function() { window.close(); }, 500);
-          }, 300);
-        };
-      </script>
-    `);
     pWin.document.close();
   };
 
-  // Option 2: Downloads receipt directly to file array buffers
   const handleDownloadPdf = () => {
     if (!form.name.trim() || !form.courseName || !form.domain) {
       return alert("Verify Student Name, course duration, and domain specialization selection.");
@@ -381,7 +383,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
                     </span>
                   )}
                   {!isCheckingPhone && phoneExists === false && (
-                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md border border-amber-100">
                       <CheckCircle2 size={12} /> New Profile
                     </span>
                   )}
@@ -424,7 +426,16 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <AdminInput placeholder="Total Cost" type="number" value={form.total} onChangeText={(v) => setForm(f => ({ ...f, total: v }))} />
               <AdminInput placeholder="Already Paid Amount" type="number" value={form.alreadyPaid} onChangeText={(v) => setForm(f => ({ ...f, alreadyPaid: v }))} />
-              <AdminInput placeholder="Amount Paid Now" type="number" value={form.paid} onChangeText={(v) => setForm(f => ({ ...f, paid: v }))} />
+              
+              {/* Dynamic Disabled Locking rule setup */}
+              <AdminInput 
+                placeholder="Amount Paid Now" 
+                type="number" 
+                value={form.paid} 
+                onChangeText={(v) => setForm(f => ({ ...f, paid: v }))} 
+                disabled={isPaidInFull}
+                style={isPaidInFull ? { cursor: "not-allowed", opacity: 0.6, backgroundColor: "#f4f4f5" } : undefined}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
