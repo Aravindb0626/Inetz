@@ -24,7 +24,7 @@ interface FormState {
 }
 
 const DURATION_OPTIONS = ["1 Week", "2 Weeks", "1 Month", "3 Months"] as const;
-const DOMAIN_OPTIONS = ["Web development", "Java Full Stack", "Python full stack", "Data analytics", "Data science", "AI & ML", "Digital Marketing", "HR"] as const;
+const DOMAIN_OPTIONS = ["Web development", "Java Full Stack", "Python full stack", "Data analytics", "Data science", "AI & ML", "Digital Marketing", "HR","Embedded"] as const;
 const BILLING_STAFF = ["Preethi", "Senthil Sir", "Amal", "Naresh", "Boomika", "Anbu", "Aravindh", "Dhanalakshmi", "Esther"] as const;
 
 const SectionHeader = ({ label }: { label: string }) => (
