@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const phone = searchParams.get("phone")?.trim();
 
-    // ─── BRANCH A: SINGLE STUDENT LOOKUP BY PHONE ───
+    // ─── BRANCH A: SINGLE STUDENT LOOKUP BY PHONE (FOR MODAL AUTOFILL) ───
     if (phone) {
       const student = await Student.findOne({ phone });
       if (!student) {
@@ -20,24 +20,38 @@ export async function GET(req: NextRequest) {
         name: student.name,
         college: student.college,
         domain: student.domain,
-        courseName: student.duration, 
+        courseName: student.duration, // Maps your schema's "duration" key safely
         totalBilling: student.totalBilling,
-        totalAccumulatedPaid: student.totalCollection || 0
+        totalAccumulatedPaid: student.totalCollection || 0 // Maps your schema's "totalCollection" key safely
       });
     }
 
-    // ─── BRANCH B: ALL TRANSACTIONS AUDIT LEDGER LIST FETCH ───
-    // CHANGED: Query matches all students so zero installment rows aren't ignored
+    // ─── BRANCH B: ALL TRANSACTIONS AUDIT LEDGER LIST FETCH (FOR DATATABLE) ───
+    // Querying all records with exactly matching schema field criteria projection keys
     const students = await Student.find({})
-      .select("name phone college domain duration totalBilling totalCollection balanceAmount installments paymentType paymentMethod transactionId billingBy displayDate")
+      .select("name phone college domain duration totalBilling totalCollection installments doj")
       .lean();
 
     const transactions: any[] = [];
 
     students.forEach((student: any) => {
       if (student.installments && student.installments.length > 0) {
-        // Flatten true historical installment splits array list
-        student.installments.forEach((inst: any) => {
+        
+        // 1. Sort the nested installment copies chronologically (Oldest to Newest)
+        // This is crucial to accurately determine the history of previous balances!
+        const chronologicalInstallments = [...student.installments].sort((a: any, b: any) => {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        });
+
+        let runningPaidSum = 0;
+
+        chronologicalInstallments.forEach((inst: any) => {
+          const currentTotalFee = Number(student.totalBilling) || 0;
+          const iterationPaidAmount = Number(inst.paidAmount) || 0;
+          
+          // Math calculation dynamically traces out the balance left at this point in time
+          const historicalBalance = Math.max(0, currentTotalFee - (runningPaidSum + iterationPaidAmount));
+
           transactions.push({
             receiptNo: inst.receiptNo || "MIG-DATA",
             date: inst.date || student.doj || "N/A",
@@ -45,19 +59,21 @@ export async function GET(req: NextRequest) {
             phone: student.phone,
             college: student.college || "N/A",
             domain: student.domain || "Web development",
-            courseName: student.duration || "1 Month",
-            totalCoursePayment: student.totalBilling || 0,
-            alreadyPaidAmount: (student.totalCollection || 0) - (inst.paidAmount || 0),
-            paidAmount: inst.paidAmount || 0,
-            balanceAmount: student.balanceAmount ?? Math.max(0, (student.totalBilling || 0) - (student.totalCollection || 0)),
-            paymentType: student.paymentType || "Part Payment",
+            courseName: student.duration || "1 Month", // Safely reads your database "duration"
+            totalCoursePayment: currentTotalFee,
+            alreadyPaidAmount: runningPaidSum, // 🎯 FIXED: Holds the exact mathematical running sum value up to this date
+            paidAmount: iterationPaidAmount,
+            balanceAmount: historicalBalance,
             paymentMethod: inst.paymentMethod || "Cash",
             transactionId: inst.transactionId || "N/A",
             billingBy: inst.billingBy || "Historical Data"
           });
+
+          // Accumulate payment for the next upcoming installment entry row
+          runningPaidSum += iterationPaidAmount;
         });
       } else {
-        // Fallback catch placeholder for Unpaid / Zero installment tracking profiles!
+        // Fallback catch block handles registration records with zero payment balance logs
         transactions.push({
           receiptNo: "REGISTRATION-PENDING",
           date: student.doj || "N/A",
@@ -66,16 +82,20 @@ export async function GET(req: NextRequest) {
           college: student.college || "N/A",
           domain: student.domain || "Web development",
           courseName: student.duration || "1 Month",
-          totalCoursePayment: student.totalBilling || 0,
+          totalCoursePayment: Number(student.totalBilling) || 0,
           alreadyPaidAmount: 0,
           paidAmount: 0,
-          balanceAmount: student.totalBilling || 0,
-          paymentType: "Part Payment",
+          balanceAmount: Number(student.totalBilling) || 0,
           paymentMethod: "N/A",
           transactionId: "N/A",
           billingBy: "System Registration"
         });
       }
+    });
+
+    // Sort globally to ensure the newest transaction logs display at the top of your dashboard table grid
+    transactions.sort((a: any, b: any) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
     return NextResponse.json({ success: true, data: transactions });
@@ -84,9 +104,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ─── KEEP YOUR EXISTING POST METHOD DOWN HERE UNCHANGED ───
+// ─── POST: SAVE PAYMENT (HANDLES CREATION & NESTED INSTALLMENT APPENDS) ───
 export async function POST(req: NextRequest) {
-  // ... your existing code handles creation & nested increments perfectly!
   try {
     const data = await req.json();
     const currentPaid = Number(data.paidAmount) || 0;

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CreditCard, Printer, FileText, Save, Loader2, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { generateReceiptHtml } from "./receiptTemplate";
 
 interface PaymentModalProps {
   programs?: unknown[]; 
@@ -24,7 +25,7 @@ interface FormState {
 }
 
 const DURATION_OPTIONS = ["1 Week", "2 Weeks", "1 Month", "3 Months"] as const;
-const DOMAIN_OPTIONS = ["Web development", "Java Full Stack", "Python full stack", "Data analytics", "Data science", "AI & ML", "Digital Marketing", "HR","Embedded"] as const;
+const DOMAIN_OPTIONS = ["Web development", "Java Full Stack", "Python full stack", "Data analytics", "Data science", "AI & ML", "Digital Marketing", "HR", "Embedded"] as const;
 const BILLING_STAFF = ["Preethi", "Senthil Sir", "Amal", "Naresh", "Boomika", "Anbu", "Aravindh", "Dhanalakshmi", "Esther"] as const;
 
 const SectionHeader = ({ label }: { label: string }) => (
@@ -95,7 +96,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
   const numPaid = Number(form.paid) || 0;
   const rawBalance = Math.max(0, numTotal - (numAlreadyPaid + numPaid));
 
-  // Determine if student has cleared all dues beforehand
   const isPaidInFull = numTotal > 0 && numAlreadyPaid >= numTotal;
 
   useEffect(() => {
@@ -184,133 +184,23 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  const getReceiptHtmlContent = () => {
-    const parsedPreviousBalanceRow = numAlreadyPaid > 0 ? `
-      <div class="ledger-row" style="color: #64748b;">
-        <span>Previously Paid Balance</span>
-        <span style="font-weight: 600;">₹${numAlreadyPaid.toLocaleString("en-IN")}</span>
-      </div>` : "";
-
-    const parsedMethodInfo = `${form.method} ${form.method === "GPay" && form.txn ? `(${form.txn})` : ""}`;
-
-    return `
-      <html>
-      <head>
-        <title>Receipt_${receiptNo}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          @page { size: A5 landscape; margin: 4mm 6mm; }
-          * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-          body { margin: 0; padding: 5px; color: #1e293b; background: #fff; width: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          
-          #print-root-element-box {
-            border: 1.5px solid #cbd5e1 !important;
-            border-radius: 12px !important;
-            padding: 14px !important;
-            width: 100% !important;
-            background: #fff !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            min-height: 132mm;
-          }
-          .header-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
-          .office-details { font-size: 8px; color: #475569; line-height: 1.4; font-weight: 500; }
-          .receipt-title { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; }
-          .receipt-id { font-size: 10px; font-weight: bold; font-family: monospace; color: #64748b; margin-top: 2px; }
-          .main-split { display: grid; grid-template-cols: 1.1fr 0.9fr; gap: 16px; margin-top: 10px; align-items: start; }
-          .details-list { display: flex; flex-direction: column; gap: 6px; }
-          .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; }
-          .field-group { border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; }
-          .field-label { font-size: 8px; text-transform: uppercase; color: #a1a1aa; font-weight: 700; tracking-wider; }
-          .field-value { font-size: 11px; font-weight: 600; color: #1e293b; margin-top: 1px; }
-          .ledger-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-          .ledger-row { display: flex; justify-content: space-between; text-xs text-zinc-600 border-b border-dashed border-zinc-200 pb-1; font-size: 11px; color: #475569; }
-          .ledger-row-last { display: flex; justify-content: space-between; items-center pt-1 font-bold text-zinc-900; font-size: 12px; border-top: 1.5px solid #1e293b; padding-top: 4px; }
-          .paid-accent { font-size: 16px; color: #059669; font-weight: 800; }
-          .footer-row { display: flex; justify-content: space-between; font-size: 8.5px; color: #94a3b8; border-top: 1px solid #f4f4f5; padding-top: 6px; items-center; margin-top: auto; }
-          .sig-line { border-top: 1px solid #475569; width: 125px; padding-top: 2px; font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; text-align: center; margin-top: 35px; }
-          .disclaimer-box { border: 1px solid #fee2e2; background: #fff5f5; border-radius: 6px; padding: 5px; text-align: center; font-size: 7.5px; color: #991b1b; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
-        </style>
-      </head>
-      <body>
-        <div id="print-root-element-box">
-          <div class="header-row">
-            <div>
-              <img src="/Inetz-logo-removebg1.png" alt="iNetz Technologies" style="height: 32px; width: auto; display: block; margin-bottom: 2px;" />
-              <div class="office-details">
-                3rd Floor, K.P Towers, No-159, Arcot Rd, Opp. Nexus Vijaya Mall, Vadapalani, Chennai - 600026<br/>
-                <strong>Mob:</strong> 9884441984 | <strong>Email:</strong> info@inetztech.com
-              </div>
-            </div>
-            <div style="text-align: right;">
-              <div class="receipt-title">Official Fee Receipt</div>
-              <div class="receipt-id">ID: ${receiptNo}</div>
-            </div>
-          </div>
-
-          <div class="main-split">
-            <div class="details-list">
-              <div class="field-group">
-                <div class="field-label">Student Participant</div>
-                <div class="field-value">${form.name || "N/A"} (${form.phone || "N/A"})</div>
-              </div>
-              <div class="field-group">
-                <div class="field-label">Affiliated Institution</div>
-                <div class="field-value">${form.college || "N/A"}</div>
-              </div>
-              <div class="field-group">
-                <div class="field-label">Domain Specialized</div>
-                <div class="field-value">${form.domain || "N/A"} (${form.courseName || "N/A"})</div>
-              </div>
-            </div>
-
-            <div class="ledger-box">
-              <div class="ledger-row">
-                <span>Total Course Fee</span>
-                <span style="font-weight: 600; color: #1e293b;">₹${numTotal.toLocaleString("en-IN")}</span>
-              </div>
-              ${parsedPreviousBalanceRow}
-              <div class="ledger-row">
-                <span>Payment Processing Mode</span>
-                <span style="font-weight: 600; color: #1e293b;">${parsedMethodInfo}</span>
-              </div>
-              <div class="ledger-row-last">
-                <span>Current Amount Paid Now</span>
-                <span class="paid-accent">₹${numPaid.toLocaleString("en-IN")}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="print-footer-container" style="display: flex; flex-direction: column; margin-top: auto;">
-            <div class="footer-row">
-              <div style="line-height: 1.4;">
-                <strong>Timestamp:</strong> ${displayDate} @ ${displayTime}<br/>
-                <strong>Gate Auth:</strong> ${form.billing || "SYSTEM"}
-              </div>
-              <div>
-                <div class="sig-line">Authorized Signatory</div>
-              </div>
-            </div>
-            
-            <div class="disclaimer-box">
-              Important Note: Payment once processed is strictly non-refundable and non-transferable under any circumstances.
-            </div>
-          </div>
-        </div>
-
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            }, 300);
-          };
-        </script>
-      </body>
-      </html>
-    `;
-  };
+  // Shared runner logic map builder function
+  const getCompiledDataPayload = () => ({
+    receiptNo,
+    displayDate,
+    displayTime,
+    name: form.name.trim(),
+    phone: form.phone.trim(),
+    college: form.college.trim(),
+    domain: form.domain,
+    courseName: form.courseName || "1 Month",
+    numTotal,
+    numAlreadyPaid,
+    numPaid,
+    method: form.method,
+    txn: form.txn.trim(),
+    billing: form.billing,
+  });
 
   const handlePrintReceipt = () => {
     if (!form.name.trim() || !form.courseName || !form.domain) {
@@ -320,7 +210,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     const pWin = window.open("", "_blank");
     if (!pWin) return alert("Pop-up window blocked. Please authorize popups for this portal.");
 
-    pWin.document.write(getReceiptHtmlContent());
+    pWin.document.write(generateReceiptHtml(getCompiledDataPayload()));
     pWin.document.close();
   };
 
@@ -329,7 +219,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
       return alert("Verify Student Name, course duration, and domain specialization selection.");
     }
 
-    const htmlString = getReceiptHtmlContent();
+    const htmlString = generateReceiptHtml(getCompiledDataPayload());
     const blob = new Blob([htmlString], { type: "text/html" });
     const fileUrl = URL.createObjectURL(blob);
     
@@ -383,7 +273,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
                     </span>
                   )}
                   {!isCheckingPhone && phoneExists === false && (
-                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md border border-amber-100">
+                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
                       <CheckCircle2 size={12} /> New Profile
                     </span>
                   )}
@@ -427,7 +317,6 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
               <AdminInput placeholder="Total Cost" type="number" value={form.total} onChangeText={(v) => setForm(f => ({ ...f, total: v }))} />
               <AdminInput placeholder="Already Paid Amount" type="number" value={form.alreadyPaid} onChangeText={(v) => setForm(f => ({ ...f, alreadyPaid: v }))} />
               
-              {/* Dynamic Disabled Locking rule setup */}
               <AdminInput 
                 placeholder="Amount Paid Now" 
                 type="number" 
