@@ -38,7 +38,8 @@ export function Navbar() {
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Status flags
+  // Absolute status flags
+  const isLoading = status === "loading";
   const isLoggedIn = status === "authenticated";
   const user = session?.user as any; 
 
@@ -59,12 +60,14 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-[100] w-full border-b border-zinc-100/50 bg-white/70 backdrop-blur-xl dark:border-zinc-800/50 dark:bg-zinc-900/70">
       <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
-        <Link href="/" className="flex items-center gap-3">
+        
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-3 shrink-0">
           <InetzLogo />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-2 lg:flex p-1 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-full border border-zinc-100/50 dark:border-zinc-800/50">
+        {/* Desktop Navigation Links */}
+        <nav className="hidden lg:flex items-center gap-2 p-1 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-full border border-zinc-100/50 dark:border-zinc-800/50">
           {navItems.map((item) => {
             const isActive = item.href === activeHref;
             return (
@@ -92,10 +95,12 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Action Controls */}
+        {/* Action Controls (Desktop + Mobile Toggle Wrapper) */}
         <div className="flex items-center gap-3">
+          
+          {/* Always visible on Tablet/Desktop, Hidden on mobile */}
           <div className="hidden sm:flex items-center gap-3">
-            {status === "loading" ? (
+            {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
             ) : !isLoggedIn ? (
               <>
@@ -104,7 +109,7 @@ export function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                {/* Admin Access Point - High contrast emerald color */}
+                {/* Admin Access Point */}
                 {user?.role === "admin" && (
                   <Button
                     href="/admin"
@@ -123,13 +128,14 @@ export function Navbar() {
                     title="Dashboard"
                   >
                     {user?.image ? (
-                      <Image src={user.image} alt="User" fill className="object-cover" />
+                      <Image src={user.image} alt="User Profile" fill className="object-cover" />
                     ) : (
                       <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
                         <User className="w-5 h-5 text-zinc-500" />
                       </div>
                     )}
                   </button>
+                  
                   <Button
                     onClick={handleLogout}
                     variant="outline"
@@ -143,10 +149,11 @@ export function Navbar() {
             )}
           </div>
 
+          {/* Mobile Hamburger Trigger - Hidden on large desktop layouts */}
           <Button
             variant="ghost"
             size="sm"
-            className="lg:hidden p-2 rounded-full h-10 w-10"
+            className="lg:hidden p-2 rounded-full h-10 w-10 flex items-center justify-center"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -154,7 +161,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Dropdown Menu Container */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -193,13 +200,15 @@ export function Navbar() {
               )}
 
               <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                {!isLoggedIn ? (
+                {isLoading ? (
+                  <div className="h-12 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                ) : !isLoggedIn ? (
                   <div className="grid grid-cols-2 gap-3">
                     <Button href="/login" variant="outline" size="lg" className="rounded-2xl">Login</Button>
                     <Button href="/register" variant="primary" size="lg" className="rounded-2xl">Register</Button>
                   </div>
                 ) : (
-                  <Button onClick={handleLogout} variant="primary" size="lg" className="rounded-2xl bg-red-600 hover:bg-red-700 border-none text-white">
+                  <Button onClick={handleLogout} variant="primary" size="lg" className="w-full rounded-2xl bg-red-600 hover:bg-red-700 border-none text-white flex justify-center items-center">
                     <LogOut className="w-5 h-5 mr-2" /> Logout
                   </Button>
                 )}

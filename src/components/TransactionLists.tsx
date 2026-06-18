@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Loader2, ArrowLeftRight, Calendar, User, CreditCard,
-  Building, Eye, X, Printer, FileText,
+  Building, Eye, X, Printer, FileText, ChevronLeft, ChevronRight, Search
 } from "lucide-react";
 import { generateReceiptHtml } from "./receiptTemplate";
 
@@ -45,22 +45,34 @@ const TABLE_HEADERS = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function normalizeTransaction(item: Record<string, unknown>): Transaction {
-  const num = (v: unknown) => Number(v) || 0;
+function normalizeTransaction(item: any): Transaction {
+  const num = (v: any) => Number(v) || 0;
+  
+  // Extracting keys safely using standard logical short-circuits
+  const totalCoursePayment = num(item.totalCoursePayment || item.paidAmount || 0);
+  const alreadyPaid = num(item.alreadyPaidAmount || item.alreadyPaid || 0);
+
+  let rawMethod = item.paymentMethod || item.method || "Cash";
+  if (rawMethod === 0 || rawMethod === "0" || typeof rawMethod !== "string") {
+    rawMethod = "Cash";
+  }
+  
+  const paymentMethod: PaymentMethod = (rawMethod === "GPay" || rawMethod === "G-Pay") ? "GPay" : "Cash";
+
   return {
-    receiptNo:          String(item.receiptNo          ?? "MIG-DATA"),
-    date:               String(item.date               ?? "N/A"),
-    name:               String(item.name               ?? "N/A"),
-    phone:              String(item.phone              ?? "N/A"),
-    college:            String(item.college            ?? "N/A"),
-    domain:             String(item.domain             ?? "Web development"),
+    receiptNo:          String(item.receiptNo          || "MIG-DATA"),
+    date:               String(item.date               || "N/A"),
+    name:               String(item.name               || "N/A"),
+    phone:              String(item.phone              || "N/A"),
+    college:            String(item.college            || "N/A"),
+    domain:             String(item.domain             || "Web development"),
     paidAmount:         num(item.paidAmount),
-    paymentMethod:      (item.paymentMethod as PaymentMethod) ?? "Cash",
-    transactionId:      String(item.transactionId      ?? "N/A"),
-    billingBy:          String(item.billingBy          ?? "SYSTEM"),
-    totalCoursePayment: num(item.totalCoursePayment) || num(item.paidAmount),
-    alreadyPaid:        num(item.alreadyPaidAmount ?? item.alreadyPaid),
-    courseName:         String(item.courseName         ?? "1 Month"),
+    paymentMethod,
+    transactionId:      String(item.transactionId      || "N/A"),
+    billingBy:          String(item.billingBy          || "SYSTEM"),
+    totalCoursePayment,
+    alreadyPaid,
+    courseName:         String(item.courseName         || "1 Month"),
   };
 }
 
@@ -130,7 +142,7 @@ function AuditModal({ tx, onClose, onPrint, onDownload }: ModalProps) {
 
         <dl className="space-y-2.5 text-xs text-zinc-600">
           {fields.map(([label, value]) => (
-            <div key={label as string}>
+            <div key={label}>
               <strong>{label}:</strong> {value}
             </div>
           ))}
@@ -161,27 +173,54 @@ export default function TransactionsList() {
   const [error, setError]               = useState<string | null>(null);
   const [selectedTx, setSelectedTx]     = useState<Transaction | null>(null);
 
-  useEffect(() => {
-    async function fetchTransactions() {
-      try {
-        const response = await fetch("/api/payments");
-        const result   = await response.json();
+  // Server-Side Search and Pagination Controls
+  const [search, setSearch]                   = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage]         = useState(1);
+  const [totalPages, setTotalPages]           = useState(1);
+  const [totalLogs, setTotalLogs]             = useState(0);
 
-        if (result.success) {
-          const normalized = (result.data ?? []).map(normalizeTransaction);
-          console.log("Normalized Ledger Feed:", normalized);
-          setTransactions(normalized);
-        } else {
-          setError(result.error ?? "Failed to download transaction data.");
-        }
-      } catch {
-        setError("Network exception error occurred while pulling live data grids.");
-      } finally {
-        setIsLoading(false);
+  // Debounce search input text entry
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset page marker safely if search parameters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
+  const fetchTransactions = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // 🎯 Passes filters and page offsets straight to your updated API route
+      const response = await fetch(
+        `/api/payments?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}&limit=20`
+      );
+      const result = await response.json();
+
+      if (result.success) {
+        const rawData = result.data || [];
+        const normalized = rawData.map((item: any) => normalizeTransaction(item));
+        
+        setTransactions(normalized);
+        setTotalLogs(result.pagination?.total ?? normalized.length);
+        setTotalPages(result.pagination?.totalPages ?? 1);
+        setError(null);
+      } else {
+        setError(result.error ?? "Failed to download transaction data.");
       }
+    } catch (err) {
+      setError("Network exception error occurred while pulling live data grids.");
+    } finally {
+      setIsLoading(false);
     }
+  }, [debouncedSearch, currentPage]);
+
+  useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [fetchTransactions]);
 
   function buildReceiptHtml(tx: Transaction) {
     return generateReceiptHtml({
@@ -221,13 +260,10 @@ export default function TransactionsList() {
     URL.revokeObjectURL(url);
   }
 
-  if (isLoading) return <LoadingState />;
-  if (error)     return <ErrorState message={error} />;
-
   return (
-    <div className="bg-white w-full rounded-3xl border border-zinc-100 shadow-sm overflow-hidden">
+    <div className="bg-white w-full rounded-3xl border border-zinc-100 shadow-sm overflow-hidden space-y-4">
 
-      {/* Header */}
+      {/* Header and Live Search Input Bar */}
       <div className="px-8 py-6 border-b border-zinc-100 bg-zinc-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="p-2.5 bg-zinc-900 text-white rounded-xl">
@@ -240,87 +276,130 @@ export default function TransactionsList() {
             </p>
           </div>
         </div>
-        <div className="text-xs font-mono px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg font-semibold">
-          Total Logs: {transactions.length}
+
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={16} />
+            <input
+              type="text"
+              placeholder="Search receipt, name, phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 text-xs font-medium rounded-xl text-zinc-800 outline-none focus:border-zinc-400 focus:bg-white transition-all"
+            />
+          </div>
+          <div className="text-xs font-mono px-3 py-2 bg-zinc-100 text-zinc-600 rounded-lg font-semibold whitespace-nowrap">
+            Total Logs: {totalLogs}
+          </div>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Render Data Streams Viewport */}
       <div className="w-full overflow-x-auto">
-        {transactions.length === 0 ? (
+        {isLoading ? (
+          <LoadingState />
+        ) : error ? (
+          <ErrorState message={error} />
+        ) : transactions.length === 0 ? (
           <EmptyState />
         ) : (
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-400 select-none">
-                {TABLE_HEADERS.map((h) => (
-                  <th key={h} className={`py-4 px-6${h === "Actions" ? " text-right" : ""}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 text-sm text-zinc-700">
-              {transactions.map((tx, idx) => (
-                <tr key={tx.receiptNo || idx} className="hover:bg-zinc-50/70 transition-colors duration-150">
-
-                  <td className="py-4 px-6 space-y-1">
-                    <div className="font-mono text-xs font-bold text-zinc-800 tracking-tight">{tx.receiptNo}</div>
-                    <div className="text-zinc-400 text-xs flex items-center gap-1">
-                      <Calendar size={12} /> {tx.date}
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-6 space-y-1">
-                    <div className="font-semibold text-zinc-900 flex items-center gap-1.5">
-                      <User size={13} className="text-zinc-400" /> {tx.name}
-                    </div>
-                    <div className="text-zinc-400 text-xs font-mono">{tx.phone}</div>
-                    <div className="text-zinc-500 text-xs flex items-center gap-1 truncate max-w-[200px]">
-                      <Building size={12} className="text-zinc-300" /> {tx.college}
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-6">
-                    <span className="px-2.5 py-1 bg-zinc-100 text-zinc-800 text-xs font-semibold rounded-lg border border-zinc-200/50">
-                      {tx.domain}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-6 space-y-1">
-                    <div className="font-bold text-emerald-600 text-base">{inr(tx.paidAmount)}</div>
-                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${METHOD_STYLES[tx.paymentMethod]}`}>
-                      {tx.paymentMethod}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-6 text-zinc-500 text-xs font-medium">
-                    <div className="flex items-center gap-1 text-zinc-700 font-semibold">
-                      <CreditCard size={12} className="text-zinc-400" /> {tx.billingBy}
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-6 text-right">
-                    <button
-                      onClick={() => setSelectedTx(tx)}
-                      className="p-2 text-zinc-400 hover:text-zinc-900 border border-zinc-100 bg-white shadow-sm hover:border-zinc-300 rounded-xl transition-all inline-flex items-center gap-1.5 text-xs font-semibold"
-                    >
-                      <Eye size={14} /> Show
-                    </button>
-                  </td>
-
+          <div className="space-y-4">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-400 select-none">
+                  {TABLE_HEADERS.map((h) => (
+                    <th key={h} className={`py-4 px-6${h === "Actions" ? " text-right" : ""}`}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 text-sm text-zinc-700">
+                {transactions.map((tx, idx) => (
+                  // 🎯 OPTIMIZED COMPOSITE DOM KEY: Combines ID string with current loop position index to ensure stable UI mapping profiles
+                  <tr key={`${tx.receiptNo}_${idx}`} className="hover:bg-zinc-50/70 transition-colors duration-150">
+
+                    <td className="py-4 px-6 space-y-1">
+                      <div className="font-mono text-xs font-bold text-zinc-800 tracking-tight">{tx.receiptNo}</div>
+                      <div className="text-zinc-400 text-xs flex items-center gap-1">
+                        <Calendar size={12} /> {tx.date}
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-6 space-y-1">
+                      <div className="font-semibold text-zinc-900 flex items-center gap-1.5">
+                        <User size={13} className="text-zinc-400" /> {tx.name}
+                      </div>
+                      <div className="text-zinc-400 text-xs font-mono">{tx.phone}</div>
+                      <div className="text-zinc-500 text-xs flex items-center gap-1 truncate max-w-[200px]">
+                        <Building size={12} className="text-zinc-300" /> {tx.college}
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-6">
+                      <span className="px-2.5 py-1 bg-zinc-100 text-zinc-800 text-xs font-semibold rounded-lg border border-zinc-200/50">
+                        {tx.domain}
+                      </span>
+                    </td>
+
+                    <td className="py-4 px-6 space-y-1">
+                      <div className="font-bold text-emerald-600 text-base">{inr(tx.paidAmount)}</div>
+                      <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${METHOD_STYLES[tx.paymentMethod] || METHOD_STYLES["Cash"]}`}>
+                        {tx.paymentMethod}
+                      </span>
+                    </td>
+
+                    <td className="py-4 px-6 text-zinc-500 text-xs font-medium">
+                      <div className="flex items-center gap-1 text-zinc-700 font-semibold">
+                        <CreditCard size={12} className="text-zinc-400" /> {tx.billingBy}
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-6 text-right">
+                      <button
+                        onClick={() => setSelectedTx(tx)}
+                        className="p-2 text-zinc-400 hover:text-zinc-900 border border-zinc-100 bg-white shadow-sm hover:border-zinc-300 rounded-xl transition-all inline-flex items-center gap-1.5 text-xs font-semibold"
+                      >
+                        <Eye size={14} /> Show
+                      </button>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Server-Side Pagination Footer Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between bg-zinc-50/50 px-8 py-4 border-t border-zinc-100 text-xs font-bold text-zinc-500">
+                <span>Showing Page {currentPage} of {totalPages}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-zinc-200 bg-white rounded-xl hover:bg-zinc-50 disabled:opacity-40 disabled:hover:bg-white transition-all shadow-sm"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-zinc-200 bg-white rounded-xl hover:bg-zinc-50 disabled:opacity-40 disabled:hover:bg-white transition-all shadow-sm"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal View */}
       {selectedTx && (
         <AuditModal
           tx={selectedTx}
-          onClose={()       => setSelectedTx(null)}
-          onPrint={()       => handlePrint(selectedTx)}
-          onDownload={()    => handleDownload(selectedTx)}
+          onClose={()      => setSelectedTx(null)}
+          onPrint={()      => handlePrint(selectedTx)}
+          onDownload={()   => handleDownload(selectedTx)}
         />
       )}
 

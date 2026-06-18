@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Plus, Loader2, FileSpreadsheet } from "lucide-react";
-import TransactionsList from "@/components/TransactionLists";
+import TransactionsList from "./TransactionLists";
 
 interface CollectionsTabProps {
   exporting: boolean;

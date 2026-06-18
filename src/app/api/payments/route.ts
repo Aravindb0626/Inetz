@@ -8,15 +8,8 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const phone = searchParams.get("phone")?.trim();
-    
-    // ─── OPTIMIZATION ENGINE: PAGING & FILTER CONSTANTS ───
-    const search = searchParams.get("search")?.trim() || "";
-    const domainFilter = searchParams.get("domain") || "All";
-    const page = Math.max(1, Number(searchParams.get("page")) || 1);
-    const limit = Math.max(1, Number(searchParams.get("limit")) || 20); // Sends only 20 rows per batch
-    const skip = (page - 1) * limit;
 
-    // ─── BRANCH A: SINGLE STUDENT LOOKUP BY PHONE ───
+    // ─── BRANCH A: SINGLE STUDENT LOOKUP BY PHONE (FOR MODAL AUTOFILL) ───
     if (phone) {
       const student = await Student.findOne({ phone });
       if (!student) return NextResponse.json({ exists: false });
@@ -31,99 +24,131 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ─── BRANCH B: SCALABLE HIGH-SPEED LOOKUP LOGIC ───
-    // 1. Build Query Match Filters dynamically on the database level
-    const matchStage: any = {};
+    // ─── BRANCH B: TRANSACTIONS LEDGER FETCH (HANDLES BOTH UI & FULL EXCEL EXPORT) ───
+    const search = searchParams.get("search")?.trim() || "";
+    const isDownload = searchParams.get("download") === "true"; // 🎯 CHECK FOR DOWNLOAD FLAG
     
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const limit = Math.max(1, Number(searchParams.get("limit")) || 20);
+    const skip = (page - 1) * limit;
+
+    // 1. Build dynamic matching filters
+    const matchStage: any = {};
     if (search) {
       matchStage.$or = [
         { name: { $regex: search, $options: "i" } },
         { phone: { $regex: search, $options: "i" } },
-        { college: { $regex: search, $options: "i" } }
+        { college: { $regex: search, $options: "i" } },
+        { "installments.receiptNo": { $regex: search, $options: "i" } }
       ];
     }
-    
-    if (domainFilter !== "All") {
-      matchStage.domain = domainFilter;
+
+    // 2. Build the Core Pipeline Aggregation Array
+    const pipeline: any[] = [
+      { $match: matchStage },
+      { $unwind: { path: "$installments", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          receiptNo: { $ifNull: ["$installments.receiptNo", "REGISTRATION-PENDING"] },
+          date: { $ifNull: ["$installments.date", "$doj"] },
+          name: 1,
+          phone: 1,
+          college: { $ifNull: ["$college", "N/A"] },
+          domain: { $ifNull: ["$domain", "Web development"] },
+          courseName: { $ifNull: ["$duration", "1 Month"] },
+          paidAmount: { $ifNull: ["$installments.paidAmount", 0] },
+          paymentMethod: { $ifNull: ["$installments.paymentMethod", "Cash"] },
+          transactionId: { $ifNull: ["$installments.transactionId", "N/A"] },
+          billingBy: { $ifNull: ["$installments.billingBy", "System Registration"] },
+          totalCoursePayment: { $ifNull: ["$totalBilling", 0] }
+        }
+      },
+      { $sort: { date: -1, receiptNo: -1 } }
+    ];
+
+    let finalTransactions = [];
+    let totalLogs = 0;
+
+    if (isDownload) {
+      // 🎯 OPTIMIZATION FOR EXCEL: Run straight pipeline to get ALL data without pagination
+      finalTransactions = await Student.aggregate(pipeline);
+      totalLogs = finalTransactions.length;
+    } else {
+      // 🎯 OPTIMIZATION FOR DASHBOARD UI: Use $facet to calculate totals and limit current window view to 20
+      pipeline.push({
+        $facet: {
+          metadata: [{ $count: "totalLogs" }],
+          dataRows: [{ $skip: skip }, { $limit: limit }]
+        }
+      });
+      const aggregationResult = await Student.aggregate(pipeline);
+      const facet = aggregationResult[0];
+      totalLogs = facet.metadata[0]?.totalLogs || 0;
+      finalTransactions = facet.dataRows || [];
     }
 
-    // 2. High-Speed Database Facet Query Aggregation Loop Pipeline
-    // This calculates metadata stats and pages profiles simultaneously in 1 query pass!
-    const aggregationResult = await Student.aggregate([
-      { $match: matchStage },
-      {
-        $facet: {
-          metadata: [
-            {
-              $group: {
-                _id: null,
-                totalStudents: { $sum: 1 },
-                accountsWithDues: {
-                  $sum: { $cond: [ { $gt: [ { $subtract: ["$totalBilling", "$totalCollection"] }, 0 ] }, 1, 0 ] }
-                },
-                clearedAccounts: {
-                  $sum: { $cond: [ { $lte: [ { $subtract: ["$totalBilling", "$totalCollection"] }, 0 ] }, 1, 0 ] }
-                }
-              }
-            }
-          ],
-          uniqueDomains: [
-            { $group: { _id: "$domain" } },
-            { $match: { _id: { $ne: null } } }
-          ],
-          dataRows: [
-            { $sort: { updatedAt: -1 } },
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $project: {
-                name: 1,
-                phone: 1,
-                college: 1,
-                domain: 1,
-                duration: 1,
-                totalBilling: 1,
-                balanceAmount: { $subtract: ["$totalBilling", "$totalCollection"] },
-                installments: 1
-              }
-            }
-          ]
+    // 3. Post-Process Rows to compute dynamic historical previous paid sums
+    const activeStudents = await Student.find({
+      phone: { $in: finalTransactions.map((t: any) => t.phone) }
+    }).lean();
+
+    const formattedTransactions = finalTransactions.map((tx: any) => {
+      const match = activeStudents.find((s: any) => s.phone === tx.phone);
+      let calculatedAlreadyPaid = 0;
+
+      if (match && match.installments && tx.receiptNo !== "REGISTRATION-PENDING") {
+        const sortedHistory = [...match.installments].sort(
+          (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        let runningSum = 0;
+        for (const inst of sortedHistory) {
+          if (inst.receiptNo === tx.receiptNo) {
+            calculatedAlreadyPaid = runningSum;
+            break;
+          }
+          runningSum += Number(inst.paidAmount) || 0;
         }
       }
-    ]);
 
-    const facet = aggregationResult[0];
-    const meta = facet.metadata[0] || { totalStudents: 0, accountsWithDues: 0, clearedAccounts: 0 };
-    const cleanDomains = facet.uniqueDomains.map((d: any) => d._id);
+      return {
+        receiptNo: tx.receiptNo,
+        date: tx.date,
+        name: tx.name,
+        phone: tx.phone,
+        college: tx.college,
+        domain: tx.domain,
+        courseName: tx.courseName,
+        paidAmount: tx.paidAmount,
+        paymentMethod: tx.paymentMethod,
+        transactionId: tx.transactionId,
+        billingBy: tx.billingBy,
+        totalCoursePayment: tx.totalCoursePayment,
+        alreadyPaidAmount: calculatedAlreadyPaid,
+        balanceAmount: Math.max(0, tx.totalCoursePayment - (calculatedAlreadyPaid + tx.paidAmount))
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      students: facet.dataRows,
-      availableDomains: ["All", ...cleanDomains],
-      pagination: {
-        total: meta.totalStudents,
-        duesCount: meta.accountsWithDues,
-        clearCount: meta.clearedAccounts,
+      data: formattedTransactions,
+      pagination: isDownload ? null : {
+        total: totalLogs,
         currentPage: page,
-        totalPages: Math.ceil(meta.totalStudents / limit)
+        totalPages: Math.ceil(totalLogs / limit)
       }
     });
 
   } catch (error: any) {
+    console.error("Audit ledger generation failure: ", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-
-
 // ─── POST: SAVE PAYMENT (HANDLES CREATION & NESTED INSTALLMENT APPENDS) ───
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
     const data = await req.json();
-    
     const currentPaid = Number(data.paidAmount) || 0;
-    const phone = data.phone.trim();
-
     const newInstallment = {
       receiptNo: data.receiptNo,
       date: data.displayDate,
@@ -133,47 +158,29 @@ export async function POST(req: NextRequest) {
       billingBy: data.billingBy
     };
 
-    // 🎯 FIX: Atomic Upsert Operation
-    // If student exists, it pushes the installment and increments balances safely.
-    // If student doesn't exist, 'upsert: true' creates the document from scratch.
-    const updatedStudent = await Student.findOneAndUpdate(
-      { phone: phone },
-      {
-        // 1. Atomically push into the array without loading it into memory
-        $push: { installments: newInstallment },
-        
-        // 2. Atomically increment total collections and reduce pending values
-        $inc: { 
-          totalCollection: currentPaid,
-          pendingAmount: -currentPaid 
-        },
-        
-        // 3. Set standard static field parameters securely if it's a new document
-        $setOnInsert: {
-          doj: data.displayDate,
-          name: data.name.trim(),
-          college: data.college.trim(),
-          domain: data.domain,
-          duration: data.courseName,
-          totalBilling: Number(data.totalCoursePayment) || 0,
-        }
-      },
-      { 
-        new: true, 
-        upsert: true, // Auto-creates profile if phone number isn't registered yet
-        runValidators: true 
-      }
-    );
+    let student = await Student.findOne({ phone: data.phone.trim() });
 
-    // Dynamic double check fallback to fix pendingAmount edge cases on brand new students
-    if (updatedStudent && updatedStudent.installments.length === 1) {
-      updatedStudent.pendingAmount = updatedStudent.totalBilling - currentPaid;
-      await updatedStudent.save();
+    if (student) {
+      student.installments.push(newInstallment);
+      await student.save(); 
+    } else {
+      const count = await Student.countDocuments();
+      student = new Student({
+        sNo: count + 1,
+        doj: data.displayDate,
+        name: data.name.trim(),
+        phone: data.phone.trim(),
+        college: data.college.trim(),
+        domain: data.domain,
+        duration: data.courseName, 
+        totalBilling: Number(data.totalCoursePayment) || 0,
+        installments: [newInstallment],
+        pendingAmount: (Number(data.totalCoursePayment) || 0) - currentPaid
+      });
+      await student.save();
     }
-
     return NextResponse.json({ success: true, receiptNo: data.receiptNo });
   } catch (error: any) {
-    console.error("Critical Concurrent Write Exception: ", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

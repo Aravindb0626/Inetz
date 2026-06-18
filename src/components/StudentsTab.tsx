@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Loader2, RefreshCw, Search, CheckCircle, AlertTriangle, Users, Filter, Eye, X, Calendar, CreditCard, Award, Phone, Building, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, RefreshCw, Search, CheckCircle, AlertTriangle, Users, Filter, Eye, X, Calendar, CreditCard, Award, Phone, Building, ChevronLeft, ChevronRight, Pencil, Trash2, Save } from "lucide-react";
 
 export default function StudentsTab() {
   const [students, setStudents] = useState<any[]>([]);
@@ -16,6 +16,11 @@ export default function StudentsTab() {
   const [paginationInfo, setPaginationInfo] = useState({ total: 0, duesCount: 0, clearCount: 0, totalPages: 1 });
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
 
+  // States to facilitate drawer edits
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(studentSearch), 350);
     return () => clearTimeout(timer);
@@ -24,7 +29,7 @@ export default function StudentsTab() {
   const fetchStudents = useCallback(async () => {
     setStudentsLoading(true);
     try {
-      const queryUrl = `/api/payments?search=${encodeURIComponent(debouncedSearch)}&domain=${encodeURIComponent(selectedDomain)}&page=${currentPage}&limit=20`;
+      const queryUrl = `/api/students?search=${encodeURIComponent(debouncedSearch)}&domain=${encodeURIComponent(selectedDomain)}&page=${currentPage}&limit=20`;
       const res = await fetch(queryUrl);
       const result = await res.json();
       
@@ -39,7 +44,7 @@ export default function StudentsTab() {
         });
       }
     } catch (err) {
-      console.error("Failed fetching paginated logs: ", err);
+      console.error("Failed fetching paginated profiles: ", err);
     } finally {
       setStudentsLoading(false);
     }
@@ -49,10 +54,65 @@ export default function StudentsTab() {
     fetchStudents();
   }, [fetchStudents]);
 
-  // Reset page marker safely if core structural query modifications occur
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch, selectedDomain]);
+
+  // Open candidate details card and load edit variables clone frame safely
+  const handleOpenProfile = (student: any) => {
+    setSelectedStudent(student);
+    setEditForm({ ...student });
+    setIsEditing(false);
+  };
+
+  // Triggers asynchronous write updates to backend schema parameters mapping
+  const handleUpdateStudent = async () => {
+    if (!editForm.name || !editForm.phone) return alert("Name and phone keys are mandatory properties!");
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/students", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editForm._id,
+          name: editForm.name,
+          phone: editForm.phone,
+          college: editForm.college,
+          domain: editForm.domain,
+          duration: editForm.duration,
+          totalBilling: Number(editForm.totalBilling) || 0
+        })
+      });
+      const res = await response.json();
+      if (res.success) {
+        alert("Student record updated securely!");
+        setSelectedStudent(null);
+        fetchStudents();
+      } else {
+        alert(res.error || "Failed updating record parameters.");
+      }
+    } catch {
+      alert("Network runtime error updating profile properties.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Triggers destructive DELETE sequence safely with layout prompt confirmations
+  const handleDeleteStudent = async (id: string, name: string) => {
+    if (!confirm(`Are you absolutely sure you want to drop ${name}'s entire profile grid from database logs? This action is permanent.`)) return;
+    try {
+      const res = await fetch(`/api/students?id=${id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (result.success) {
+        fetchStudents();
+      } else {
+        alert(result.error || "Failed to clear student object.");
+      }
+    } catch {
+      alert("Network write error during drop routine execution operations.");
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -152,7 +212,7 @@ export default function StudentsTab() {
                   {students.map((student, sIdx) => {
                     const hasDues = student.balanceAmount > 0;
                     return (
-                      <tr key={student.phone || sIdx} className="hover:bg-zinc-50/50 transition-colors duration-150">
+                      <tr key={`${student.phone}_${sIdx}`} className="hover:bg-zinc-50/50 transition-colors duration-150">
                         <td className="py-4 px-6 space-y-1">
                           <div className="font-bold text-zinc-900 text-sm">{student.name}</div>
                           <div className="text-zinc-400 font-mono">{student.phone}</div>
@@ -177,9 +237,14 @@ export default function StudentsTab() {
                           </div>
                         </td>
                         <td className="py-4 px-6 text-right">
-                          <button onClick={() => setSelectedStudent(student)} className="p-2 text-zinc-400 hover:text-zinc-900 border border-zinc-100 bg-white shadow-sm hover:border-zinc-300 rounded-xl transition-all inline-flex items-center gap-1.5 text-xs font-semibold">
-                            <Eye size={14} /> Profile History
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button onClick={() => handleOpenProfile(student)} className="p-2 text-zinc-400 hover:text-zinc-900 border border-zinc-100 bg-white shadow-sm hover:border-zinc-300 rounded-xl transition-all inline-flex items-center gap-1 text-xs font-semibold">
+                              <Eye size={13} /> View
+                            </button>
+                            <button onClick={() => handleDeleteStudent(student._id, student.name)} className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 bg-white shadow-sm border border-zinc-100 hover:border-red-200 rounded-xl transition-all">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -214,75 +279,131 @@ export default function StudentsTab() {
         </div>
       )}
 
-      {/* STUDENT DETAILS DRAWER OVERLAY */}
+      {/* STUDENT DETAILS & INTEGRATED EDIT DRAWER OVERLAY */}
       {selectedStudent && (
         <div className="fixed inset-0 z-[1050] bg-zinc-950/40 backdrop-blur-sm flex items-center justify-end animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-lg h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-zinc-100">
+            
+            {/* Drawer Header Block */}
             <div className="p-6 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
               <div className="flex items-center gap-2.5">
                 <span className="p-2 bg-zinc-900 text-white rounded-xl"><Users size={16} /></span>
                 <div>
-                  <h2 className="text-base font-bold text-zinc-900">Student Profile Summary</h2>
+                  <h2 className="text-base font-bold text-zinc-900">{isEditing ? "Edit Candidate Information" : "Student Profile Summary"}</h2>
                   <p className="text-[10px] font-mono text-zinc-400 mt-0.5">UID: {selectedStudent.phone}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedStudent(null)} className="p-2 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 rounded-xl"><X size={18} /></button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5 space-y-3.5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-black text-zinc-900 leading-tight">{selectedStudent.name}</h3>
-                    <p className="text-xs text-zinc-400 font-mono mt-0.5 flex items-center gap-1"><Phone size={12} /> {selectedStudent.phone}</p>
-                  </div>
-                  <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-md tracking-wider border ${selectedStudent.balanceAmount > 0 ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"}`}>
-                    {selectedStudent.balanceAmount > 0 ? "Incomplete Dues" : "Verified Clear"}
-                  </span>
-                </div>
-                <hr className="border-dashed border-zinc-200" />
-                <div className="space-y-2 text-xs font-semibold text-zinc-600">
-                  <p className="flex items-center gap-2 text-zinc-800"><Building size={14} className="text-zinc-400 shrink-0" /> {selectedStudent.college}</p>
-                  <p className="flex items-center gap-2 text-zinc-800"><Award size={14} className="text-zinc-400 shrink-0" /> {selectedStudent.domain} ({selectedStudent.duration})</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 pl-1">Financial State</h4>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-zinc-400 uppercase">Total Fee</p><p className="text-sm font-black text-zinc-900 mt-1">₹{selectedStudent.totalBilling?.toLocaleString("en-IN")}</p></div>
-                  <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-emerald-500 uppercase">Paid Now</p><p className="text-sm font-black text-emerald-600 mt-1">₹{(selectedStudent.totalBilling - selectedStudent.balanceAmount).toLocaleString("en-IN")}</p></div>
-                  <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-amber-500 uppercase">Balance</p><p className="text-sm font-black text-amber-600 mt-1">₹{selectedStudent.balanceAmount?.toLocaleString("en-IN")}</p></div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 pl-1">Processed Receipts Timeline</h4>
-                {(selectedStudent.installments || []).length === 0 ? (
-                  <div className="text-center py-8 bg-zinc-50 border border-zinc-100 rounded-xl text-xs text-zinc-400 font-semibold">No verified collection assets found for this candidate.</div>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedStudent.installments.map((receipt: any, rIdx: number) => (
-                      <div key={receipt.receiptNo || rIdx} className="bg-white border border-zinc-100 shadow-sm rounded-xl p-4 flex justify-between items-start gap-4">
-                        <div className="space-y-1">
-                          <p className="font-mono text-xs font-black text-zinc-800 tracking-tight">{receipt.receiptNo}</p>
-                          <p className="text-[11px] text-zinc-400 flex items-center gap-1"><Calendar size={12} /> {receipt.date}</p>
-                          <p className="text-[11px] text-zinc-500 flex items-center gap-1"><CreditCard size={11} /> Auth By: <span className="font-bold text-zinc-700">{receipt.billingBy}</span></p>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <p className="text-sm font-black text-emerald-600">₹{receipt.paidAmount?.toLocaleString("en-IN")}</p>
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-zinc-100 text-zinc-700 border">{receipt.paymentMethod}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="flex items-center gap-1.5">
+                {!isEditing && (
+                  <button onClick={() => setIsEditing(true)} className="p-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors">
+                    <Pencil size={13} /> Edit
+                  </button>
                 )}
+                <button onClick={() => setSelectedStudent(null)} className="p-2 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 rounded-xl"><X size={18} /></button>
               </div>
             </div>
 
-            <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex justify-end">
-              <button onClick={() => setSelectedStudent(null)} className="w-full px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl">Close Profile Document</button>
+            {/* Scrollable Core Drawer Content Context View */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              
+              {isEditing ? (
+                /* INTERACTIVE EDIT INPUT FIELDS BLOCK FORMS */
+                <div className="space-y-4 animate-in fade-in duration-100">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Student Name</label>
+                    <input type="text" value={editForm.name || ""} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Mobile Contact Identity</label>
+                    <input type="text" value={editForm.phone || ""} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-mono"/>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Institution / University Name</label>
+                    <input type="text" value={editForm.college || ""} onChange={e => setEditForm({...editForm, college: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Syllabus Domain</label>
+                      <input type="text" value={editForm.domain || ""} onChange={e => setEditForm({...editForm, domain: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Course Duration</label>
+                      <input type="text" value={editForm.duration || ""} onChange={e => setEditForm({...editForm, duration: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Total Contract Billing (₹)</label>
+                    <input type="number" value={editForm.totalBilling || ""} onChange={e => setEditForm({...editForm, totalBilling: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-bold"/>
+                  </div>
+
+                  <div className="pt-4 flex gap-2">
+                    <button onClick={() => setIsEditing(false)} className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">Cancel</button>
+                    <button onClick={handleUpdateStudent} disabled={isSaving} className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50">
+                      {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Updates
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* TRADITIONAL STATIC DISPLAY SCHEMES */
+                <>
+                  <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5 space-y-3.5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-black text-zinc-900 leading-tight">{selectedStudent.name}</h3>
+                        <p className="text-xs text-zinc-400 font-mono mt-0.5 flex items-center gap-1"><Phone size={12} /> {selectedStudent.phone}</p>
+                      </div>
+                      <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-md tracking-wider border ${selectedStudent.balanceAmount > 0 ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"}`}>
+                        {selectedStudent.balanceAmount > 0 ? "Incomplete Dues" : "Verified Clear"}
+                      </span>
+                    </div>
+                    <hr className="border-dashed border-zinc-200" />
+                    <div className="space-y-2 text-xs font-semibold text-zinc-600">
+                      <p className="flex items-center gap-2 text-zinc-800"><Building size={14} className="text-zinc-400 shrink-0" /> {selectedStudent.college}</p>
+                      <p className="flex items-center gap-2 text-zinc-800"><Award size={14} className="text-zinc-400 shrink-0" /> {selectedStudent.domain} ({selectedStudent.duration})</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 pl-1">Financial State</h4>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-zinc-400 uppercase">Total Fee</p><p className="text-sm font-black text-zinc-900 mt-1">₹{selectedStudent.totalBilling?.toLocaleString("en-IN")}</p></div>
+                      <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-emerald-500 uppercase">Paid Now</p><p className="text-sm font-black text-emerald-600 mt-1">₹{(selectedStudent.totalBilling - selectedStudent.balanceAmount).toLocaleString("en-IN")}</p></div>
+                      <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-amber-500 uppercase">Balance</p><p className="text-sm font-black text-amber-600 mt-1">₹{selectedStudent.balanceAmount?.toLocaleString("en-IN")}</p></div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 pl-1">Processed Receipts Timeline</h4>
+                    {(selectedStudent.installments || []).length === 0 ? (
+                      <div className="text-center py-8 bg-zinc-50 border border-zinc-100 rounded-xl text-xs text-zinc-400 font-semibold">No verified collection assets found for this candidate.</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedStudent.installments.map((receipt: any, rIdx: number) => (
+                          <div key={receipt.receiptNo || rIdx} className="bg-white border border-zinc-100 shadow-sm rounded-xl p-4 flex justify-between items-start gap-4">
+                            <div className="space-y-1">
+                              <p className="font-mono text-xs font-black text-zinc-800 tracking-tight">{receipt.receiptNo}</p>
+                              <p className="text-[11px] text-zinc-400 flex items-center gap-1"><Calendar size={12} /> {receipt.date}</p>
+                              <p className="text-[11px] text-zinc-500 flex items-center gap-1"><CreditCard size={11} /> Auth By: <span className="font-bold text-zinc-700">{receipt.billingBy}</span></p>
+                            </div>
+                            <div className="text-right space-y-1">
+                              <p className="text-sm font-black text-emerald-600">₹{receipt.paidAmount?.toLocaleString("en-IN")}</p>
+                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-zinc-100 text-zinc-700 border">{receipt.paymentMethod}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
+
+            {!isEditing && (
+              <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex justify-end">
+                <button onClick={() => setSelectedStudent(null)} className="w-full px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl">Close Profile Document</button>
+              </div>
+            )}
+
           </div>
         </div>
       )}
