@@ -49,47 +49,37 @@ function LoginContent() {
   setError("");
   setSuccessMsg("");
 
-  const rawCallback = searchParams.get("callback");
-  
-  try {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const rawCallback = searchParams.get("callback");
+    
+    try {
+      // FIX: Use NextAuth's native signIn function pointing to 'credentials'
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false, // Prevents a harsh window-reload step on failure
+      });
 
-    const result = await res.json();
+      if (res?.error) {
+        // NextAuth forwards the throw new Error messages from authorize function here
+        setError(res.error || "Authentication failed. Check your credentials.");
+        setLoading(false);
+      } else {
+        setSuccessMsg("Session initialized successfully!");
+        
+        // NextAuth natively appends authentication cookies. We safe route now:
+        const finalDestination = rawCallback 
+          ? decodeURIComponent(rawCallback) 
+          : "/dashboard"; // Let layout redirect to /admin if they are an admin
 
-    if (res.ok) {
-      // 1. Correct destructuring: The API returns { success: true, data: { ... } }
-      // or { user: { ... } } based on your earlier snippets. 
-      // Most of your dashboard logic expects 'user' key.
-      const userData = result.data || result.user;
-
-      // 2. CRITICAL: Save to sessionStorage BEFORE redirecting
-      // Dashboard looks for sessionStorage.getItem("user")
-      sessionStorage.setItem("user", JSON.stringify(userData));
-
-      setSuccessMsg("Authentication Successful. Initializing...");
-
-      // 3. Role-Based Navigation
-      const roleBasedDestination = userData.role === "admin" ? "/admin" : "/dashboard";
-      const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : roleBasedDestination;
-
-      // Use window.location.href to ensure a full refresh so 
-      // the browser picks up the new 'token' cookie.
-      window.location.href = finalDestination;
-      
-    } else {
-      setError(result.error || "Authentication failed. Check your credentials.");
+        router.push(finalDestination);
+        router.refresh(); // Forces Next.js data layouts to parse the updated auth token
+      }
+    } catch (err) {
+      setError("An unexpected authentication error occurred.");
       setLoading(false);
     }
-  } catch (err) {
-    setError("Network error. The server is unreachable.");
-    setLoading(false);
-  }
-};
-  
+  };
+
   if (!mounted) {
     return (
       <div className="h-screen flex items-center justify-center bg-white dark:bg-zinc-950">
@@ -139,6 +129,7 @@ function LoginContent() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2 text-red-600 text-[10px] font-bold"
               >
                 <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
@@ -149,6 +140,7 @@ function LoginContent() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-2 text-emerald-600 text-[10px] font-bold"
               >
                 <ShieldCheck className="w-3 h-3 text-emerald-500" />

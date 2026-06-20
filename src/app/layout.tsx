@@ -11,7 +11,7 @@ import Providers from "./providers";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  display: 'swap',
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     description: "Accelerate your tech career with expert-led training, real-world internships, and guaranteed placement support at Inetz Technologies.",
     images: [
       {
-        url: "/logo.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Inetz Technologies Chennai",
@@ -87,6 +87,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${inter.className} min-h-full flex flex-col bg-white text-zinc-900`}>
+        {/* NextAuth context sits at the absolute top of the body execution stack */}
         <Providers>
         <ThemeProvider forcedTheme="light">
           <Navbar />
