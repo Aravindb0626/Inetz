@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CreditCard, Printer, FileText, Save, Loader2, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { CreditCard, Printer, FileText, Save, Loader2, X, AlertCircle, CheckCircle2, Calendar } from "lucide-react";
 import { generateReceiptHtml } from "./receiptTemplate";
 
 interface PaymentModalProps {
@@ -22,6 +22,7 @@ interface FormState {
   type: "Full Payment" | "Part Payment";
   method: "Cash" | "GPay";
   txn: string;
+  customDate: string; // 🎯 Added state property tracking choice parameters
 }
 
 const DURATION_OPTIONS = ["1 Week", "2 Weeks", "1 Month", "3 Months"] as const;
@@ -65,6 +66,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     type: "Full Payment",
     method: "Cash",
     txn: "",
+    customDate: "", // Initial empty tracker string
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -79,10 +81,17 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     const now = new Date();
     setCurrentTimestamp(now);
 
+    // Default target string formatted safely to calendar input specs (YYYY-MM-DD)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    
+    setForm(f => ({ ...f, customDate: `${year}-${month}-${day}` }));
+
     const sequentialSerial = 
-      now.getFullYear() +
-      String(now.getMonth() + 1).padStart(2, "0") +
-      String(now.getDate()).padStart(2, "0") +
+      year +
+      month +
+      day +
       "-" +
       String(now.getHours()).padStart(2, "0") +
       String(now.getMinutes()).padStart(2, "0") +
@@ -139,12 +148,19 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  const displayDate = currentTimestamp ? currentTimestamp.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "";
+  // Convert custom input calendar string safely to required format "16 Jun 2026"
+  const getCleanDisplayDate = () => {
+    if (!form.customDate) return "";
+    const dateObj = new Date(form.customDate);
+    if (isNaN(dateObj.getTime())) return "";
+    return dateObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
   const displayTime = currentTimestamp ? currentTimestamp.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "";
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.phone.trim() || !form.college.trim() || !form.billing || !form.paid || !form.courseName || !form.domain) {
-      return alert("Please fulfill all tracking selections and identity profiles.");
+    if (!form.name.trim() || !form.phone.trim() || !form.college.trim() || !form.billing || !form.paid || !form.courseName || !form.domain || !form.customDate) {
+      return alert("Please fulfill all tracking selections, calendar ranges, and identity profiles.");
     }
     setIsSaving(true);
 
@@ -167,7 +183,7 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
           paymentMethod: form.method,
           transactionId: form.method === "GPay" ? form.txn.trim() : "N/A",
           billingBy: form.billing,
-          displayDate: displayDate.replace(/\\s+/g, ' '), 
+          displayDate: getCleanDisplayDate(), // 🎯 Dynamic chosen string injected securely
         }),
       });
       const result = await response.json();
@@ -184,10 +200,9 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
     }
   };
 
-  // Shared runner logic map builder function
   const getCompiledDataPayload = () => ({
     receiptNo,
-    displayDate,
+    displayDate: getCleanDisplayDate(),
     displayTime,
     name: form.name.trim(),
     phone: form.phone.trim(),
@@ -203,32 +218,27 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
   });
 
   const handlePrintReceipt = () => {
-    if (!form.name.trim() || !form.courseName || !form.domain) {
-      return alert("Verify Student Name, course duration, and domain specialization selection.");
+    if (!form.name.trim() || !form.courseName || !form.domain || !form.customDate) {
+      return alert("Verify Student Name, course duration, calendar parameters, and domain selection.");
     }
-    
     const pWin = window.open("", "_blank");
     if (!pWin) return alert("Pop-up window blocked. Please authorize popups for this portal.");
-
     pWin.document.write(generateReceiptHtml(getCompiledDataPayload()));
     pWin.document.close();
   };
 
   const handleDownloadPdf = () => {
-    if (!form.name.trim() || !form.courseName || !form.domain) {
-      return alert("Verify Student Name, course duration, and domain specialization selection.");
+    if (!form.name.trim() || !form.courseName || !form.domain || !form.customDate) {
+      return alert("Verify Student Name, course duration, calendar parameters, and domain selection.");
     }
-
     const htmlString = generateReceiptHtml(getCompiledDataPayload());
     const blob = new Blob([htmlString], { type: "text/html" });
     const fileUrl = URL.createObjectURL(blob);
-    
     const downloadAnchor = document.createElement("a");
     downloadAnchor.href = fileUrl;
     downloadAnchor.download = `Receipt_${receiptNo}_${form.name.replace(/\s+/g, "_")}.html`;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
-    
     document.body.removeChild(downloadAnchor);
     URL.revokeObjectURL(fileUrl);
   };
@@ -246,8 +256,21 @@ export default function PaymentModal({ onClose }: PaymentModalProps) {
         </div>
 
         <div className="p-8 overflow-y-auto space-y-6 flex-1">
-          <div className="text-right text-xs font-mono text-zinc-400 tracking-tight">
-            Assigned Bill ID: <span className="font-semibold text-zinc-700">{receiptNo || "Generating..."}</span>
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-400 tracking-tight">
+            
+            {/* 🎯 DATE INPUT INTEGRATION BAR */}
+            <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200 px-3 py-1.5 rounded-xl font-sans text-zinc-600 font-semibold shadow-sm">
+              <Calendar size={14} className="text-zinc-400" />
+              <span>Billing Date:</span>
+              <input 
+                type="date"
+                value={form.customDate}
+                onChange={e => setForm({...form, customDate: e.target.value})}
+                className="bg-transparent border-none outline-none font-bold text-zinc-800 cursor-pointer text-xs"
+              />
+            </div>
+
+            <div>Assigned Bill ID: <span className="font-semibold text-zinc-700">{receiptNo || "Generating..."}</span></div>
           </div>
 
           <div>

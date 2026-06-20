@@ -12,7 +12,6 @@ export interface IInstallment {
 export interface IStudent extends Document {
   sNo: number;
   doj: string;
-  groupNo?: string;
   name: string;
   phone: string;
   college: string;
@@ -38,7 +37,6 @@ const InstallmentSchema = new Schema<IInstallment>({
 const StudentSchema = new Schema<IStudent>({
   sNo: { type: Number, required: true },
   doj: { type: String, required: true },
-  groupNo: { type: String, default: "" },
   name: { type: String, required: true, trim: true },
   phone: { type: String, required: true, trim: true, unique: true },
   college: { type: String, required: true, trim: true },
