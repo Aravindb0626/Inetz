@@ -38,23 +38,15 @@ export function Navbar() {
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Status flags
+  // Absolute status flags
+  const isLoading = status === "loading";
   const isLoggedIn = status === "authenticated";
   const user = session?.user as any; 
 
   const handleLogout = async () => {
-    // Clear NextAuth
-    await signOut({ redirect: false });
-    // Clear Manual Auth
-    sessionStorage.removeItem("user");
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    
-    setIsManualLoggedIn(false);
-    router.push("/");
-    router.refresh(); // Force UI update
+    await signOut({ callbackUrl: "/" });
   };
 
-  // ... (rest of your component uses 'isLoggedIn' and 'userRole')
   const activeHref = useMemo(() => {
     const exact = navItems.find((i) => i.href === pathname)?.href;
     if (exact) return exact;
