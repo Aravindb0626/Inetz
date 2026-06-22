@@ -120,36 +120,6 @@ export default function CollectionsTab({ setIsPayOpen }: CollectionsTabProps) {
 
         {/* CONTROLS AREA: ACTIONS & DATE INPUT WRAPPERS */}
         <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
-          
-          {/* 📅 SECTION: INLINE DATE PICKERS FILTER GATES */}
-          <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200 rounded-2xl p-2 text-xs font-semibold text-zinc-700 w-full sm:w-auto overflow-x-auto">
-            <span className="text-zinc-400 flex items-center gap-1 pl-1 shrink-0">
-              <Calendar size={13} /> Audit Period:
-            </span>
-            <input 
-              type="date" 
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent border-none outline-none text-zinc-800 focus:text-zinc-950 cursor-pointer font-medium p-0.5 rounded transition-colors"
-            />
-            <span className="text-zinc-300 font-normal select-none">to</span>
-            <input 
-              type="date" 
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              disabled={!startDate}
-              className="bg-transparent border-none outline-none text-zinc-800 focus:text-zinc-950 cursor-pointer font-medium p-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            />
-            {(startDate || endDate) && (
-              <button 
-                onClick={handleClearDates}
-                className="p-1 hover:bg-zinc-200/60 text-zinc-400 hover:text-zinc-600 rounded-lg transition-colors ml-1"
-                title="Clear date selections"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
 
           {/* ⚡ SECTION: ACTION BUTTON GATES */}
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
