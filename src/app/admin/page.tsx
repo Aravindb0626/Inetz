@@ -220,8 +220,6 @@ export default function AdminPage() {
 
           {activeTab === "transactions" && (
             <CollectionsTab
-              exporting={exporting} 
-              handleExportToExcel={handleExportToExcel} 
               setIsPayOpen={setIsPayOpen} 
             />
           )}
