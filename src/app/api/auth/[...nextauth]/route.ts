@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/user";
+import bcrypt from "bcryptjs";
 
 const handler = NextAuth({
   providers: [
@@ -9,54 +11,98 @@ const handler = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Please enter both email and password.");
+        }
+
+        await connectToDatabase();
+
+        // 1. Find the user in the database
+        const dbUser = await User.findOne({ email: credentials.email.toLowerCase() });
+        if (!dbUser) {
+          throw new Error("No account found with this email.");
+        }
+
+
+
+
+
+
+
+        console.log(credentials)
+        console.log(dbUser)
+        // 2. Prevent normal logging if they originally signed up via Google
+        if (dbUser.provider === "google" && !dbUser.password) {
+          throw new Error("This account uses Google Login. Please sign in via Google.");
+        }
+
+        // 3. Verify password
+        const isPasswordCorrect = await bcrypt.compare(credentials.password, dbUser.password);
+        if (!isPasswordCorrect) {
+          throw new Error("Incorrect access key.");
+        }
+
+        console.log(isPasswordCorrect)
+        
+
+        // 4. Return user object structure safely with clean type bypass
+        return {
+          id: dbUser._id.toString(),
+          name: dbUser.name,
+          email: dbUser.email,
+          image: dbUser.image || undefined, // Safe default fallback instead of forced null
+          role: dbUser.role || "student",
+        } as any; // Bypasses the strict NextAuth User object shape safely
+      }
+    })
   ],
   callbacks: {
-    // src/app/api/auth/[...nextauth]/route.ts
+    async signIn({ user, account }) {
+      // Handle OAuth creation during Google sign-in
+      if (account?.provider === "google") {
+        try {
+          await connectToDatabase();
 
-async signIn({ user, account }) {
-  if (account?.provider === "google") {
-    try {
-      await connectToDatabase();
+          if (!user.email) {
+            console.error("No email returned from Google");
+            return false;
+          }
 
-      // 1. Guard clause (Narrowing the type)
-      if (!user.email) {
-        console.error("No email returned from Google");
-        return false;
-      }
+          const existingUser = await User.findOne({ email: user.email.toLowerCase() });
 
-      // 2. Use 'as string' to satisfy the Mongoose type checker
-      const existingUser = await User.findOne({ email: user.email as string });
-
-      if (!existingUser) {
-        await User.create({
-          name: user.name || undefined,
-          email: user.email, // TypeScript knows this is a string now
-          image: user.image || undefined,
-          role: "student", 
-          provider: "google",
-        });
-      }
-      return true;
-    } catch (error) {
-      console.error("Error during Google sign-in:", error);
-      return false;
-    }
-  }
-  return true;
-},
-
-    async jwt({ token, user, trigger, session }) {
-      // Fetch role from DB on initial sign-in
-      if (user && user.email) {
-        await connectToDatabase();
-        const dbUser = await User.findOne({ email: user.email });
-        if (dbUser) {
-          token.role = dbUser.role;
-          token.id = dbUser._id.toString();
+          if (!existingUser) {
+            await User.create({
+              name: user.name || undefined,
+              email: user.email.toLowerCase(),
+              image: user.image || undefined,
+              role: "student", 
+              provider: "google",
+            });
+          }
+          return true;
+        } catch (error) {
+          console.error("Error during Google sign-in:", error);
+          return false;
         }
       }
+      return true;
+    },
 
-      // Allow session updates (e.g., if a user's role is changed while logged in)
+    async jwt({ token, user, trigger, session }) {
+      // Initial sign-in: pass database items down into token profile
+      if (user) {
+        token.id = user.id;
+        token.role = (user as any).role;
+      }
+
+      // Handle interactive profile/session updates dynamically
       if (trigger === "update" && session?.role) {
         token.role = session.role;
       }
@@ -65,10 +111,10 @@ async signIn({ user, account }) {
     },
 
     async session({ session, token }) {
-      // Sync the JWT token data to the client-side session
+      // Synchronize backend session properties safely into active context state
       if (session.user) {
-        (session.user as any).role = token.role;
         (session.user as any).id = token.id;
+        (session.user as any).role = token.role;
       }
       return session;
     },

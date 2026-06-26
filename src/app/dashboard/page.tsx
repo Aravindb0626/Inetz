@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  User, Phone, GraduationCap, MapPin,
+  User, Phone, GraduationCap,
   Calendar, Mail, Briefcase, FileText,
   ChevronRight, LayoutGrid, Info, BadgeCheck, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSession } from "next-auth/react"; // 1. Import useSession
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 
 interface Application {
@@ -27,14 +27,13 @@ interface Application {
 }
 
 const Dashboard = () => {
-  const { data: session, status: sessionStatus } = useSession(); // 2. Get session data
+  const { data: session, status: sessionStatus } = useSession();
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<Application[]>([]);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      // 3. Only fetch if the user is authenticated and we have an email
       if (sessionStatus !== "authenticated" || !session?.user?.email) {
         if (sessionStatus === "unauthenticated") setLoading(false);
         return;
@@ -58,12 +57,7 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, [session, sessionStatus]); // Re-run when session status changes
-
-  useEffect(() => {
-  console.log("Session Status:", sessionStatus);
-  console.log("Session Data:", session);
-}, [session, sessionStatus]);
+  }, [session, sessionStatus]);
 
   const activeApp: Application | undefined =
     applications.find((a: Application) => a._id === selectedAppId);
@@ -85,10 +79,10 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="h-screen bg-[#F9F9F9] text-zinc-900 font-sans overflow-hidden flex flex-col">
+    <div className="min-h-screen lg:h-screen bg-[#F9F9F9] text-zinc-900 font-sans flex flex-col lg:overflow-hidden">
       
       {/* COMPACT HEADER */}
-      <header className="bg-white border-b border-zinc-200 py-4 px-8 shrink-0">
+      <header className="bg-white border-b border-zinc-200 py-4 px-6 md:px-8 shrink-0">
         <div className="max-w-[1400px] mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center text-white">
@@ -100,7 +94,13 @@ const Dashboard = () => {
           <div className="flex items-center gap-3 bg-zinc-50 px-3 py-1.5 rounded-full border border-zinc-100 shadow-sm">
             {session?.user?.image ? (
               <div className="relative w-6 h-6 rounded-full overflow-hidden border border-zinc-200">
-                <Image src={session.user.image} alt="Profile" fill className="object-cover" />
+                <Image 
+                  src={session.user.image} 
+                  alt="Profile" 
+                  fill 
+                  sizes="24px"
+                  className="object-cover" 
+                />
               </div>
             ) : (
               <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] text-white font-bold">
@@ -112,15 +112,17 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1400px] w-full mx-auto p-6 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+      {/* MAIN CONTAINER */}
+      <main className="flex-1 max-w-[1400px] w-full mx-auto p-4 md:p-6 flex flex-col lg:overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 lg:h-full">
           
           {/* LEFT: COURSE TABS */}
-          <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="lg:col-span-4 flex flex-col gap-4 max-h-[400px] lg:max-h-none">
             <div className="flex justify-between items-center px-2">
                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">My Applications</h2>
                <span className="text-[10px] bg-zinc-200 px-2 py-0.5 rounded-full font-bold">{applications.length}</span>
             </div>
+            
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
               {applications.length > 0 ? (
                 applications.map((app) => (
@@ -146,7 +148,7 @@ const Dashboard = () => {
                   </button>
                 ))
               ) : (
-                <div className="text-center py-10 border-2 border-dashed rounded-2xl border-zinc-200">
+                <div className="text-center py-10 border-2 border-dashed rounded-2xl border-zinc-200 bg-white">
                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No Applications Found</p>
                 </div>
               )}
@@ -154,7 +156,7 @@ const Dashboard = () => {
           </div>
 
           {/* RIGHT: DETAILS */}
-          <div className="lg:col-span-8 overflow-hidden">
+          <div className="lg:col-span-8 flex flex-col lg:overflow-hidden pb-6 lg:pb-0">
             <AnimatePresence mode="wait">
               {activeApp ? (
                 <motion.div 
@@ -162,9 +164,10 @@ const Dashboard = () => {
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  className="h-full flex flex-col bg-white rounded-[2rem] border border-zinc-200 shadow-sm overflow-hidden"
+                  className="w-full flex flex-col bg-white rounded-[2rem] border border-zinc-200 shadow-sm overflow-hidden lg:h-full"
                 >
-                  <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                  {/* DETAIL HEADER */}
+                  <div className="p-6 border-b border-zinc-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-zinc-50/50">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white rounded-xl border border-zinc-200">
                         <FileText className="w-4 h-4 text-zinc-500" />
@@ -177,7 +180,7 @@ const Dashboard = () => {
                         )}>{activeApp.status}</p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Submission Date</p>
                       <p className="text-xs font-bold text-zinc-900">
                         {new Date(activeApp.createdAt).toLocaleDateString('en-GB')}
@@ -185,8 +188,11 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                  {/* DETAIL BODY */}
+                  <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12">
+                      
+                      {/* Personal Profile */}
                       <div className="space-y-4">
                         <h4 className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em] flex items-center gap-2">
                           <User className="w-3 h-3" /> Personal Profile
@@ -198,6 +204,7 @@ const Dashboard = () => {
                         </div>
                       </div>
 
+                      {/* Academic Record */}
                       <div className="space-y-4">
                         <h4 className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em] flex items-center gap-2">
                           <GraduationCap className="w-3 h-3" /> Academic Record
@@ -209,11 +216,12 @@ const Dashboard = () => {
                         </div>
                       </div>
 
+                      {/* Student Configuration */}
                       <div className="space-y-4 md:col-span-2 pt-6 border-t border-zinc-50">
                         <h4 className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em] flex items-center gap-2">
                           <BadgeCheck className="w-3 h-3" /> Student Configuration
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
                             <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Track Selection</p>
                             <p className="text-sm font-bold text-zinc-800">{activeApp.domain}</p>
@@ -234,11 +242,12 @@ const Dashboard = () => {
                           </div>
                         </div>
                       </div>
+
                     </div>
                   </div>
                 </motion.div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] bg-zinc-50/50">
+                <div className="h-[300px] lg:h-full flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] bg-zinc-50/50">
                   <Info className="w-8 h-8 text-zinc-300 mb-2" />
                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Select a course to view details</p>
                 </div>
@@ -257,7 +266,7 @@ const Dashboard = () => {
   );
 };
 
-/* Info Row Helper */
+/* Info Row Helper Component */
 const InfoItem = ({ label, value, icon: Icon }: { label: string, value?: string, icon: any }) => (
   <div className="flex items-start gap-4 group">
     <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center shrink-0 border border-zinc-100 group-hover:bg-zinc-900 group-hover:text-white transition-colors">

@@ -38,7 +38,6 @@ export function Navbar() {
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Absolute status flags
   const isLoading = status === "loading";
   const isLoggedIn = status === "authenticated";
   const user = session?.user as any; 
@@ -95,10 +94,8 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Action Controls (Desktop + Mobile Toggle Wrapper) */}
+        {/* Action Controls */}
         <div className="flex items-center gap-3">
-          
-          {/* Always visible on Tablet/Desktop, Hidden on mobile */}
           <div className="hidden sm:flex items-center gap-3">
             {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
@@ -109,7 +106,6 @@ export function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                {/* Admin Access Point */}
                 {user?.role === "admin" && (
                   <Button
                     href="/admin"
@@ -149,7 +145,6 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile Hamburger Trigger - Hidden on large desktop layouts */}
           <Button
             variant="ghost"
             size="sm"
@@ -161,7 +156,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu Container */}
+      {/* Mobile Dropdown Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div

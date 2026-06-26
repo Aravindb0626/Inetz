@@ -28,7 +28,6 @@ function LoginContent() {
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fix Hydration: Ensure client-side values match after mount
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -44,41 +43,37 @@ function LoginContent() {
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccessMsg("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setSuccessMsg("");
 
-    const rawCallback = searchParams.get("callback");
-    
-    try {
-      // FIX: Use NextAuth's native signIn function pointing to 'credentials'
-      const res = await signIn("credentials", {
-        email,
-        password,
-        redirect: false, // Prevents a harsh window-reload step on failure
-      });
+  const rawCallback = searchParams.get("callback");
+  const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : "/dashboard";
+  
+  try {
+    const res = await signIn("credentials", {
+      email: email.trim(), // Remove accidental spaces
+      password: password,
+      redirect: false,     // Tell NextAuth NOT to redirect to the error page
+    });
 
-      if (res?.error) {
-        // NextAuth forwards the throw new Error messages from authorize function here
-        setError(res.error || "Authentication failed. Check your credentials.");
-        setLoading(false);
-      } else {
-        setSuccessMsg("Session initialized successfully!");
-        
-        // NextAuth natively appends authentication cookies. We safe route now:
-        const finalDestination = rawCallback 
-          ? decodeURIComponent(rawCallback) 
-          : "/dashboard"; // Let layout redirect to /admin if they are an admin
-
-        router.push(finalDestination);
-        router.refresh(); // Forces Next.js data layouts to parse the updated auth token
-      }
-    } catch (err) {
-      setError("An unexpected authentication error occurred.");
+    // Check if NextAuth passed back a configuration or runtime error
+    if (res?.error) {
+      // NextAuth matches your thrown error here
+      setError(res.error); 
       setLoading(false);
+    } else if (res?.url) {
+      // If successful, initialize session routing safely
+      setSuccessMsg("Session initialized successfully!");
+      router.push(finalDestination);
+      router.refresh();
     }
-  };
+  } catch (err) {
+    setError("An unexpected authentication error occurred.");
+    setLoading(false);
+  }
+};
 
   if (!mounted) {
     return (
@@ -130,7 +125,7 @@ function LoginContent() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2 text-red-600 text-[10px] font-bold"
+                className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 flex items-center gap-2 text-red-600 dark:text-red-400 text-[10px] font-bold"
               >
                 <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
                 {error}
@@ -141,7 +136,7 @@ function LoginContent() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-2 text-emerald-600 text-[10px] font-bold"
+                className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold"
               >
                 <ShieldCheck className="w-3 h-3 text-emerald-500" />
                 {successMsg}
