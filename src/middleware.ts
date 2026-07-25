@@ -3,13 +3,16 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
   // Retrieve and decode NextAuth's JWT session token
+  // Fix: Explicitly pass secureCookie flag based on environment / protocol
   const token = await getToken({ 
     req, 
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === "production",
   });
 
-  const { pathname } = req.nextUrl;
   const isAuth = !!token;
   const isAdmin = token?.role === "admin";
 
@@ -23,7 +26,7 @@ export async function middleware(req: NextRequest) {
   // 1. Unauthenticated users trying to access ANY protected route -> Redirect to /login
   if (isProtectedRoute && !isAuth) {
     const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callback", encodeURIComponent(pathname));
+    loginUrl.searchParams.set("callback", pathname); // Avoid double-encoding
     return NextResponse.redirect(loginUrl);
   }
 
@@ -43,8 +46,14 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    /*
+     * Match all protected routes, including their base root paths
+     */
+    "/dashboard",
     "/dashboard/:path*",
+    "/onboarding",
     "/onboarding/:path*",
+    "/admin",
     "/admin/:path*",
     "/login",
     "/register",

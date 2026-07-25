@@ -30,14 +30,6 @@ const handler = NextAuth({
           throw new Error("No account found with this email.");
         }
 
-
-
-
-
-
-
-        console.log(credentials)
-        console.log(dbUser)
         // 2. Prevent normal logging if they originally signed up via Google
         if (dbUser.provider === "google" && !dbUser.password) {
           throw new Error("This account uses Google Login. Please sign in via Google.");
@@ -49,23 +41,20 @@ const handler = NextAuth({
           throw new Error("Incorrect access key.");
         }
 
-        console.log(isPasswordCorrect)
-        
-
-        // 4. Return user object structure safely with clean type bypass
+        // 4. Return user object structure safely
         return {
           id: dbUser._id.toString(),
           name: dbUser.name,
           email: dbUser.email,
-          image: dbUser.image || undefined, // Safe default fallback instead of forced null
+          image: dbUser.image || undefined,
           role: dbUser.role || "student",
-        } as any; // Bypasses the strict NextAuth User object shape safely
+        } as any;
       }
     })
   ],
   callbacks: {
     async signIn({ user, account }) {
-      // Handle OAuth creation during Google sign-in
+      // Handle OAuth creation and database sync during Google sign-in
       if (account?.provider === "google") {
         try {
           await connectToDatabase();
@@ -75,10 +64,11 @@ const handler = NextAuth({
             return false;
           }
 
-          const existingUser = await User.findOne({ email: user.email.toLowerCase() });
+          let dbUser = await User.findOne({ email: user.email.toLowerCase() });
 
-          if (!existingUser) {
-            await User.create({
+          if (!dbUser) {
+            // Create user if they don't exist
+            dbUser = await User.create({
               name: user.name || undefined,
               email: user.email.toLowerCase(),
               image: user.image || undefined,
@@ -86,6 +76,12 @@ const handler = NextAuth({
               provider: "google",
             });
           }
+
+          // CRITICAL FIX: Attach MongoDB id and role directly to user object
+          // so the jwt callback can inherit them on Google login!
+          user.id = dbUser._id.toString();
+          (user as any).role = dbUser.role || "student";
+
           return true;
         } catch (error) {
           console.error("Error during Google sign-in:", error);
