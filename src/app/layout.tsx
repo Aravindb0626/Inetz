@@ -11,7 +11,7 @@ import Providers from "./providers";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  display: 'swap',
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -114,85 +114,55 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${inter.className} min-h-full flex flex-col bg-white text-zinc-900`}>
+        {/* NextAuth context sits at the absolute top of the body execution stack */}
         <Providers>
-        <ThemeProvider forcedTheme="light">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <WhatsAppButton />
-          <Toaster position="top-center" richColors />
-          
-          {/* Combined Organization & Local Business Schema */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "EducationalOrganization",
-                "name": "Inetz Technologies",
-                "url": "https://inetztech.com",
-                "logo": "https://inetztech.com/logo.png",
-                "description": "Leading software training and internship provider in Chennai, specializing in Full Stack, MERN, Java, and AI.",
-                "address": {
-                  "@type": "PostalAddress",
-                  "streetAddress": "KP Towers, Vadapalani",
-                  "addressLocality": "Chennai",
-                  "addressRegion": "TN",
-                  "postalCode": "600026",
-                  "addressCountry": "IN"
-                },
-                "geo": {
-                  "@type": "GeoCoordinates",
-                  "latitude": 13.0494,
-                  "longitude": 80.2123
-                },
-                "contactPoint": {
-                  "@type": "ContactPoint",
-                  "telephone": "+91-9840234475",
-                  "contactType": "admissions",
-                  "areaServed": "IN",
-                  "availableLanguage": "en"
-                },
-                "sameAs": [
-                  "https://www.linkedin.com/company/inetztech",
-                  "https://www.facebook.com/inetztech",
-                  "https://www.instagram.com/inetztech",
-                  "https://www.youtube.com/@inetztech"
-                ],
-                "hasOfferCatalog": {
-                  "@type": "OfferCatalog",
-                  "name": "Software Internship Programs",
-                  "itemListElement": [
+          <ThemeProvider forcedTheme="light">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <WhatsAppButton />
+            <Toaster position="top-center" richColors />
+            
+            {/* Combined Organization & Local Business Schema */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@graph": [
                     {
-                      "@type": "Offer",
-                      "itemOffered": {
-                        "@type": "Course",
-                        "name": "MERN Stack Internship",
-                        "description": "Full stack development using MongoDB, Express, React, and Node.js."
-                      }
+                      "@type": "Organization",
+                      "@id": "https://inetztech.com/#organization",
+                      "name": "Inetz Technologies",
+                      "url": "https://inetztech.com",
+                      "logo": "https://inetztech.com/logo.png",
+                      "sameAs": [
+                        "https://www.linkedin.com/company/inetztech",
+                        "https://www.facebook.com/inetztech",
+                        "https://www.instagram.com/inetztech",
+                        "https://www.youtube.com/@inetztech"
+                      ]
                     },
                     {
-                      "@type": "Offer",
-                      "itemOffered": {
-                        "@type": "Course",
-                        "name": "Java Full Stack Internship",
-                        "description": "Enterprise development with Java, Spring Boot, and Microservices."
-                      }
-                    },
-                    {
-                      "@type": "Offer",
-                      "itemOffered": {
-                        "@type": "Course",
-                        "name": "Python & AI Internship",
-                        "description": "Machine Learning, AI, and Backend development with Python."
-                      }
+                      "@type": "EducationalOrganization",
+                      "name": "Inetz Technologies",
+                      "description": "Provider of the best internships in Chennai with a focus on Full Stack Development and Placement.",
+                      "address": {
+                        "@type": "PostalAddress",
+                        "addressLocality": "Chennai",
+                        "addressRegion": "TN",
+                        "postalCode": "600001",
+                        "addressCountry": "IN"
+                      },
+                      "telephone": "+91-9840234475",
+                      "url": "https://inetztech.com",
+                      "image": "https://inetztech.com/logo.png"
                     }
                   ]
-                }
-              })
-            }}
-          />
-        </ThemeProvider>
+                })
+              }}
+            />
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

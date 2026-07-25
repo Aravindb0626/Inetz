@@ -28,7 +28,6 @@ function LoginContent() {
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fix Hydration: Ensure client-side values match after mount
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -44,42 +43,38 @@ function LoginContent() {
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccessMsg("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setSuccessMsg("");
 
-    const rawCallback = searchParams.get("callback");
-    
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        // Determine destination based on role
-        // If a callback URL exists (like from a protected link), use it.
-        // Otherwise, route based on the user's role.
-        const roleBasedDestination = data.user.role === "admin" ? "/admin" : "/dashboard";
-        const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : roleBasedDestination;
-
-        // Force a clean navigation to ensure the token is recognized
-        window.location.href = finalDestination;
-      } else {
-        setError(data.error || "Authentication failed. Check your credentials.");
-        setLoading(false);
-      }
-    } catch (err) {
-      setError("Network error. The server is unreachable.");
-      setLoading(false);
-    }
-  };
-
+  const rawCallback = searchParams.get("callback");
+  const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : "/dashboard";
   
+  try {
+    const res = await signIn("credentials", {
+      email: email.trim(), // Remove accidental spaces
+      password: password,
+      redirect: false,     // Tell NextAuth NOT to redirect to the error page
+    });
+
+    // Check if NextAuth passed back a configuration or runtime error
+    if (res?.error) {
+      // NextAuth matches your thrown error here
+      setError(res.error); 
+      setLoading(false);
+    } else if (res?.url) {
+      // If successful, initialize session routing safely
+      setSuccessMsg("Session initialized successfully!");
+      router.push(finalDestination);
+      router.refresh();
+    }
+  } catch (err) {
+    setError("An unexpected authentication error occurred.");
+    setLoading(false);
+  }
+};
+
   if (!mounted) {
     return (
       <div className="h-screen flex items-center justify-center bg-white dark:bg-zinc-950">
@@ -129,7 +124,8 @@ function LoginContent() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2 text-red-600 text-[10px] font-bold"
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 flex items-center gap-2 text-red-600 dark:text-red-400 text-[10px] font-bold"
               >
                 <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
                 {error}
@@ -139,7 +135,8 @@ function LoginContent() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-2 text-emerald-600 text-[10px] font-bold"
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold"
               >
                 <ShieldCheck className="w-3 h-3 text-emerald-500" />
                 {successMsg}
