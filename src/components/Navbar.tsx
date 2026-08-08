@@ -46,7 +46,7 @@ export function Navbar() {
     await signOut({ callbackUrl: "/" });
   };
 
-  // If already logged in -> go straight to /register form
+// If already logged in -> go straight to /register form
   // If not logged in -> redirect to login with callbackUrl=/register so they land on form post-login
   const handleRegisterClick = () => {
     if (isLoggedIn) {
@@ -131,7 +131,7 @@ export function Navbar() {
                   size="sm" 
                   className="px-6 rounded-full font-bold shadow-lg shadow-orange-500/20 bg-orange-500 hover:bg-orange-600 text-white"
                 >
-                  Register Now
+                  Apply Now
                 </Button>
               </>
             ) : (
@@ -153,7 +153,7 @@ export function Navbar() {
                   size="sm" 
                   className="px-5 rounded-full font-bold shadow-md shadow-orange-500/20 bg-orange-500 hover:bg-orange-600 text-white"
                 >
-                  Register Now
+                  Apply Now
                 </Button>
 
                 <div className="flex items-center gap-2">

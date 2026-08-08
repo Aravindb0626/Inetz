@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ChevronDown, Loader2, ArrowLeft, IndianRupee, Lock, ShieldCheck } from "lucide-react";
+import { ChevronDown, Loader2, ArrowLeft, IndianRupee, Lock, ShieldCheck, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 
@@ -77,13 +77,13 @@ function StepCard({ step, title, children }: { step: number; title: string; chil
 function ReviewAndPayContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
 
-  // Check if current user is an Admin
+  // Role Detection
   const userRole = (session?.user as any)?.role;
   const isAdmin = userRole === "admin";
 
-  // Extract initial parameters from URL
+  // URL Parameters
   const urlTrack = searchParams.get("track") || "WEB DEVELOPMENT";
   const urlDuration = searchParams.get("duration") || "1 Week";
   const urlPrice = parseInt(searchParams.get("price") || "0");
@@ -109,6 +109,17 @@ function ReviewAndPayContent() {
   });
 
   const set = (key: string) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
+
+  // Helper function to trigger clear login alert & redirect
+  const promptLogin = () => {
+    const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/apply";
+    const wantsToLogin = window.confirm(
+      "Notice: You must be logged in to complete enrollment and access your student dashboard.\n\nClick 'OK' to navigate to the Sign In page now."
+    );
+    if (wantsToLogin) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
+    }
+  };
 
   // 1. Fetch tracks and programs from API
   useEffect(() => {
@@ -220,12 +231,18 @@ function ReviewAndPayContent() {
 
   // Validation flags
   const isOverAmount = customAmount > discountedFee;
-  const isUnderAmount = customAmount < 500 && !isAdmin; // Admin can collect any amount
+  const isUnderAmount = customAmount < 500 && !isAdmin;
   const isAmountInvalid = isOverAmount || isUnderAmount;
 
   // ─── MAIN PAY / ADMIT SUBMISSION HANDLER ────────────────────────────────────
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 🎯 ALERT CHECK FOR UNAUTHENTICATED USERS
+    if (sessionStatus === "unauthenticated" || !session) {
+      promptLogin();
+      return;
+    }
 
     if (isUnderAmount) return alert("Min payment is ₹500");
     if (isOverAmount) return alert(`Max payment is ₹${discountedFee.toLocaleString()}`);
@@ -234,9 +251,7 @@ function ReviewAndPayContent() {
 
     setIsProcessing(true);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // PATH 1: ADMIN MANUAL ENTRY (NO RAZORPAY POPUP)
-    // ─────────────────────────────────────────────────────────────────────────
+    // PATH 1: ADMIN MANUAL ENTRY
     if (isAdmin) {
       try {
         const response = await axios.post("/api/students", {
@@ -265,9 +280,7 @@ function ReviewAndPayContent() {
       return;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // PATH 2: STUDENT ONLINE PAYMENT VIA RAZORPAY
-    // ─────────────────────────────────────────────────────────────────────────
     try {
       const applyPayload = {
         fullName: form.fullName.trim(),
@@ -370,6 +383,25 @@ function ReviewAndPayContent() {
             )}
           </div>
 
+          {/* ON-PAGE ALERT BANNER FOR VISITORS */}
+          {sessionStatus === "unauthenticated" && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 shadow-sm">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">Account Sign-In Required</p>
+                <p className="text-[11px] font-medium text-amber-700 mt-0.5">
+                  You need an active account to link your payment and track your internship modules.
+                </p>
+              </div>
+              <button
+                onClick={promptLogin}
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] uppercase rounded-xl transition-all shrink-0 shadow-sm"
+              >
+                Sign In
+              </button>
+            </div>
+          )}
+
           <div className="space-y-5">
             <StepCard step={1} title="Contact Information">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -458,7 +490,7 @@ function ReviewAndPayContent() {
                   <span>-₹{(originalFee - discountedFee).toLocaleString()}</span>
                 </div>
 
-                {/* 🎯 ADMIN PAYMENT METHOD SELECTOR */}
+                {/* ADMIN PAYMENT METHOD SELECTOR */}
                 {isAdmin && (
                   <div className="my-3 p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5">
                     <label className="text-[9px] font-black uppercase text-amber-800 tracking-wider">
@@ -534,7 +566,7 @@ function ReviewAndPayContent() {
 
               <button onClick={handlePay} disabled={isProcessing || isAmountInvalid}
                 className={cn(
-                  "w-full mt-5 py-3.5 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                  "w-full mt-5 py-3.5 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                   isAmountInvalid ? "bg-red-500 shadow-red-100" : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
                 )}
               >

@@ -43,10 +43,20 @@ function LoginContent() {
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
   // Extract return target from either 'callbackUrl' or 'callback' search parameters
-  const targetDestination = useMemo(() => {
-    const rawCallback = searchParams.get("callbackUrl") || searchParams.get("callback");
-    return rawCallback ? decodeURIComponent(rawCallback) : "/dashboard";
-  }, [searchParams]);
+ // Sanitize callback URL to enforce relative internal redirects only
+const targetDestination = useMemo(() => {
+  const rawCallback = searchParams.get("callbackUrl") || searchParams.get("callback");
+  if (!rawCallback) return "/dashboard";
+
+  const decoded = decodeURIComponent(rawCallback).trim();
+  
+  // Prevent external redirects (e.g., "https://...", "//attacker.com", "javascript:")
+  if (decoded.startsWith("/") && !decoded.startsWith("//")) {
+    return decoded;
+  }
+
+  return "/dashboard";
+}, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

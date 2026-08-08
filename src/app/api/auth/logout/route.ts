@@ -7,15 +7,30 @@ export async function POST() {
       { status: 200 }
     );
 
-    // Overwrite cookie value and force immediate browser clearance
-    response.cookies.set("token", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      expires: new Date(0),
-      maxAge: 0, // Force zero max-age alongside Date 0
-      path: "/",
+    // List all potential session cookies to eliminate residual auth tokens
+    const cookiesToClear = [
+      "token",
+      "next-auth.session-token",
+      "__Secure-next-auth.session-token",
+      "next-auth.csrf-token",
+      "__Host-next-auth.csrf-token",
+    ];
+
+    cookiesToClear.forEach((cookieName) => {
+      response.cookies.set(cookieName, "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        expires: new Date(0),
+        maxAge: 0,
+        path: "/",
+      });
     });
+
+    // Prevent browser and CDN caching of the logout response
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
 
     return response;
   } catch (error: any) {
