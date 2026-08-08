@@ -46,6 +46,21 @@ export function Navbar() {
     await signOut({ callbackUrl: "/" });
   };
 
+  // If already logged in -> go straight to /register form
+  // If not logged in -> redirect to login with callbackUrl=/register so they land on form post-login
+  const handleRegisterClick = () => {
+    if (isLoggedIn) {
+      router.push("/register");
+    } else {
+      router.push("/login?callbackUrl=/register");
+    }
+  };
+
+  // Direct login -> lands on /dashboard after logging in
+  const handleLoginClick = () => {
+    router.push("/login?callbackUrl=/dashboard");
+  };
+
   const activeHref = useMemo(() => {
     const exact = navItems.find((i) => i.href === pathname)?.href;
     if (exact) return exact;
@@ -101,8 +116,23 @@ export function Navbar() {
               <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
             ) : !isLoggedIn ? (
               <>
-                <Button href="/login" variant="ghost" size="sm" className="font-semibold">Login</Button>
-                <Button href="/register" variant="primary" size="sm" className="px-6 rounded-full font-bold shadow-lg shadow-orange-500/20">Register</Button>
+                <Button 
+                  onClick={handleLoginClick} 
+                  variant="ghost" 
+                  size="sm" 
+                  className="font-semibold"
+                >
+                  Login
+                </Button>
+
+                <Button 
+                  onClick={handleRegisterClick} 
+                  variant="primary" 
+                  size="sm" 
+                  className="px-6 rounded-full font-bold shadow-lg shadow-orange-500/20 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  Register Now
+                </Button>
               </>
             ) : (
               <div className="flex items-center gap-3">
@@ -116,6 +146,15 @@ export function Navbar() {
                     <ShieldCheck className="w-4 h-4 mr-2" /> Admin
                   </Button>
                 )}
+
+                <Button 
+                  href="/apply" 
+                  variant="primary" 
+                  size="sm" 
+                  className="px-5 rounded-full font-bold shadow-md shadow-orange-500/20 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  Register Now
+                </Button>
 
                 <div className="flex items-center gap-2">
                   <button
@@ -199,8 +238,17 @@ export function Navbar() {
                   <div className="h-12 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
                 ) : !isLoggedIn ? (
                   <div className="grid grid-cols-2 gap-3">
-                    <Button href="/login" variant="outline" size="lg" className="rounded-2xl">Login</Button>
-                    <Button href="/register" variant="primary" size="lg" className="rounded-2xl">Register</Button>
+                    <Button onClick={handleLoginClick} variant="outline" size="lg" className="rounded-2xl">
+                      Login
+                    </Button>
+                    <Button 
+                      onClick={handleRegisterClick} 
+                      variant="primary" 
+                      size="lg" 
+                      className="rounded-2xl bg-orange-500 text-white hover:bg-orange-600"
+                    >
+                      Register Now
+                    </Button>
                   </div>
                 ) : (
                   <Button onClick={handleLogout} variant="primary" size="lg" className="w-full rounded-2xl bg-red-600 hover:bg-red-700 border-none text-white flex justify-center items-center">

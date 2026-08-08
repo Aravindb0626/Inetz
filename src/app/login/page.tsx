@@ -42,38 +42,38 @@ function LoginContent() {
   
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
+  // Extract return target from either 'callbackUrl' or 'callback' search parameters
+  const targetDestination = useMemo(() => {
+    const rawCallback = searchParams.get("callbackUrl") || searchParams.get("callback");
+    return rawCallback ? decodeURIComponent(rawCallback) : "/dashboard";
+  }, [searchParams]);
+
   const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-  setSuccessMsg("");
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccessMsg("");
 
-  const rawCallback = searchParams.get("callback");
-  const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : "/dashboard";
-  
-  try {
-    const res = await signIn("credentials", {
-      email: email.trim(), // Remove accidental spaces
-      password: password,
-      redirect: false,     // Tell NextAuth NOT to redirect to the error page
-    });
+    try {
+      const res = await signIn("credentials", {
+        email: email.trim(),
+        password: password,
+        redirect: false,
+      });
 
-    // Check if NextAuth passed back a configuration or runtime error
-    if (res?.error) {
-      // NextAuth matches your thrown error here
-      setError(res.error); 
+      if (res?.error) {
+        setError(res.error); 
+        setLoading(false);
+      } else if (res?.url) {
+        setSuccessMsg("Session initialized successfully!");
+        router.push(targetDestination);
+        router.refresh();
+      }
+    } catch (err) {
+      setError("An unexpected authentication error occurred.");
       setLoading(false);
-    } else if (res?.url) {
-      // If successful, initialize session routing safely
-      setSuccessMsg("Session initialized successfully!");
-      router.push(finalDestination);
-      router.refresh();
     }
-  } catch (err) {
-    setError("An unexpected authentication error occurred.");
-    setLoading(false);
-  }
-};
+  };
 
   if (!mounted) {
     return (
@@ -213,7 +213,7 @@ function LoginContent() {
 
           <button 
             type="button"
-            onClick={() => signIn("google", { callbackUrl: searchParams.get("callback") || "/dashboard" })}
+            onClick={() => signIn("google", { callbackUrl: targetDestination })}
             className="w-full flex justify-center items-center gap-2 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-[0.98]"
           >
             <FaChrome className="w-3.5 h-3.5 text-orange-500" />
@@ -224,7 +224,7 @@ function LoginContent() {
             <p className="text-center text-[10px] text-zinc-500 uppercase tracking-tight">
               Don't have an ID?{" "}
               <Link
-                href="/register"
+                href="/apply"
                 className="font-black text-orange-600 hover:text-orange-700 underline underline-offset-4"
               >
                 Join the Academy

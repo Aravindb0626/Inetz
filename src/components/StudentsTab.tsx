@@ -1,412 +1,1001 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Loader2, RefreshCw, Search, CheckCircle, AlertTriangle, Users, Filter, Eye, X, Calendar, CreditCard, Award, Phone, Building, ChevronLeft, ChevronRight, Pencil, Trash2, Save } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Eye,
+  Trash2,
+  X,
+  Save,
+  Loader2,
+  GraduationCap,
+  Calendar,
+  Phone,
+  Mail,
+  CreditCard,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  UserPlus,
+  CheckCircle2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import axios from "axios";
+
+interface Installment {
+  receiptNo: string;
+  date: string;
+  paidAmount: number;
+  paymentMethod: string;
+  transactionId?: string;
+  billingBy: string;
+}
+
+interface StudentRecord {
+  _id: string;
+  sNo: number;
+  doj: string;
+  name: string;
+  email: string;
+  phone: string;
+  college: string;
+  domain: string;
+  duration: string;
+  totalBilling: number;
+  totalCollection: number;
+  pendingAmount: number;
+  feesStatus: "Pending" | "Fully Paid" | "Clear" | string;
+  certificateStatus: "Pending" | "Issued" | string;
+  installments: Installment[];
+  createdAt?: string;
+}
+
+const DEFAULT_DOMAINS = [
+  "Web Development",
+  "Data Analytics",
+  "Python Development",
+  "Cyber Security",
+  "Android App Development",
+  "UI/UX Design",
+];
+
+const DEFAULT_DURATIONS = ["1 Week", "2 Weeks", "1 Month", "2 Months", "3 Months", "6 Months"];
 
 export default function StudentsTab() {
-  const [students, setStudents] = useState<any[]>([]);
-  const [availableDomains, setAvailableDomains] = useState<string[]>(["All"]);
-  const [studentsLoading, setStudentsLoading] = useState(true);
-  
-  const [studentSearch, setStudentSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedDomain, setSelectedDomain] = useState<string>("All");
-  const [currentPage, setCurrentPage] = useState(1);
-  
-  const [paginationInfo, setPaginationInfo] = useState({ total: 0, duesCount: 0, clearCount: 0, totalPages: 1 });
-  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [availableDomains, setAvailableDomains] = useState<string[]>(["All", ...DEFAULT_DOMAINS]);
+  const [loading, setLoading] = useState(true);
 
-  // States to facilitate drawer edits
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
+  // Filters & Pagination
+  const [search, setSearch] = useState("");
+  const [domainFilter, setDomainFilter] = useState("All");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalStudents, setTotalStudents] = useState(0);
+
+  // View/Edit Modal State
+  const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(studentSearch), 350);
-    return () => clearTimeout(timer);
-  }, [studentSearch]);
+  // Add Student Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
+  // Add Form Data State
+  const [addForm, setAddForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    college: "",
+    domain: "Web Development",
+    duration: "1 Month",
+    totalBilling: "",
+    initialPayment: "0",
+    paymentMethod: "Cash",
+    billingBy: "Admin",
+  });
+
+  const [addErrors, setAddErrors] = useState<Record<string, string>>({});
+
+  // Edit Form Data State
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    college: "",
+    domain: "",
+    duration: "",
+    totalBilling: 0,
+    certificateStatus: "Pending",
+    feesStatus: "Pending",
+  });
+
+  // Fetch Students Directory
   const fetchStudents = useCallback(async () => {
-    setStudentsLoading(true);
+    setLoading(true);
     try {
-      const queryUrl = `/api/students?search=${encodeURIComponent(debouncedSearch)}&domain=${encodeURIComponent(selectedDomain)}&page=${currentPage}&limit=20`;
-      const res = await fetch(queryUrl);
-      const result = await res.json();
-      
-      if (result.success) {
-        setStudents(result.students || []);
-        setAvailableDomains(result.availableDomains || ["All"]);
-        setPaginationInfo({
-          total: result.pagination.total,
-          duesCount: result.pagination.duesCount,
-          clearCount: result.pagination.clearCount,
-          totalPages: result.pagination.totalPages
-        });
+      const query = new URLSearchParams({
+        search,
+        domain: domainFilter,
+        page: page.toString(),
+        limit: "15",
+      });
+
+      const res = await axios.get(`/api/students?${query.toString()}`);
+      if (res.data.success) {
+        setStudents(res.data.students || []);
+        if (res.data.availableDomains) {
+          const mergedDomains = Array.from(new Set(["All", ...DEFAULT_DOMAINS, ...res.data.availableDomains]));
+          setAvailableDomains(mergedDomains);
+        }
+        if (res.data.pagination) {
+          setTotalPages(res.data.pagination.totalPages || 1);
+          setTotalStudents(res.data.pagination.total || 0);
+        }
       }
     } catch (err) {
-      console.error("Failed fetching paginated profiles: ", err);
+      console.error("Failed to load students:", err);
     } finally {
-      setStudentsLoading(false);
+      setLoading(false);
     }
-  }, [debouncedSearch, selectedDomain, currentPage]);
+  }, [search, domainFilter, page]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, selectedDomain]);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FORM VALIDATION RULES (ALL REQUIRED EXCEPT EMAIL)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const validateAddForm = () => {
+    const errors: Record<string, string> = {};
 
-  // Open candidate details card and load edit variables clone frame safely
-  const handleOpenProfile = (student: any) => {
-    setSelectedStudent(student);
-    setEditForm({ ...student });
-    setIsEditing(false);
+    // 1. Name Validation (Required)
+    if (!addForm.name.trim()) {
+      errors.name = "Student Name is required.";
+    } else if (addForm.name.trim().length < 2) {
+      errors.name = "Name must be at least 2 characters long.";
+    }
+
+    // 2. Phone Validation (Required, exactly 10 digits)
+    const cleanPhone = addForm.phone.replace(/\D/g, "");
+    if (!addForm.phone.trim()) {
+      errors.phone = "Mobile Number is required.";
+    } else if (cleanPhone.length < 10) {
+      errors.phone = "Please enter a valid 10-digit mobile number.";
+    }
+
+    // 3. Email Validation (OPTIONAL - validate format only if provided)
+    if (addForm.email.trim().length > 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(addForm.email.trim())) {
+        errors.email = "Please enter a valid email address.";
+      }
+    }
+
+    // 4. College / Institution (Required)
+    if (!addForm.college.trim()) {
+      errors.college = "College/Institution name is required.";
+    }
+
+    // 5. Domain (Required)
+    if (!addForm.domain.trim()) {
+      errors.domain = "Specialization domain is required.";
+    }
+
+    // 6. Duration (Required)
+    if (!addForm.duration.trim()) {
+      errors.duration = "Program duration is required.";
+    }
+
+    // 7. Total Billing Amount (Required, positive number)
+    const numTotal = Number(addForm.totalBilling);
+    if (!addForm.totalBilling || isNaN(numTotal) || numTotal <= 0) {
+      errors.totalBilling = "Please enter a valid fee amount greater than 0.";
+    }
+
+    // 8. Initial Payment Validation (Cannot exceed total billing)
+    const numPaid = Number(addForm.initialPayment) || 0;
+    if (numPaid < 0) {
+      errors.initialPayment = "Initial payment cannot be negative.";
+    } else if (numTotal > 0 && numPaid > numTotal) {
+      errors.initialPayment = "Initial payment cannot exceed Total Fee.";
+    }
+
+    setAddErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  // Triggers asynchronous write updates to backend schema parameters mapping
-  const handleUpdateStudent = async () => {
-    if (!editForm.name || !editForm.phone) return alert("Name and phone keys are mandatory properties!");
+  // Handle Add Student Submit
+  const handleAddStudentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateAddForm()) {
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      const response = await axios.post("/api/students", {
+        name: addForm.name.trim(),
+        email: addForm.email.trim().toLowerCase(),
+        phone: addForm.phone.trim(),
+        college: addForm.college.trim(),
+        domain: addForm.domain,
+        duration: addForm.duration,
+        totalBilling: Number(addForm.totalBilling),
+        initialPayment: Number(addForm.initialPayment) || 0,
+        paymentMethod: addForm.paymentMethod,
+        billingBy: addForm.billingBy.trim() || "Admin",
+      });
+
+      if (response.data.success) {
+        alert("New Student Profile registered successfully!");
+        setIsAddModalOpen(false);
+        // Reset Form
+        setAddForm({
+          name: "",
+          email: "",
+          phone: "",
+          college: "",
+          domain: "Web Development",
+          duration: "1 Month",
+          totalBilling: "",
+          initialPayment: "0",
+          paymentMethod: "Cash",
+          billingBy: "Admin",
+        });
+        setAddErrors({});
+        fetchStudents();
+      }
+    } catch (err: any) {
+      console.error("Add Student Failure:", err);
+      const msg = err.response?.data?.error || "Failed to create student profile.";
+      alert(msg);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  // Open View/Edit Modal
+  const handleOpenEditModal = (student: StudentRecord) => {
+    setSelectedStudent(student);
+    setEditForm({
+      name: student.name || "",
+      email: student.email || "",
+      phone: student.phone || "",
+      college: student.college || "",
+      domain: student.domain || "Web Development",
+      duration: student.duration || "1 Month",
+      totalBilling: student.totalBilling || 0,
+      certificateStatus: student.certificateStatus || "Pending",
+      feesStatus: student.feesStatus || "Pending",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Save Edit Updates
+  const handleSaveChanges = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+
     setIsSaving(true);
     try {
-      const response = await fetch("/api/students", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editForm._id,
-          name: editForm.name,
-          phone: editForm.phone,
-          college: editForm.college,
-          domain: editForm.domain,
-          duration: editForm.duration,
-          totalBilling: Number(editForm.totalBilling) || 0
-        })
+      const res = await axios.put("/api/students", {
+        id: selectedStudent._id,
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim(),
+        college: editForm.college.trim(),
+        domain: editForm.domain,
+        duration: editForm.duration,
+        totalBilling: Number(editForm.totalBilling),
+        certificateStatus: editForm.certificateStatus,
+        feesStatus: editForm.feesStatus,
       });
-      const res = await response.json();
-      if (res.success) {
-        alert("Student record updated securely!");
-        setSelectedStudent(null);
+
+      if (res.data.success) {
+        alert("Student record updated successfully!");
+        setIsEditModalOpen(false);
         fetchStudents();
-      } else {
-        alert(res.error || "Failed updating record parameters.");
       }
-    } catch {
-      alert("Network runtime error updating profile properties.");
+    } catch (err: any) {
+      console.error("Error updating student:", err);
+      alert(err.response?.data?.error || "Failed to save changes.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Triggers destructive DELETE sequence safely with layout prompt confirmations
+  // Delete Student
   const handleDeleteStudent = async (id: string, name: string) => {
-    if (!confirm(`Are you absolutely sure you want to drop ${name}'s entire profile grid from database logs? This action is permanent.`)) return;
+    if (!confirm(`Are you sure you want to delete profile for "${name}"? This action cannot be undone.`)) return;
+
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/students?id=${id}`, { method: "DELETE" });
-      const result = await res.json();
-      if (result.success) {
+      const res = await axios.delete(`/api/students?id=${id}`);
+      if (res.data.success) {
+        alert("Student profile deleted successfully.");
+        if (isEditModalOpen) setIsEditModalOpen(false);
         fetchStudents();
-      } else {
-        alert(result.error || "Failed to clear student object.");
       }
-    } catch {
-      alert("Network write error during drop routine execution operations.");
+    } catch (err: any) {
+      console.error("Error deleting student:", err);
+      alert(err.response?.data?.error || "Failed to delete profile.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-6">
       
-      {/* HEADER BAR */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between bg-white p-8 rounded-[2rem] border border-zinc-100 shadow-sm gap-6">
+      {/* DIRECTORY HEADER & CONTROLS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black text-zinc-900 tracking-tight">Student Directory</h1>
-          <p className="text-zinc-400 text-sm mt-0.5">Scalable high-speed database aggregation monitoring engine</p>
+          <h2 className="text-lg font-black text-zinc-900 uppercase tracking-tight">Student Directory</h2>
+          <p className="text-xs text-zinc-400 font-medium mt-0.5">
+            Total Enrolled Candidates: <span className="font-bold text-zinc-700">{totalStudents}</span>
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <div className="relative flex-1 min-w-[240px] sm:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search name, phone, or university..."
-              value={studentSearch}
-              onChange={(e) => setStudentSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 text-xs font-medium rounded-xl text-zinc-800 outline-none focus:border-zinc-400 focus:bg-white transition-all"
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search Name, Email, Phone..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="w-full pl-9 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 transition-all placeholder:text-zinc-400"
             />
           </div>
-          <button onClick={fetchStudents} className="p-3 bg-zinc-50 hover:bg-zinc-100 text-zinc-500 border border-zinc-200 rounded-xl transition-colors h-10 flex items-center justify-center">
-            <RefreshCw size={14} className={studentsLoading ? "animate-spin" : ""} />
+
+          {/* Domain Filter */}
+          <div className="relative">
+            <select
+              value={domainFilter}
+              onChange={(e) => { setDomainFilter(e.target.value); setPage(1); }}
+              className="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer appearance-none pr-8"
+            >
+              {availableDomains.map((dom) => (
+                <option key={dom} value={dom}>
+                  {dom === "All" ? "All Domains" : dom}
+                </option>
+              ))}
+            </select>
+            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+          </div>
+
+          <button
+            onClick={fetchStudents}
+            className="p-2 border border-zinc-200 rounded-xl hover:bg-zinc-100 text-zinc-600 transition-colors"
+            title="Reload Directory"
+          >
+            <RefreshCw size={14} className={cn(loading && "animate-spin")} />
+          </button>
+
+          {/* 🎯 ADD STUDENT MANUAL BUTTON */}
+          <button
+            onClick={() => {
+              setAddErrors({});
+              setIsAddModalOpen(true);
+            }}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all"
+          >
+            <UserPlus size={15} /> Add Student
           </button>
         </div>
       </div>
 
-      {/* STATS INFOGRAPHIC ROW */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm flex items-center gap-4">
-          <span className="p-3 bg-zinc-100 text-zinc-800 rounded-xl"><Users size={18} /></span>
-          <div>
-            <p className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Total Matches Found</p>
-            <p className="text-xl font-black text-zinc-900 mt-0.5">{paginationInfo.total} Students</p>
+      {/* STUDENT TABLE */}
+      <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="h-64 flex flex-col items-center justify-center text-zinc-400">
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mb-2" />
+            <p className="text-xs font-bold uppercase tracking-wider">Syncing Student Directory...</p>
           </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm flex items-center gap-4">
-          <span className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><CheckCircle size={18} /></span>
-          <div>
-            <p className="text-[10px] font-black uppercase text-emerald-500 tracking-wider">Cleared Profiles</p>
-            <p className="text-xl font-black text-emerald-600 mt-0.5">{paginationInfo.clearCount} Accounts</p>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm flex items-center gap-4">
-          <span className="p-3 bg-amber-50 text-amber-600 rounded-xl"><AlertTriangle size={18} /></span>
-          <div>
-            <p className="text-[10px] font-black uppercase text-amber-500 tracking-wider">Accounts With Dues</p>
-            <p className="text-xl font-black text-amber-600 mt-0.5">{paginationInfo.duesCount} Accounts</p>
-          </div>
-        </div>
-      </div>
-
-      {/* FILTER ROW */}
-      <div className="bg-white p-4 rounded-2xl border border-zinc-100 shadow-sm flex items-center gap-3 overflow-x-auto scrollbar-none">
-        <span className="text-zinc-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shrink-0 pl-2">
-          <Filter size={12} /> Domain:
-        </span>
-        <div className="flex items-center gap-1.5 whitespace-nowrap">
-          {availableDomains.map((dom) => (
-            <button
-              key={dom}
-              onClick={() => setSelectedDomain(dom)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
-                selectedDomain === dom ? "bg-zinc-900 text-white border-zinc-900" : "bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-              }`}
-            >
-              {dom}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ROSTER DATA GRID TABLE */}
-      {studentsLoading ? (
-        <div className="h-64 bg-white rounded-[2rem] border border-zinc-100 flex items-center justify-center">
-          <Loader2 className="animate-spin text-emerald-600" size={28} />
-        </div>
-      ) : students.length === 0 ? (
-        <div className="text-center py-20 bg-white border border-zinc-100 rounded-[2rem] text-zinc-400 text-sm font-medium">
-          No student match conditions found inside filtered database limits.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="bg-white rounded-[2rem] border border-zinc-100 shadow-sm overflow-hidden">
-            <div className="w-full overflow-x-auto">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-400 select-none">
-                    <th className="py-4 px-6">Student Information</th>
-                    <th className="py-4 px-6">Specialized Track / Duration</th>
-                    <th className="py-4 px-6">Total Billing</th>
-                    <th className="py-4 px-6">Balance Dues Status</th>
-                    <th className="py-4 px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 text-xs text-zinc-700 font-medium">
-                  {students.map((student, sIdx) => {
-                    const hasDues = student.balanceAmount > 0;
-                    return (
-                      <tr key={`${student.phone}_${sIdx}`} className="hover:bg-zinc-50/50 transition-colors duration-150">
-                        <td className="py-4 px-6 space-y-1">
-                          <div className="font-bold text-zinc-900 text-sm">{student.name}</div>
-                          <div className="text-zinc-400 font-mono">{student.phone}</div>
-                          <div className="text-zinc-500 max-w-sm truncate">{student.college}</div>
-                        </td>
-                        <td className="py-4 px-6 space-y-1">
-                          <div><span className="px-2 py-0.5 bg-zinc-100 text-zinc-800 font-bold rounded border border-zinc-200">{student.domain}</span></div>
-                          <div className="text-zinc-400 font-semibold pl-1 mt-1">{student.duration}</div>
-                        </td>
-                        <td className="py-4 px-6 font-bold text-zinc-900 text-sm">₹{student.totalBilling?.toLocaleString("en-IN")}</td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-2">
-                            {hasDues ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-100">
-                                <AlertTriangle size={12} /> Pending Dues: ₹{student.balanceAmount.toLocaleString("en-IN")}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                <CheckCircle size={12} /> Clear No Dues
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button onClick={() => handleOpenProfile(student)} className="p-2 text-zinc-400 hover:text-zinc-900 border border-zinc-100 bg-white shadow-sm hover:border-zinc-300 rounded-xl transition-all inline-flex items-center gap-1 text-xs font-semibold">
-                              <Eye size={13} /> View
-                            </button>
-                            <button onClick={() => handleDeleteStudent(student._id, student.name)} className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 bg-white shadow-sm border border-zinc-100 hover:border-red-200 rounded-xl transition-all">
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* DYNAMIC PAGINATION FOOTER BUTTONS CONTROLS */}
-          {paginationInfo.totalPages > 1 && (
-            <div className="flex items-center justify-between bg-white px-6 py-4 rounded-2xl border border-zinc-100 shadow-sm text-xs font-bold text-zinc-500">
-              <span>Showing Page {currentPage} of {paginationInfo.totalPages}</span>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 border border-zinc-200 rounded-xl hover:bg-zinc-50 disabled:opacity-40 disabled:hover:bg-transparent transition-all"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.min(paginationInfo.totalPages, prev + 1))}
-                  disabled={currentPage === paginationInfo.totalPages}
-                  className="p-2 border border-zinc-200 rounded-xl hover:bg-zinc-50 disabled:opacity-40 disabled:hover:bg-transparent transition-all"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* STUDENT DETAILS & INTEGRATED EDIT DRAWER OVERLAY */}
-      {selectedStudent && (
-        <div className="fixed inset-0 z-[1050] bg-zinc-950/40 backdrop-blur-sm flex items-center justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-zinc-100">
-            
-            {/* Drawer Header Block */}
-            <div className="p-6 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 bg-zinc-900 text-white rounded-xl"><Users size={16} /></span>
-                <div>
-                  <h2 className="text-base font-bold text-zinc-900">{isEditing ? "Edit Candidate Information" : "Student Profile Summary"}</h2>
-                  <p className="text-[10px] font-mono text-zinc-400 mt-0.5">UID: {selectedStudent.phone}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {!isEditing && (
-                  <button onClick={() => setIsEditing(true)} className="p-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors">
-                    <Pencil size={13} /> Edit
-                  </button>
-                )}
-                <button onClick={() => setSelectedStudent(null)} className="p-2 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 rounded-xl"><X size={18} /></button>
-              </div>
-            </div>
-
-            {/* Scrollable Core Drawer Content Context View */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              
-              {isEditing ? (
-                /* INTERACTIVE EDIT INPUT FIELDS BLOCK FORMS */
-                <div className="space-y-4 animate-in fade-in duration-100">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Student Name</label>
-                    <input type="text" value={editForm.name || ""} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Mobile Contact Identity</label>
-                    <input type="text" value={editForm.phone || ""} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-mono"/>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Institution / University Name</label>
-                    <input type="text" value={editForm.college || ""} onChange={e => setEditForm({...editForm, college: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Syllabus Domain</label>
-                      <input type="text" value={editForm.domain || ""} onChange={e => setEditForm({...editForm, domain: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Course Duration</label>
-                      <input type="text" value={editForm.duration || ""} onChange={e => setEditForm({...editForm, duration: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-medium"/>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Total Contract Billing (₹)</label>
-                    <input type="number" value={editForm.totalBilling || ""} onChange={e => setEditForm({...editForm, totalBilling: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-400 focus:bg-white transition-all text-zinc-800 font-bold"/>
-                  </div>
-
-                  <div className="pt-4 flex gap-2">
-                    <button onClick={() => setIsEditing(false)} className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">Cancel</button>
-                    <button onClick={handleUpdateStudent} disabled={isSaving} className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50">
-                      {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Updates
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* TRADITIONAL STATIC DISPLAY SCHEMES */
-                <>
-                  <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5 space-y-3.5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-black text-zinc-900 leading-tight">{selectedStudent.name}</h3>
-                        <p className="text-xs text-zinc-400 font-mono mt-0.5 flex items-center gap-1"><Phone size={12} /> {selectedStudent.phone}</p>
-                      </div>
-                      <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-md tracking-wider border ${selectedStudent.balanceAmount > 0 ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"}`}>
-                        {selectedStudent.balanceAmount > 0 ? "Incomplete Dues" : "Verified Clear"}
+        ) : students.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-zinc-100 bg-zinc-50/60 text-[10px] font-black uppercase text-zinc-400 tracking-wider">
+                  <th className="py-3.5 px-4">S.No</th>
+                  <th className="py-3.5 px-4">Student Name</th>
+                  <th className="py-3.5 px-4">Contact Info</th>
+                  <th className="py-3.5 px-4">College & Domain</th>
+                  <th className="py-3.5 px-4">Fee Status</th>
+                  <th className="py-3.5 px-4">Cert Status</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 text-xs font-medium text-zinc-700">
+                {students.map((st) => (
+                  <tr key={st._id} className="hover:bg-zinc-50/50 transition-colors">
+                    <td className="py-3.5 px-4 font-mono text-[11px] font-bold text-zinc-400">
+                      #{st.sNo || "N/A"}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="font-bold text-zinc-900">{st.name}</p>
+                      <p className="text-[10px] font-mono text-zinc-400">{st.doj || "N/A"}</p>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="font-mono text-zinc-800">{st.phone}</p>
+                      <p className="text-[10px] text-zinc-400 truncate max-w-[150px]">{st.email || "No Email"}</p>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="font-bold text-zinc-800 truncate max-w-[180px]">{st.college}</p>
+                      <p className="text-[10px] text-emerald-600 font-bold">{st.domain} ({st.duration})</p>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[9px] font-black uppercase border tracking-wider",
+                          st.pendingAmount <= 0 || st.feesStatus === "Clear" || st.feesStatus === "Fully Paid"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                        )}
+                      >
+                        {st.pendingAmount <= 0 ? "Clear" : `Due: ₹${st.pendingAmount}`}
                       </span>
-                    </div>
-                    <hr className="border-dashed border-zinc-200" />
-                    <div className="space-y-2 text-xs font-semibold text-zinc-600">
-                      <p className="flex items-center gap-2 text-zinc-800"><Building size={14} className="text-zinc-400 shrink-0" /> {selectedStudent.college}</p>
-                      <p className="flex items-center gap-2 text-zinc-800"><Award size={14} className="text-zinc-400 shrink-0" /> {selectedStudent.domain} ({selectedStudent.duration})</p>
-                    </div>
-                  </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[9px] font-black uppercase border tracking-wider",
+                          st.certificateStatus === "Issued"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                        )}
+                      >
+                        {st.certificateStatus || "Pending"}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <button
+                        onClick={() => handleOpenEditModal(st)}
+                        className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ml-auto"
+                      >
+                        <Eye size={12} /> View / Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="py-16 text-center space-y-2">
+            <AlertCircle className="w-8 h-8 text-zinc-300 mx-auto" />
+            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">No Student Records Found</p>
+          </div>
+        )}
 
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 pl-1">Financial State</h4>
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-zinc-400 uppercase">Total Fee</p><p className="text-sm font-black text-zinc-900 mt-1">₹{selectedStudent.totalBilling?.toLocaleString("en-IN")}</p></div>
-                      <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-emerald-500 uppercase">Paid Now</p><p className="text-sm font-black text-emerald-600 mt-1">₹{(selectedStudent.totalBilling - selectedStudent.balanceAmount).toLocaleString("en-IN")}</p></div>
-                      <div className="bg-white border border-zinc-200 rounded-xl p-3"><p className="text-[9px] font-bold text-amber-500 uppercase">Balance</p><p className="text-sm font-black text-amber-600 mt-1">₹{selectedStudent.balanceAmount?.toLocaleString("en-IN")}</p></div>
-                    </div>
-                  </div>
+        {/* PAGINATION FOOTER */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+            <p className="text-xs text-zinc-400 font-bold">
+              Page {page} of {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 bg-white border border-zinc-200 rounded-lg disabled:opacity-40 hover:bg-zinc-50 transition-all text-zinc-700"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 bg-white border border-zinc-200 rounded-lg disabled:opacity-40 hover:bg-zinc-50 transition-all text-zinc-700"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 pl-1">Processed Receipts Timeline</h4>
-                    {(selectedStudent.installments || []).length === 0 ? (
-                      <div className="text-center py-8 bg-zinc-50 border border-zinc-100 rounded-xl text-xs text-zinc-400 font-semibold">No verified collection assets found for this candidate.</div>
-                    ) : (
-                      <div className="space-y-3">
-                        {selectedStudent.installments.map((receipt: any, rIdx: number) => (
-                          <div key={receipt.receiptNo || rIdx} className="bg-white border border-zinc-100 shadow-sm rounded-xl p-4 flex justify-between items-start gap-4">
-                            <div className="space-y-1">
-                              <p className="font-mono text-xs font-black text-zinc-800 tracking-tight">{receipt.receiptNo}</p>
-                              <p className="text-[11px] text-zinc-400 flex items-center gap-1"><Calendar size={12} /> {receipt.date}</p>
-                              <p className="text-[11px] text-zinc-500 flex items-center gap-1"><CreditCard size={11} /> Auth By: <span className="font-bold text-zinc-700">{receipt.billingBy}</span></p>
-                            </div>
-                            <div className="text-right space-y-1">
-                              <p className="text-sm font-black text-emerald-600">₹{receipt.paidAmount?.toLocaleString("en-IN")}</p>
-                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-zinc-100 text-zinc-700 border">{receipt.paymentMethod}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {/* 🎯 MODAL 1: ADD NEW STUDENT PROFILE (STRICT VALIDATIONS, OPTIONAL EMAIL)   */}
+      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-[999] bg-zinc-950/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl rounded-3xl border border-zinc-200 shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="px-6 py-5 bg-zinc-900 text-white flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                  <UserPlus size={18} />
+                </span>
+                <div>
+                  <h3 className="text-base font-black uppercase tracking-tight">Manual Student Admission</h3>
+                  <p className="text-[11px] text-zinc-400 font-medium">Register a candidate for offline or cash payment</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            {!isEditing && (
-              <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex justify-end">
-                <button onClick={() => setSelectedStudent(null)} className="w-full px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl">Close Profile Document</button>
-              </div>
-            )}
+            {/* Form Content */}
+            <form onSubmit={handleAddStudentSubmit} className="p-6 md:p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+              
+              {/* Personal Info */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 pb-2">
+                  1. Candidate Profile Info
+                </h4>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Name (REQUIRED) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">
+                      Student Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Rahul Sharma"
+                      value={addForm.name}
+                      onChange={(e) => {
+                        setAddForm({ ...addForm, name: e.target.value });
+                        if (addErrors.name) setAddErrors({ ...addErrors, name: "" });
+                      }}
+                      className={cn(
+                        "w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white transition-all",
+                        addErrors.name ? "border-red-400 bg-red-50/30" : "border-zinc-200 focus:border-emerald-500"
+                      )}
+                    />
+                    {addErrors.name && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{addErrors.name}</p>}
+                  </div>
+
+                  {/* Phone (REQUIRED - 10 DIGITS) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">
+                      Mobile Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="10-digit Phone Number"
+                      value={addForm.phone}
+                      onChange={(e) => {
+                        setAddForm({ ...addForm, phone: e.target.value });
+                        if (addErrors.phone) setAddErrors({ ...addErrors, phone: "" });
+                      }}
+                      className={cn(
+                        "w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white transition-all",
+                        addErrors.phone ? "border-red-400 bg-red-50/30" : "border-zinc-200 focus:border-emerald-500"
+                      )}
+                    />
+                    {addErrors.phone && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{addErrors.phone}</p>}
+                  </div>
+
+                  {/* Email (OPTIONAL) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">
+                      Email Address <span className="text-zinc-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="candidate@gmail.com"
+                      value={addForm.email}
+                      onChange={(e) => {
+                        setAddForm({ ...addForm, email: e.target.value });
+                        if (addErrors.email) setAddErrors({ ...addErrors, email: "" });
+                      }}
+                      className={cn(
+                        "w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white transition-all",
+                        addErrors.email ? "border-red-400 bg-red-50/30" : "border-zinc-200 focus:border-emerald-500"
+                      )}
+                    />
+                    {addErrors.email && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{addErrors.email}</p>}
+                  </div>
+
+                  {/* College / Institution (REQUIRED) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">
+                      College / Institution <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Loyola College"
+                      value={addForm.college}
+                      onChange={(e) => {
+                        setAddForm({ ...addForm, college: e.target.value });
+                        if (addErrors.college) setAddErrors({ ...addErrors, college: "" });
+                      }}
+                      className={cn(
+                        "w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white transition-all",
+                        addErrors.college ? "border-red-400 bg-red-50/30" : "border-zinc-200 focus:border-emerald-500"
+                      )}
+                    />
+                    {addErrors.college && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{addErrors.college}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Program Details */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 pb-2">
+                  2. Program Enrollment Parameters
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Domain (REQUIRED) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">
+                      Specialization Domain <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={addForm.domain}
+                      onChange={(e) => setAddForm({ ...addForm, domain: e.target.value })}
+                      className="w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 transition-all cursor-pointer"
+                    >
+                      {DEFAULT_DOMAINS.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Duration (REQUIRED) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">
+                      Internship Duration <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={addForm.duration}
+                      onChange={(e) => setAddForm({ ...addForm, duration: e.target.value })}
+                      className="w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 transition-all cursor-pointer"
+                    >
+                      {DEFAULT_DURATIONS.map((dur) => (
+                        <option key={dur} value={dur}>{dur}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Collection */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 pb-2">
+                  3. Fee Structure & Cash Collection
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Total Fee (REQUIRED) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">
+                      Total Course Fee (₹) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1500"
+                      value={addForm.totalBilling}
+                      onChange={(e) => {
+                        setAddForm({ ...addForm, totalBilling: e.target.value });
+                        if (addErrors.totalBilling) setAddErrors({ ...addErrors, totalBilling: "" });
+                      }}
+                      className={cn(
+                        "w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white transition-all",
+                        addErrors.totalBilling ? "border-red-400 bg-red-50/30" : "border-zinc-200 focus:border-emerald-500"
+                      )}
+                    />
+                    {addErrors.totalBilling && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{addErrors.totalBilling}</p>}
+                  </div>
+
+                  {/* Initial Payment Collected */}
+                  <div>
+                    <label className="text-[10px] font-bold text-emerald-700 uppercase ml-1">
+                      Amount Paid Now (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={addForm.initialPayment}
+                      onChange={(e) => {
+                        setAddForm({ ...addForm, initialPayment: e.target.value });
+                        if (addErrors.initialPayment) setAddErrors({ ...addErrors, initialPayment: "" });
+                      }}
+                      className={cn(
+                        "w-full mt-1 px-3.5 py-2.5 bg-emerald-50/50 border rounded-xl text-xs font-bold text-emerald-900 outline-none focus:bg-white transition-all",
+                        addErrors.initialPayment ? "border-red-400" : "border-emerald-200 focus:border-emerald-500"
+                      )}
+                    />
+                    {addErrors.initialPayment && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{addErrors.initialPayment}</p>}
+                  </div>
+
+                  {/* Payment Method */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase ml-1">Payment Method</label>
+                    <select
+                      value={addForm.paymentMethod}
+                      onChange={(e) => setAddForm({ ...addForm, paymentMethod: e.target.value })}
+                      className="w-full mt-1 px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 transition-all cursor-pointer"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="GPay">GPay / UPI</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-zinc-100 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-5 py-2.5 border border-zinc-200 text-zinc-600 rounded-xl text-xs font-bold hover:bg-zinc-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAdding}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all"
+                >
+                  {isAdding ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Register Candidate
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}
+
+      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {/* 🎯 MODAL 2: COMPREHENSIVE VIEW & EDIT STUDENT MODAL                        */}
+      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {isEditModalOpen && selectedStudent && (
+        <div className="fixed inset-0 z-[999] bg-zinc-950/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl rounded-3xl border border-zinc-200 shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-5 bg-zinc-900 text-white flex justify-between items-center">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black uppercase tracking-tight">{selectedStudent.name}</h3>
+                  <span className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
+                    S.No: #{selectedStudent.sNo || "N/A"}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                  Joined on: {selectedStudent.doj || "N/A"}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveChanges} className="p-6 md:p-8 space-y-8 max-h-[80vh] overflow-y-auto">
+              
+              {/* SECTION 1: PERSONAL & ACADEMIC INFORMATION */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 pb-2">
+                  1. Personal & Program Details
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Student Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Phone Number</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Email Address</label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      placeholder="e.g. student@gmail.com"
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">College / Institution</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.college}
+                      onChange={(e) => setEditForm({ ...editForm, college: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Specialization Domain</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.domain}
+                      onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Duration</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.duration}
+                      onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Certificate Status</label>
+                    <select
+                      value={editForm.certificateStatus}
+                      onChange={(e) => setEditForm({ ...editForm, certificateStatus: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Issued">Issued</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: FINANCIAL TRACKING & FEES */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 pb-2">
+                  2. Financial Status & Adjustments
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Total Fee (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      value={editForm.totalBilling}
+                      onChange={(e) => setEditForm({ ...editForm, totalBilling: Number(e.target.value) })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100">
+                    <p className="text-[9px] font-black uppercase text-emerald-600">Total Collected</p>
+                    <p className="text-base font-black text-emerald-700 mt-0.5">
+                      ₹{(selectedStudent.totalCollection || 0).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+
+                  <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
+                    <p className="text-[9px] font-black uppercase text-amber-600">Calculated Balance</p>
+                    <p className="text-base font-black text-amber-700 mt-0.5">
+                      ₹{Math.max(0, editForm.totalBilling - (selectedStudent.totalCollection || 0)).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Fees Status</label>
+                    <select
+                      value={editForm.feesStatus}
+                      onChange={(e) => setEditForm({ ...editForm, feesStatus: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Clear">Clear</option>
+                      <option value="Fully Paid">Fully Paid</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: INSTALLMENT LEDGER HISTORY */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center border-b border-zinc-100 pb-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                    3. Payment Installments Ledger ({selectedStudent.installments?.length || 0})
+                  </h4>
+                </div>
+
+                {selectedStudent.installments && selectedStudent.installments.length > 0 ? (
+                  <div className="border border-zinc-200 rounded-2xl overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-zinc-50 border-b border-zinc-200 text-[9px] font-black uppercase text-zinc-400">
+                        <tr>
+                          <th className="p-3">Receipt No</th>
+                          <th className="p-3">Date</th>
+                          <th className="p-3">Paid Amount</th>
+                          <th className="p-3">Method</th>
+                          <th className="p-3">Billing Staff</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 font-medium text-zinc-700">
+                        {selectedStudent.installments.map((inst, idx) => (
+                          <tr key={inst.receiptNo || idx} className="hover:bg-zinc-50/50">
+                            <td className="p-3 font-mono text-[11px] font-bold text-zinc-900">{inst.receiptNo}</td>
+                            <td className="p-3">{inst.date}</td>
+                            <td className="p-3 font-bold text-emerald-600">₹{inst.paidAmount?.toLocaleString("en-IN")}</td>
+                            <td className="p-3">
+                              <span className="px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded text-[9px] font-bold">
+                                {inst.paymentMethod}
+                              </span>
+                            </td>
+                            <td className="p-3 text-zinc-500">{inst.billingBy}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-6 text-center border-2 border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50">
+                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">No Installments Audited Yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* MODAL FOOTER ACTIONS */}
+              <div className="pt-4 border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => handleDeleteStudent(selectedStudent._id, selectedStudent.name)}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+                >
+                  {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete Profile
+                </button>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="flex-1 sm:flex-initial px-5 py-2.5 border border-zinc-200 text-zinc-600 rounded-xl text-xs font-bold hover:bg-zinc-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex-1 sm:flex-initial px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all"
+                  >
+                    {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Updates
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

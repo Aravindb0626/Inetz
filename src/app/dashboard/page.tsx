@@ -5,35 +5,52 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Phone, GraduationCap,
   Calendar, Mail, Briefcase, FileText,
-  ChevronRight, LayoutGrid, Info, BadgeCheck, Loader2
+  LayoutGrid, Info, BadgeCheck, Loader2,
+  CreditCard, IndianRupee, AlertCircle, CheckCircle2, Link2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import axios from "axios";
 
-interface Application {
+interface Installment {
+  receiptNo: string;
+  date: string;
+  paidAmount: number;
+  paymentMethod: string;
+  billingBy: string;
+  transactionId?: string;
+}
+
+interface StudentProfile {
   _id: string;
-  fullName?: string;
-  email?: string;
-  phone?: string;
-  college?: string;
-  year?: string;
-  department?: string;
+  sNo: number;
+  doj: string;
+  name: string;
+  phone: string;
+  college: string;
   domain: string;
   duration: string;
-  mode: string;
-  status: string;
-  createdAt: string;
+  totalBilling: number;
+  totalCollection: number;
+  pendingAmount: number;
+  feesStatus: "Pending" | "Fully Paid" | string;
+  certificateStatus: "Pending" | "Issued" | string;
+  installments: Installment[];
+  createdAt?: string;
 }
 
 const Dashboard = () => {
   const { data: session, status: sessionStatus } = useSession();
   const [loading, setLoading] = useState(true);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [studentData, setStudentData] = useState<StudentProfile | null>(null);
+  
+  // Account Linking States
+  const [phoneInput, setPhoneInput] = useState("");
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchStudentData = async () => {
       if (sessionStatus !== "authenticated" || !session?.user?.email) {
         if (sessionStatus === "unauthenticated") setLoading(false);
         return;
@@ -41,26 +58,56 @@ const Dashboard = () => {
 
       try {
         const userEmail = session.user.email;
-        const response = await fetch(`/api/student/data?email=${userEmail}`);
-        const result = await response.json();
+        const response = await axios.get(`/api/student/data?email=${encodeURIComponent(userEmail)}`);
 
-        if (result.success) {
-          const apps = Array.isArray(result.data.profile) ? result.data.profile : [result.data.profile];
-          setApplications(apps);
-          if (apps.length > 0) setSelectedAppId(apps[0]._id);
+        if (response.data?.success && response.data?.student) {
+          setStudentData(response.data.student);
         }
-      } catch (error) {
-        console.error("Data fetch failed", error);
+      } catch (error: any) {
+        if (error.response?.status !== 404) {
+          console.error("Student data fetch failed:", error);
+        }
+        setStudentData(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
+    fetchStudentData();
   }, [session, sessionStatus]);
 
-  const activeApp: Application | undefined =
-    applications.find((a: Application) => a._id === selectedAppId);
+  // Account Linking Form Handler via Axios POST
+  const handlePhoneSubmitAndLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!session?.user?.email) {
+      return alert("Session expired. Please sign in again.");
+    }
+
+    const cleanPhone = phoneInput.trim();
+    if (cleanPhone.length < 10) {
+      return alert("Please enter a valid 10-digit phone number.");
+    }
+
+    setLinking(true);
+
+    try {
+      const response = await axios.post("/api/student/data", {
+        email: session.user.email,
+        phone: cleanPhone,
+      });
+
+      if (response.data?.success && response.data?.student) {
+        setStudentData(response.data.student);
+      }
+    } catch (err: any) {
+      console.error("Account linking error:", err);
+      const errorMessage = err.response?.data?.error || "No student record found for this phone number.";
+      alert(errorMessage);
+    } finally {
+      setLinking(false);
+    }
+  };
 
   // Loading State
   if (loading || sessionStatus === "loading") return (
@@ -73,13 +120,13 @@ const Dashboard = () => {
   // Unauthenticated State
   if (sessionStatus === "unauthenticated") return (
     <div className="h-screen flex flex-col items-center justify-center bg-white">
-      <p className="text-sm font-bold text-zinc-900">Please sign in to view this page.</p>
+      <p className="text-sm font-bold text-zinc-900">Please sign in to view your portal.</p>
       <a href="/login" className="mt-4 text-xs font-black uppercase text-orange-500 underline">Go to Login</a>
     </div>
   );
 
   return (
-    <div className="min-h-screen lg:h-screen bg-[#F9F9F9] text-zinc-900 font-sans flex flex-col lg:overflow-hidden">
+    <div className="min-h-screen bg-[#F9F9F9] text-zinc-900 font-sans flex flex-col">
       
       {/* COMPACT HEADER */}
       <header className="bg-white border-b border-zinc-200 py-4 px-6 md:px-8 shrink-0">
@@ -88,7 +135,7 @@ const Dashboard = () => {
             <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center text-white">
               <LayoutGrid className="w-4 h-4" />
             </div>
-            <h1 className="text-sm font-black uppercase tracking-tight">Technical <span className="text-emerald-600">Portal</span></h1>
+            <h1 className="text-sm font-black uppercase tracking-tight">Student <span className="text-emerald-600">Portal</span></h1>
           </div>
           
           <div className="flex items-center gap-3 bg-zinc-50 px-3 py-1.5 rounded-full border border-zinc-100 shadow-sm">
@@ -113,148 +160,168 @@ const Dashboard = () => {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="flex-1 max-w-[1400px] w-full mx-auto p-4 md:p-6 flex flex-col lg:overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 lg:h-full">
-          
-          {/* LEFT: COURSE TABS */}
-          <div className="lg:col-span-4 flex flex-col gap-4 max-h-[400px] lg:max-h-none">
-            <div className="flex justify-between items-center px-2">
-               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">My Applications</h2>
-               <span className="text-[10px] bg-zinc-200 px-2 py-0.5 rounded-full font-bold">{applications.length}</span>
-            </div>
+      <main className="flex-1 max-w-[1400px] w-full mx-auto p-4 md:p-6">
+        {studentData ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
             
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              {applications.length > 0 ? (
-                applications.map((app) => (
-                  <button
-                    key={app._id}
-                    onClick={() => setSelectedAppId(app._id)}
-                    className={cn(
-                      "w-full text-left p-5 rounded-2xl border transition-all relative overflow-hidden group",
-                      selectedAppId === app._id 
-                        ? "bg-white border-zinc-900 shadow-md" 
-                        : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
-                    )}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className={cn("text-sm font-black transition-colors", selectedAppId === app._id ? "text-zinc-900" : "text-zinc-500")}>
-                          {app.domain}
-                        </h3>
-                        <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-wider">{app.duration} • {app.mode}</p>
-                      </div>
-                      <ChevronRight className={cn("w-4 h-4 transition-transform", selectedAppId === app._id ? "translate-x-1 text-zinc-900" : "text-zinc-200")} />
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-10 border-2 border-dashed rounded-2xl border-zinc-200 bg-white">
-                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No Applications Found</p>
+            {/* LEFT COLUMN: STUDENT & ENROLLMENT OVERVIEW */}
+            <div className="lg:col-span-5 space-y-6">
+              
+              {/* Profile Card */}
+              <div className="bg-white p-6 rounded-[2rem] border border-zinc-200 shadow-sm space-y-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-xl font-black text-zinc-900">{studentData.name}</h2>
+                    <p className="text-xs text-zinc-400 font-mono mt-0.5">{studentData.phone}</p>
+                  </div>
+                  <span className={cn(
+                    "text-[9px] font-black uppercase px-3 py-1 rounded-full border tracking-wider",
+                    studentData.pendingAmount > 0 
+                      ? "bg-amber-50 text-amber-700 border-amber-200" 
+                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  )}>
+                    {studentData.pendingAmount > 0 ? "Pending Dues" : "Fully Paid"}
+                  </span>
                 </div>
-              )}
+
+                <div className="space-y-3 pt-2 border-t border-zinc-100">
+                  <InfoItem label="Email Address" value={session?.user?.email || "N/A"} icon={Mail} />
+                  <InfoItem label="College / University" value={studentData.college} icon={GraduationCap} />
+                  <InfoItem label="Date of Joining" value={studentData.doj} icon={Calendar} />
+                </div>
+              </div>
+
+              {/* Enrolled Track Summary */}
+              <div className="bg-white p-6 rounded-[2rem] border border-zinc-200 shadow-sm space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+                  <BadgeCheck className="w-4 h-4 text-emerald-600" /> Enrolled Internship Track
+                </h3>
+                
+                <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-2">
+                  <p className="text-xs font-black text-zinc-400 uppercase">Specialization Domain</p>
+                  <p className="text-base font-black text-zinc-900">{studentData.domain}</p>
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="px-2.5 py-1 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-zinc-700">
+                      Duration: {studentData.duration}
+                    </span>
+                    <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-700">
+                      Cert Status: {studentData.certificateStatus}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Snapshot */}
+              <div className="bg-white p-6 rounded-[2rem] border border-zinc-200 shadow-sm space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-zinc-600" /> Fee Breakdown
+                </h3>
+                
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-3">
+                    <p className="text-[9px] font-black uppercase text-zinc-400">Total Fee</p>
+                    <p className="text-sm font-black text-zinc-900 mt-1">₹{studentData.totalBilling?.toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-3">
+                    <p className="text-[9px] font-black uppercase text-emerald-600">Total Paid</p>
+                    <p className="text-sm font-black text-emerald-700 mt-1">₹{studentData.totalCollection?.toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-3">
+                    <p className="text-[9px] font-black uppercase text-amber-600">Balance</p>
+                    <p className="text-sm font-black text-amber-700 mt-1">₹{studentData.pendingAmount?.toLocaleString("en-IN")}</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
-          </div>
 
-          {/* RIGHT: DETAILS */}
-          <div className="lg:col-span-8 flex flex-col lg:overflow-hidden pb-6 lg:pb-0">
-            <AnimatePresence mode="wait">
-              {activeApp ? (
-                <motion.div 
-                  key={selectedAppId}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="w-full flex flex-col bg-white rounded-[2rem] border border-zinc-200 shadow-sm overflow-hidden lg:h-full"
-                >
-                  {/* DETAIL HEADER */}
-                  <div className="p-6 border-b border-zinc-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-zinc-50/50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-xl border border-zinc-200">
-                        <FileText className="w-4 h-4 text-zinc-500" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Application Status</p>
-                        <p className={cn(
-                          "text-xs font-bold uppercase",
-                          activeApp.status?.toLowerCase() === 'pending' ? "text-orange-500" : "text-emerald-600"
-                        )}>{activeApp.status}</p>
-                      </div>
-                    </div>
-                    <div className="sm:text-right">
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Submission Date</p>
-                      <p className="text-xs font-bold text-zinc-900">
-                        {new Date(activeApp.createdAt).toLocaleDateString('en-GB')}
-                      </p>
-                    </div>
+            {/* RIGHT COLUMN: PAYMENT RECEIPTS & INSTALLMENT HISTORY */}
+            <div className="lg:col-span-7">
+              <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-zinc-200 shadow-sm h-full flex flex-col">
+                <div className="flex justify-between items-center pb-4 border-b border-zinc-100">
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-tight text-zinc-900">Payment Receipts</h3>
+                    <p className="text-[10px] font-bold text-zinc-400 mt-0.5">Verified Installments History</p>
                   </div>
-
-                  {/* DETAIL BODY */}
-                  <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12">
-                      
-                      {/* Personal Profile */}
-                      <div className="space-y-4">
-                        <h4 className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em] flex items-center gap-2">
-                          <User className="w-3 h-3" /> Personal Profile
-                        </h4>
-                        <div className="space-y-4">
-                          <InfoItem label="Full Name" value={activeApp.fullName} icon={User} />
-                          <InfoItem label="Email Address" value={activeApp.email} icon={Mail} />
-                          <InfoItem label="Phone Number" value={activeApp.phone} icon={Phone} />
-                        </div>
-                      </div>
-
-                      {/* Academic Record */}
-                      <div className="space-y-4">
-                        <h4 className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em] flex items-center gap-2">
-                          <GraduationCap className="w-3 h-3" /> Academic Record
-                        </h4>
-                        <div className="space-y-4">
-                          <InfoItem label="College / University" value={activeApp.college} icon={GraduationCap} />
-                          <InfoItem label="Year of Study" value={activeApp.year} icon={Calendar} />
-                          <InfoItem label="Department" value={activeApp.department} icon={Briefcase} />
-                        </div>
-                      </div>
-
-                      {/* Student Configuration */}
-                      <div className="space-y-4 md:col-span-2 pt-6 border-t border-zinc-50">
-                        <h4 className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em] flex items-center gap-2">
-                          <BadgeCheck className="w-3 h-3" /> Student Configuration
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                            <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Track Selection</p>
-                            <p className="text-sm font-bold text-zinc-800">{activeApp.domain}</p>
-                          </div>
-                          <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                            <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Duration</p>
-                            <p className="text-sm font-bold text-zinc-800">{activeApp.duration}</p>
-                          </div>
-                          <div className={cn(
-                            "p-4 rounded-2xl border",
-                            activeApp.mode === 'Offline' ? "bg-orange-50 border-orange-100" : "bg-blue-50 border-blue-100"
-                          )}>
-                            <p className={cn(
-                              "text-[9px] font-black uppercase mb-1",
-                              activeApp.mode === 'Offline' ? "text-orange-400" : "text-blue-400"
-                            )}>Training Mode</p>
-                            <p className="text-sm font-bold text-zinc-800">{activeApp.mode}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-                </motion.div>
-              ) : (
-                <div className="h-[300px] lg:h-full flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] bg-zinc-50/50">
-                  <Info className="w-8 h-8 text-zinc-300 mb-2" />
-                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Select a course to view details</p>
+                  <span className="text-[10px] bg-zinc-100 px-2.5 py-1 rounded-full font-extrabold text-zinc-600 border border-zinc-200">
+                    {studentData.installments?.length || 0} Payments
+                  </span>
                 </div>
-              )}
-            </AnimatePresence>
+
+                <div className="flex-1 overflow-y-auto mt-6 space-y-4 pr-1 custom-scrollbar max-h-[600px]">
+                  {studentData.installments && studentData.installments.length > 0 ? (
+                    studentData.installments.map((inst, idx) => (
+                      <div key={inst.receiptNo || idx} className="bg-zinc-50/60 border border-zinc-200/80 rounded-2xl p-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-black text-zinc-900">{inst.receiptNo}</span>
+                            <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white border border-zinc-200 rounded text-zinc-600">
+                              {inst.paymentMethod}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-medium text-zinc-500 flex items-center gap-1.5">
+                            <Calendar className="w-3 h-3 text-zinc-400" /> Date: <span className="font-bold text-zinc-700">{inst.date}</span>
+                          </p>
+                          <p className="text-[11px] font-medium text-zinc-500">
+                            Issued By: <span className="font-bold text-zinc-700">{inst.billingBy}</span>
+                          </p>
+                        </div>
+
+                        <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-zinc-200/60">
+                          <p className="text-[9px] font-black uppercase text-zinc-400">Amount Paid</p>
+                          <p className="text-lg font-black text-emerald-600">₹{inst.paidAmount?.toLocaleString("en-IN")}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-16 border-2 border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50">
+                      <FileText className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">No Verified Payment Receipts Found</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
           </div>
-        </div>
+        ) : (
+          /* PHONE LINKING SECTION (Matching Portal Theme & Styling) */
+          <div className="max-w-md mx-auto my-12 bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-sm text-center space-y-6">
+            <div className="w-12 h-12 bg-zinc-900 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
+              <Link2 className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h2 className="text-base font-black text-zinc-900 uppercase tracking-tight">Link Your Student Profile</h2>
+              <p className="text-[11px] text-zinc-500 font-medium mt-1">
+                No profile linked to <span className="font-bold text-zinc-800">{session?.user?.email}</span>. If you registered offline or paid via cash, enter your registered mobile number below to connect your profile.
+              </p>
+            </div>
+
+            <form onSubmit={handlePhoneSubmitAndLink} className="space-y-4">
+              <div className="relative">
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <input
+                  type="tel"
+                  placeholder="Enter Registered Mobile Number"
+                  value={phoneInput}
+                  onChange={(e) => setPhoneInput(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 transition-all placeholder:text-zinc-400"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={linking}
+                className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-black text-xs uppercase py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {linking ? "Syncing Profile..." : "Sync & View Portal"}
+              </button>
+            </form>
+          </div>
+        )}
       </main>
 
       <style jsx global>{`
@@ -268,13 +335,13 @@ const Dashboard = () => {
 
 /* Info Row Helper Component */
 const InfoItem = ({ label, value, icon: Icon }: { label: string, value?: string, icon: any }) => (
-  <div className="flex items-start gap-4 group">
-    <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center shrink-0 border border-zinc-100 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+  <div className="flex items-start gap-3">
+    <div className="w-7 h-7 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0 border border-zinc-200 text-zinc-600">
       <Icon className="w-3.5 h-3.5" />
     </div>
     <div>
       <p className="text-[9px] font-black text-zinc-400 uppercase tracking-wider leading-none mb-1">{label}</p>
-      <p className="text-sm font-bold text-zinc-800">{value || "Not Provided"}</p>
+      <p className="text-xs font-bold text-zinc-800">{value || "Not Provided"}</p>
     </div>
   </div>
 );
