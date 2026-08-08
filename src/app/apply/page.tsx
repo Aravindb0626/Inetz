@@ -3,14 +3,18 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, Loader2, ArrowLeft, IndianRupee, Lock, User, Mail, Phone, Building2, GraduationCap } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { ChevronDown, Loader2, ArrowLeft, IndianRupee, Lock, ShieldCheck, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import axios from "axios";
 
-/** 
- * Design preserved as requested. 
- * Logic maintained for Razorpay, input validation, and custom amounts.
- * Dependency on static program-data removed.
- */
+interface ProgramItem {
+  _id?: string;
+  title: string;
+  duration: string;
+  price?: number;
+  originalPrice?: number;
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -36,9 +40,13 @@ function Select({ label, options, onChange, ...props }: any) {
     <Field label={label}>
       <div className="relative">
         <select {...props} onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold focus:bg-white focus:border-indigo-500 outline-none appearance-none cursor-pointer"
+          className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold focus:bg-white focus:border-indigo-500 outline-none appearance-none cursor-pointer capitalize"
         >
-          {options.map((o: string) => <option key={o} value={o}>{o}</option>)}
+          {options.map((o: string) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
         </select>
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-3 text-slate-400 pointer-events-none" />
       </div>
@@ -69,20 +77,31 @@ function StepCard({ step, title, children }: { step: number; title: string; chil
 function ReviewAndPayContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status: sessionStatus } = useSession();
 
-  // Extracting data directly from URL params - No programData needed
-  const urlTrack         = searchParams.get("track") || "Full Stack";
-  const urlDuration      = searchParams.get("duration") || "1 Month";
-  const urlPrice         = parseInt(searchParams.get("price") || "0");
+  // Role Detection
+  const userRole = (session?.user as any)?.role;
+  const isAdmin = userRole === "admin";
+
+  // URL Parameters
+  const urlTrack = searchParams.get("track") || "WEB DEVELOPMENT";
+  const urlDuration = searchParams.get("duration") || "1 Week";
+  const urlPrice = parseInt(searchParams.get("price") || "0");
   const urlOriginalPrice = parseInt(searchParams.get("originalPrice") || "0");
-  const urlCourseTitle   = searchParams.get("courseTitle") || "";
-
-  // Set defaults if params are missing (Fallback logic)
-  const discountedFee = urlPrice || 500;
-  const originalFee   = urlOriginalPrice || (discountedFee * 4);
+  const urlCourseTitle = searchParams.get("courseTitle") || "";
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [customAmount, setCustomAmount] = useState(discountedFee);
+  const [programs, setPrograms] = useState<ProgramItem[]>([]);
+  const [loadingTracks, setLoadingTracks] = useState(true);
+
+  // Fee state
+  const [discountedFee, setDiscountedFee] = useState<number>(urlPrice || 1499);
+  const [originalFee, setOriginalFee] = useState<number>(urlOriginalPrice || (discountedFee * 2));
+  const [customAmount, setCustomAmount] = useState<number>(discountedFee);
+
+  // Admin Specific Options
+  const [adminPaymentMethod, setAdminPaymentMethod] = useState<"Cash" | "GPay">("Cash");
+
   const [form, setForm] = useState({
     fullName: "", email: "", phone: "",
     college: "", department: "", year: "1st Year",
@@ -91,23 +110,198 @@ function ReviewAndPayContent() {
 
   const set = (key: string) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
-  useEffect(() => { setCustomAmount(discountedFee); }, [discountedFee]);
+  // Helper function to trigger clear login alert & redirect
+  const promptLogin = () => {
+    const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/apply";
+    const wantsToLogin = window.confirm(
+      "Notice: You must be logged in to complete enrollment and access your student dashboard.\n\nClick 'OK' to navigate to the Sign In page now."
+    );
+    if (wantsToLogin) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
+    }
+  };
 
-  // Logic: Validation flags
+  // 1. Fetch tracks and programs from API
+  useEffect(() => {
+    async function fetchPrograms() {
+      try {
+        setLoadingTracks(true);
+        const res = await fetch("/api/tracks");
+        if (res.ok) {
+          const data: ProgramItem[] = await res.json();
+          setPrograms(data);
+
+          if (Array.isArray(data) && data.length > 0) {
+            const matched = data.find(
+              (p) => p.title.toLowerCase() === urlTrack.toLowerCase() && p.duration.toLowerCase() === urlDuration.toLowerCase()
+            ) || data.find(
+              (p) => p.title.toLowerCase() === urlTrack.toLowerCase()
+            ) || data[0];
+
+            setForm((f) => ({
+              ...f,
+              track: matched.title,
+              duration: matched.duration || f.duration,
+            }));
+
+            if (matched.price) {
+              setDiscountedFee(matched.price);
+              setCustomAmount(matched.price);
+            }
+            if (matched.originalPrice) {
+              setOriginalFee(matched.originalPrice);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch tracks:", err);
+      } finally {
+        setLoadingTracks(false);
+      }
+    }
+
+    fetchPrograms();
+  }, [urlTrack, urlDuration]);
+
+  // 2. Pre-fill user data when NextAuth session becomes available
+  useEffect(() => {
+    if (session?.user) {
+      const u = session.user as any;
+      setForm((prev) => ({
+        ...prev,
+        fullName: prev.fullName || u.name || "",
+        email: prev.email || u.email || "",
+        phone: prev.phone || u.phone || u.phoneNumber || "",
+      }));
+    }
+  }, [session]);
+
+  // 3. Available duration options for current track
+  const availableDurations = Array.from(
+    new Set(
+      programs
+        .filter((p) => p.title === form.track)
+        .map((p) => p.duration)
+        .filter(Boolean)
+    )
+  );
+
+  const durationOptions = availableDurations.length > 0 ? availableDurations : ["1 Week", "2 Weeks", "1 Month", "2 Months"];
+
+  // 4. Handle Track change
+  const handleTrackChange = (selectedTitle: string) => {
+    const trackPrograms = programs.filter((p) => p.title === selectedTitle);
+    const matched = trackPrograms[0];
+    const newDuration = matched?.duration || form.duration;
+
+    setForm((f) => ({
+      ...f,
+      track: selectedTitle,
+      duration: newDuration,
+    }));
+
+    if (matched?.price) {
+      setDiscountedFee(matched.price);
+      setCustomAmount(matched.price);
+    }
+    if (matched?.originalPrice) {
+      setOriginalFee(matched.originalPrice);
+    }
+  };
+
+  // 5. Handle Duration change
+  const handleDurationChange = (selectedDuration: string) => {
+    const matched = programs.find(
+      (p) => p.title === form.track && p.duration === selectedDuration
+    );
+
+    setForm((f) => ({
+      ...f,
+      duration: selectedDuration,
+    }));
+
+    if (matched?.price) {
+      setDiscountedFee(matched.price);
+      setCustomAmount(matched.price);
+    }
+    if (matched?.originalPrice) {
+      setOriginalFee(matched.originalPrice);
+    }
+  };
+
+  // Validation flags
   const isOverAmount = customAmount > discountedFee;
-  const isUnderAmount = customAmount < 500;
+  const isUnderAmount = customAmount < 500 && !isAdmin;
   const isAmountInvalid = isOverAmount || isUnderAmount;
 
+  // ─── MAIN PAY / ADMIT SUBMISSION HANDLER ────────────────────────────────────
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 🎯 ALERT CHECK FOR UNAUTHENTICATED USERS
+    if (sessionStatus === "unauthenticated" || !session) {
+      promptLogin();
+      return;
+    }
+
     if (isUnderAmount) return alert("Min payment is ₹500");
     if (isOverAmount) return alert(`Max payment is ₹${discountedFee.toLocaleString()}`);
-    if (!form.fullName || !form.email || !form.phone) return alert("Please fill in all contact details.");
-    if (!form.college || !form.department) return alert("Please fill in your education details.");
+    if (!form.fullName || !form.phone) return alert("Please fill in candidate name and mobile number.");
+    if (!form.college || !form.department) return alert("Please fill in education details.");
 
     setIsProcessing(true);
+
+    // PATH 1: ADMIN MANUAL ENTRY
+    if (isAdmin) {
+      try {
+        const response = await axios.post("/api/students", {
+          name: form.fullName.trim(),
+          email: form.email.trim().toLowerCase(),
+          phone: form.phone.trim(),
+          college: form.college.trim(),
+          domain: form.track,
+          duration: form.duration,
+          totalBilling: discountedFee,
+          initialPayment: customAmount,
+          paymentMethod: adminPaymentMethod,
+          billingBy: session?.user?.name || "Admin Manual Entry",
+        });
+
+        if (response.data.success) {
+          alert(`Student profile registered successfully under ${adminPaymentMethod} entry!`);
+          router.push("/admin");
+        }
+      } catch (err: any) {
+        console.error("Admin Manual Admission Failed:", err);
+        alert(err.response?.data?.error || "Failed to register candidate.");
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+
+    // PATH 2: STUDENT ONLINE PAYMENT VIA RAZORPAY
     try {
-      const res  = await fetch("/api/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, amountToPay: customAmount }) });
+      const applyPayload = {
+        fullName: form.fullName.trim(),
+        name: form.fullName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        college: form.college.trim(),
+        department: form.department.trim(),
+        year: form.year,
+        domain: form.track,
+        duration: form.duration,
+        mode: form.mode,
+        totalBilling: discountedFee,
+        amountToPay: customAmount
+      };
+
+      const res = await fetch("/api/apply", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(applyPayload) 
+      });
       const data = await res.json();
 
       if (!res.ok || !data.key || !data.orderId || !data.amount) {
@@ -116,17 +310,42 @@ function ReviewAndPayContent() {
       }
       
       const rzp = new (window as any).Razorpay({
-        key: data.key, amount: data.amount, currency: "INR",
+        key: data.key, 
+        amount: data.amount, 
+        currency: "INR",
         name: "INetZ Academy",
-        description: `${urlTrack} Internship - ${urlDuration}`,
+        description: `${form.track} Internship - ${form.duration}`,
         order_id: data.orderId,
         prefill: { name: form.fullName, email: form.email, contact: form.phone },
         theme: { color: "#4F46E5" },
         modal: { ondismiss: () => setIsProcessing(false) },
         handler: async (response: any) => {
-          const verify = await fetch("/api/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(response) });
-          const result = await verify.json();
-          result.success ? router.push("/dashboard?status=success") : (alert("Verification failed."), setIsProcessing(false));
+          try {
+            const verify = await fetch("/api/verify", { 
+              method: "POST", 
+              headers: { "Content-Type": "application/json" }, 
+              body: JSON.stringify({
+                ...response,
+                phone: form.phone.trim(),
+                email: form.email.trim(),
+                paidAmount: customAmount,
+                paymentMethod: "GPay",
+                billingBy: "Razorpay Online"
+              }) 
+            });
+            const result = await verify.json();
+            
+            if (result.success) {
+              router.push("/dashboard?status=success");
+            } else {
+              alert(`Verification failed: ${result.error || "Please contact support."}`);
+              setIsProcessing(false);
+            }
+          } catch (err) {
+            console.error("Verification network error:", err);
+            alert("Verification failed due to a network connection error.");
+            setIsProcessing(false);
+          }
         },
       });
 
@@ -134,14 +353,16 @@ function ReviewAndPayContent() {
       rzp.open();
     } catch (err) {
       console.error(err);
-      alert("Something went wrong.");
+      alert("Something went wrong during payment processing.");
       setIsProcessing(false);
     }
   };
 
+  const trackOptions = Array.from(new Set(programs.map((p) => p.title)));
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      {!isAdmin && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />}
 
       <main className="max-w-5xl mx-auto px-6 py-8 md:py-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
@@ -150,15 +371,50 @@ function ReviewAndPayContent() {
           <button onClick={() => router.back()} className="text-[10px] font-black uppercase flex items-center gap-1.5 text-slate-400 hover:text-[#4F46E5] transition-all tracking-widest">
             <ArrowLeft className="w-3 h-3" /> Back
           </button>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Review & Apply</h1>
+          
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
+              {isAdmin ? "Admin Manual Admission" : "Review & Apply"}
+            </h1>
+            {isAdmin && (
+              <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldCheck size={12} /> Admin Mode
+              </span>
+            )}
+          </div>
+
+          {/* ON-PAGE ALERT BANNER FOR VISITORS */}
+          {sessionStatus === "unauthenticated" && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 shadow-sm">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">Account Sign-In Required</p>
+                <p className="text-[11px] font-medium text-amber-700 mt-0.5">
+                  You need an active account to link your payment and track your internship modules.
+                </p>
+              </div>
+              <button
+                onClick={promptLogin}
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] uppercase rounded-xl transition-all shrink-0 shadow-sm"
+              >
+                Sign In
+              </button>
+            </div>
+          )}
 
           <div className="space-y-5">
             <StepCard step={1} title="Contact Information">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Input label="Full Name"    value={form.fullName}   onChange={set("fullName")}  placeholder="John Doe" />
-                <Input label="Email"        value={form.email}      onChange={set("email")}      placeholder="john@example.com" />
+                <Input label="Full Name *" value={form.fullName} onChange={set("fullName")} placeholder="Rahul Sharma" />
+                <Input 
+                  label={isAdmin ? "Email (Optional for Admin)" : "Email *"} 
+                  value={form.email} 
+                  onChange={set("email")} 
+                  placeholder="rahul@example.com" 
+                  disabled={!isAdmin && !!session?.user?.email} 
+                />
                 <div className="md:col-span-2">
-                  <Input label="Phone Number" value={form.phone}    onChange={set("phone")}      placeholder="+91" />
+                  <Input label="Phone Number *" value={form.phone} onChange={set("phone")} placeholder="10-digit mobile number" />
                 </div>
               </div>
             </StepCard>
@@ -166,17 +422,43 @@ function ReviewAndPayContent() {
             <StepCard step={2} title="Education Details">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="md:col-span-2">
-                  <Input label="College"   value={form.college}    onChange={set("college")}    placeholder="Institution Name" />
+                  <Input label="College *" value={form.college} onChange={set("college")} placeholder="Institution Name" />
                 </div>
-                <Input label="Department"  value={form.department} onChange={set("department")} placeholder="e.g. CSE" />
-                <Select label="Year" value={form.year} options={["1st Year", "2nd Year", "3rd Year", "4th Year"]} onChange={set("year")} />
+                <Input label="Department *" value={form.department} onChange={set("department")} placeholder="e.g. CSE" />
+                <Select label="Year *" value={form.year} options={["1st Year", "2nd Year", "3rd Year", "4th Year"]} onChange={set("year")} />
               </div>
             </StepCard>
 
             <StepCard step={3} title="Program Details">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <StaticField label="Track"    value={urlTrack.toUpperCase()} />
-                <StaticField label="Duration" value={urlDuration} />
+                
+                {/* Track Dropdown */}
+                {loadingTracks ? (
+                  <Field label="Track">
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold text-slate-400 flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                      Loading...
+                    </div>
+                  </Field>
+                ) : trackOptions.length > 0 ? (
+                  <Select 
+                    label="Track" 
+                    value={form.track} 
+                    options={trackOptions} 
+                    onChange={handleTrackChange} 
+                  />
+                ) : (
+                  <StaticField label="Track" value={form.track.toUpperCase()} />
+                )}
+
+                {/* Duration Dropdown */}
+                <Select 
+                  label="Duration" 
+                  value={form.duration} 
+                  options={durationOptions} 
+                  onChange={handleDurationChange} 
+                />
+                
                 <Select label="Mode" value={form.mode} options={["Online", "Offline"]} onChange={set("mode")} />
               </div>
             </StepCard>
@@ -195,7 +477,7 @@ function ReviewAndPayContent() {
               </div>
 
               <h3 className="font-black text-sm leading-tight text-slate-800 uppercase tracking-tighter">
-                {urlCourseTitle ? `${urlCourseTitle} — ${urlDuration}` : `${urlDuration} ${urlTrack} Internship`}
+                {urlCourseTitle ? `${urlCourseTitle} — ${form.duration}` : `${form.duration} ${form.track} Internship`}
               </h3>
 
               <div className="mt-4 space-y-2">
@@ -208,6 +490,39 @@ function ReviewAndPayContent() {
                   <span>-₹{(originalFee - discountedFee).toLocaleString()}</span>
                 </div>
 
+                {/* ADMIN PAYMENT METHOD SELECTOR */}
+                {isAdmin && (
+                  <div className="my-3 p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5">
+                    <label className="text-[9px] font-black uppercase text-amber-800 tracking-wider">
+                      Admin Collection Method
+                    </label>
+                    <div className="flex gap-4 pt-1">
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="adminPayment"
+                          value="Cash"
+                          checked={adminPaymentMethod === "Cash"}
+                          onChange={() => setAdminPaymentMethod("Cash")}
+                          className="accent-indigo-600"
+                        />
+                        Cash
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="adminPayment"
+                          value="GPay"
+                          checked={adminPaymentMethod === "GPay"}
+                          onChange={() => setAdminPaymentMethod("GPay")}
+                          className="accent-indigo-600"
+                        />
+                        GPay / UPI
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 <div className={cn(
                   "border rounded-lg p-2.5 my-3 flex items-center justify-between gap-3 transition-colors",
                   isOverAmount  ? "bg-red-50 border-red-200"    :
@@ -215,13 +530,15 @@ function ReviewAndPayContent() {
                   "bg-slate-50 border-slate-100"
                 )}>
                   <div>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Payable Now</p>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                      {isAdmin ? "Collected Amount" : "Payable Now"}
+                    </p>
                     {isOverAmount ? (
                       <p className="text-[7px] font-black text-red-500 uppercase tracking-wide">Max ₹{discountedFee.toLocaleString()}</p>
                     ) : isUnderAmount ? (
                       <p className="text-[7px] font-black text-amber-500 uppercase tracking-wide">Min ₹500</p>
                     ) : (
-                      <p className="text-[7px] font-bold text-slate-400 italic">(Min ₹500)</p>
+                      <p className="text-[7px] font-bold text-slate-400 italic">({isAdmin ? "Custom Admin Entry" : "Min ₹500"})</p>
                     )}
                   </div>
                   <div className="relative flex-1 max-w-[110px]">
@@ -249,12 +566,12 @@ function ReviewAndPayContent() {
 
               <button onClick={handlePay} disabled={isProcessing || isAmountInvalid}
                 className={cn(
-                  "w-full mt-5 py-3.5 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                  "w-full mt-5 py-3.5 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                   isAmountInvalid ? "bg-red-500 shadow-red-100" : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
                 )}
               >
                 {isProcessing ? <Loader2 className="animate-spin size-3" /> : <Lock className="size-3" />}
-                {isOverAmount ? `Check Limit` : "Enroll Now"}
+                {isAdmin ? "Register Candidate (Admin)" : isOverAmount ? "Check Limit" : "Enroll Now"}
               </button>
             </div>
           </div>

@@ -28,7 +28,6 @@ function LoginContent() {
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fix Hydration: Ensure client-side values match after mount
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -43,43 +42,49 @@ function LoginContent() {
   
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
+  // Extract return target from either 'callbackUrl' or 'callback' search parameters
+ // Sanitize callback URL to enforce relative internal redirects only
+const targetDestination = useMemo(() => {
+  const rawCallback = searchParams.get("callbackUrl") || searchParams.get("callback");
+  if (!rawCallback) return "/dashboard";
+
+  const decoded = decodeURIComponent(rawCallback).trim();
+  
+  // Prevent external redirects (e.g., "https://...", "//attacker.com", "javascript:")
+  if (decoded.startsWith("/") && !decoded.startsWith("//")) {
+    return decoded;
+  }
+
+  return "/dashboard";
+}, [searchParams]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccessMsg("");
 
-    const rawCallback = searchParams.get("callback");
-    
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const res = await signIn("credentials", {
+        email: email.trim(),
+        password: password,
+        redirect: false,
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        // Determine destination based on role
-        // If a callback URL exists (like from a protected link), use it.
-        // Otherwise, route based on the user's role.
-        const roleBasedDestination = data.user.role === "admin" ? "/admin" : "/dashboard";
-        const finalDestination = rawCallback ? decodeURIComponent(rawCallback) : roleBasedDestination;
-
-        // Force a clean navigation to ensure the token is recognized
-        window.location.href = finalDestination;
-      } else {
-        setError(data.error || "Authentication failed. Check your credentials.");
+      if (res?.error) {
+        setError(res.error); 
         setLoading(false);
+      } else if (res?.url) {
+        setSuccessMsg("Session initialized successfully!");
+        router.push(targetDestination);
+        router.refresh();
       }
     } catch (err) {
-      setError("Network error. The server is unreachable.");
+      setError("An unexpected authentication error occurred.");
       setLoading(false);
     }
   };
 
-  
   if (!mounted) {
     return (
       <div className="h-screen flex items-center justify-center bg-white dark:bg-zinc-950">
@@ -129,7 +134,8 @@ function LoginContent() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2 text-red-600 text-[10px] font-bold"
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 flex items-center gap-2 text-red-600 dark:text-red-400 text-[10px] font-bold"
               >
                 <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
                 {error}
@@ -139,7 +145,8 @@ function LoginContent() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-2 text-emerald-600 text-[10px] font-bold"
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold"
               >
                 <ShieldCheck className="w-3 h-3 text-emerald-500" />
                 {successMsg}
@@ -216,7 +223,7 @@ function LoginContent() {
 
           <button 
             type="button"
-            onClick={() => signIn("google", { callbackUrl: searchParams.get("callback") || "/dashboard" })}
+            onClick={() => signIn("google", { callbackUrl: targetDestination })}
             className="w-full flex justify-center items-center gap-2 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-[0.98]"
           >
             <FaChrome className="w-3.5 h-3.5 text-orange-500" />
@@ -227,7 +234,7 @@ function LoginContent() {
             <p className="text-center text-[10px] text-zinc-500 uppercase tracking-tight">
               Don't have an ID?{" "}
               <Link
-                href="/register"
+                href="/apply"
                 className="font-black text-orange-600 hover:text-orange-700 underline underline-offset-4"
               >
                 Join the Academy
