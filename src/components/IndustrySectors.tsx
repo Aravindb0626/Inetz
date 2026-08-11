@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
@@ -306,11 +307,13 @@ export default function IndustrySectors() {
                 className="relative rounded-3xl overflow-hidden cursor-pointer snap-start shrink-0 select-none group"
                 style={{ height: isMobile ? 320 : 380 }}
               >
-                <img
+                <Image
                   src={sector.image}
                   alt={sector.title}
                   draggable={false}
-                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ${isActive ? "scale-110" : "group-hover:scale-105"}`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className={`object-cover transition-transform duration-700 ${isActive ? "scale-110" : "group-hover:scale-105"}`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
 
@@ -400,9 +403,11 @@ export default function IndustrySectors() {
             >
               {/* Left Side - Visual Hero (Mobile Hidden or Top) */}
               <div className="relative w-full md:w-2/5 h-48 md:h-auto shrink-0 overflow-hidden">
-                <img
+                <Image
                   src={selectedIndustry.image}
-                  className="w-full h-full object-cover"
+                  className="object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   alt={selectedIndustry.title}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-zinc-900 via-zinc-900/40 to-transparent" />

@@ -3,10 +3,12 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Navbar } from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
+import dynamic from "next/dynamic";
 import { Toaster } from "sonner";
 import Providers from "./providers";
+
+const Footer = dynamic(() => import("@/components/Footer"), { ssr: true });
+const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton").then((mod) => mod.WhatsAppButton));
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,14 +31,14 @@ export const metadata: Metadata = {
     "AI internship Chennai",
     "Data science internship Chennai",
     "Placement training Chennai",
-    "Software training institute in Chennai",
+    "Software training  in Chennai",
     "Inetz Technologies",
     "Best internship with placement Chennai",
     "internship in chennai for students",
     "software internship in chennai",
     "internship companies in chennai",
     "vadapalani internship company",
-    "best software training institute in chennai",
+    "best software training  in chennai",
     "1 month internship in chennai for students",
     "it companies in chennai for internship",
     "internship in chennai for freshers",
@@ -50,15 +52,26 @@ export const metadata: Metadata = {
     "hadoop training in chennai",
     "embedded systems internship chennai",
     "software developer internship in chennai",
-    "best it training institute in chennai",
+    "best it training  in chennai",
     "internship training in coimbatore",
-    "iot training institute in chennai",
+    "iot training  in chennai",
     "python internship in chennai",
     "ui ux course in chennai",
     "mern stack internship chennai",
     "java developer internship chennai",
     "full stack developer internship chennai",
-    "best placement support institute in chennai"
+    "best placement support  in chennai",
+    "15 days internship in chennai for college students",
+    "it companies in chennai for internship for students",
+    "best it training  in chennai with placement",
+    "it startup companies in chennai",
+    "software companies in vadapalani",
+    "best company for internship in chennai",
+    "internship for science students in chennai",
+    "hr internship in chennai",
+    "bio internship opportunity in chennai",
+    "data science course in chennai",
+    "java selenium training in chennai"
   ],
   authors: [{ name: "Inetz Technologies" }],
   creator: "Inetz Technologies",

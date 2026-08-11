@@ -111,7 +111,7 @@ export default function ContactPage() {
             Let's Build Your <span className="text-emerald-600 italic">Future.</span>
           </motion.h1>
           <p className="text-base text-zinc-600 dark:text-zinc-400">
-            Contact Inetz Technologies, the leading software training institute in Chennai, for internship programs, 
+            Contact Inetz Technologies, the leading software training  in Chennai, for internship programs,
             corporate training, and career-focused project guidance. Visit our Vadapalani center today.
           </p>
         </div>
@@ -262,11 +262,10 @@ export default function ContactPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || isSubmitted}
-                  className={`relative flex h-11 w-full items-center justify-center gap-2 rounded-xl font-bold transition-all duration-300 ${
-                    isSubmitted
+                  className={`relative flex h-11 w-full items-center justify-center gap-2 rounded-xl font-bold transition-all duration-300 ${isSubmitted
                       ? "bg-emerald-600 text-white"
                       : "bg-zinc-900 text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900"
-                  }`}
+                    }`}
                 >
                   <AnimatePresence mode="wait">
                     {isSubmitting ? (

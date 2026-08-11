@@ -104,7 +104,7 @@ export default function InternshipProcess() {
           transition={{ duration: 0.6 }}
           className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-zinc-900 dark:text-zinc-100"
         >
-          Best Software Training <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Institute in Chennai</span> - Internship Training
+          Best Software Training <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500"> in Chennai</span> - Internship Training
         </motion.h2>
       </div>
 

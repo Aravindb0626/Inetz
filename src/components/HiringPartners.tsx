@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Section } from "@/components/ui/Section";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
@@ -75,7 +76,7 @@ export default function HiringPartners() {
               )}
             >
               {partner.image ? (
-                <img src={partner.image} alt={partner.name} className="h-8 sm:h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-300" />
+                <Image src={partner.image} alt={partner.name} width={120} height={48} className="h-8 sm:h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-300" />
               ) : (
                 partner.name
               )}
@@ -94,7 +95,7 @@ export default function HiringPartners() {
               )}
             >
               {partner.image ? (
-                <img src={partner.image} alt={partner.name} className="h-8 sm:h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-300" />
+                <Image src={partner.image} alt={partner.name} width={120} height={48} className="h-8 sm:h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-300" />
               ) : (
                 partner.name
               )}

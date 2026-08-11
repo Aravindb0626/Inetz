@@ -156,7 +156,7 @@ export default function AboutPage() {
                 </h1>
 
                 <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-xl">
-                  Inetz Technologies is Chennai's premier software training institute and internship provider.
+                  Inetz Technologies is Chennai's premier software training  and internship provider.
                   We offer industry-aligned programs in MERN Stack, Java Full Stack, Python, and AI/ML,
                   designed to bridge the gap between academic education and corporate expectations.
                 </p>
@@ -381,25 +381,26 @@ export default function AboutPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
             {[
-              { name: "Senthil Kumar", role: "Founder & CEO", exp: "10+ Years", img: "/senthilkumar.jpg" },
-              { name: "Vigneshwaran", role: "Industry Expert", exp: "5+ Years", img: "/vigneshwaran.jpg" },
-              { name: "Amal", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/amal.jpeg" },
-              { name: "Preethi", role: "Front End Trainer", exp: "5+ Years", img: "/preethi.png" },
-              { name: "Aravindh", role: "Mern Stack Trainer", exp: "3+ Years", img: "/aravindh.png" },
-              { name: "Boomika", role: "Java Full Stack Trainer", exp: "3+ Years", img: "/boomika.png" },
-              { name: "Sri Dhanalakshmi", role: "Data Analytics Trainer", exp: "3+ Years", img: "/sridhanalakshmi.png" },
-              { name: "Anbu", role: "Project Developer", exp: "3+ Years", img: "/anbu.png" }
+              { name: "Senthil Kumar", role: "Founder & CEO",  img: "/staffs/senthilkumar.jpg" },
+              { name: "Vigneshwaran", role: "Industry Expert",  img: "/staffs/vigneshwaran.jpg" },
+              { name: "Amal", role: "Java Full Stack Trainer",  img: "/staffs/amal.jpeg" },
+              { name: "Preethi", role: "Front End Trainer",  img: "/staffs/preethi.png" },
+              { name: "Aravind", role: "Mern Stack Trainer",  img: "/staffs/aravindh.png" },
+              { name: "Boomika", role: "Java Full Stack Trainer", img: "/staffs/boomika.png" },
+              { name: "Dhanalakshmi", role: "Data Analytics Trainer",  img: "/staffs/sridhanalakshmi.png" },
+              { name: "Naresh", role: "Mern Stack Trainer", img: "/staffs/Naresh.png" },
+              { name: "Anbarasan", role: "Java Developer", img: "/staffs/anbu.png" },
+              { name: "Esther Rassou", role: "Data Analytics Trainer", img: "/staffs/Esther.png.jpeg" }
             ].map((member, i) => (
               <motion.div key={i} className="group relative">
                 <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl relative">
                   <img src={member.img} alt={member.name} className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                  <div className="absolute bottom-8 left-8 right-8">
-                    <div className="text-orange-400 font-bold text-[10px] tracking-widest mb-2 px-2 py-1 rounded bg-orange-500/10 border border-orange-500/20 w-fit">{member.exp} EXP</div>
-                    <h3 className="text-white text-3xl font-bold mb-1">{member.name}</h3>
-                    <p className="text-zinc-300 font-medium">{member.role}</p>
+                  <div className="absolute bottom-8 left-8 right-8">                    
+                    <h3 className="text-white text-lg font-bold mb-1">{member.name}</h3>
+                    <p className="text-zinc-300 text-xs font-medium">{member.role}</p>
                   </div>
                 </div>
               </motion.div>

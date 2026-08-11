@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, Network, ChevronLeft, ChevronRight } from "lucide-react";
 import { Section } from "@/components/ui/Section";
@@ -8,25 +9,25 @@ import { cn } from "@/lib/utils";
 
 const SLIDER_SLIDES = [
   {
-    url: "colleges/peri-college.png",
-    title: "PERI Institute of Technology",
+    url: "/colleges/peri-college.png",
+    title: "PERI  of Technology",
     desc: "Collaborating to provide industry-standard software training and placement support for engineering students in Chennai.",
     tag: "MOE Signing",
   },
   {
-    url: "colleges/fx-college.png",
+    url: "/colleges/fx-college.png",
     title: "Francis Xavier Engineering College",
     desc: "Empowering future engineers with advanced technical skills and real-time internship programs through strategic academic partnership.",
     tag: "Partnership",
   },
   {
-    url: "colleges/clg-moe1.png",
+    url: "/colleges/clg-moe1.png",
     title: "St. Joseph's College of Engineering",
     desc: "Integrating our specialized full-stack and data science curriculum into academic frameworks to ensure high-impact career growth.",
     tag: "MOU Signing",
   },
   {
-    url: "colleges/clg-moe.png",
+    url: "/colleges/clg-moe.png",
     title: "SDNB Vaishnav College for Women",
     desc: "Delivering expert-led on-campus training sessions to bridge the gap between classroom theory and modern IT industry requirements.",
     tag: "Training",
@@ -34,10 +35,10 @@ const SLIDER_SLIDES = [
 ] as const;
 
 const PARTNERS = [
-  "Indian Institute of Technology",
+  "Indian  of Technology",
   "Anna University",
   "VIT University",
-  "SRM Institute",
+  "SRM ",
   "BMS College of Engineering",
   "JNTU Hyderabad",
   "College of Engineering Guindy",
@@ -220,10 +221,12 @@ export function MOESection() {
                     }}
                     className="absolute inset-0"
                   >
-                    <img
+                    <Image
                       src={SLIDER_SLIDES[slide].url}
                       alt={SLIDER_SLIDES[slide].title}
-                      className="w-full h-full object-cover brightness-105 contrast-[1.02] transition-all duration-700"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover brightness-105 contrast-[1.02] transition-all duration-700"
                     />
                     <div className="absolute inset-0 pointer-events-none" style={SLIDE_SCRIM} />
                   </motion.div>
