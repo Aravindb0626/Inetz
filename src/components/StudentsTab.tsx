@@ -38,7 +38,10 @@ export default function StudentsTab() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState("All");
   
-  // 🎯 DATE RANGE STATES
+  // 🎯 DURATION FILTER STATE
+  const [durationFilter, setDurationFilter] = useState("All");
+  
+  // DATE RANGE STATES
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -70,7 +73,12 @@ export default function StudentsTab() {
         queryParams.domain = domainFilter;
       }
 
-      // 🎯 PASS DATES TO QUERY PARAMS
+      // 🎯 PASS DURATION FILTER TO QUERY PARAMS
+      if (durationFilter !== "All") {
+        queryParams.duration = durationFilter;
+      }
+
+      // PASS DATES TO QUERY PARAMS
       if (fromDate) queryParams.fromDate = fromDate;
       if (toDate) queryParams.toDate = toDate;
 
@@ -97,7 +105,7 @@ export default function StudentsTab() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, domainFilter, fromDate, toDate, page]);
+  }, [debouncedSearch, domainFilter, durationFilter, fromDate, toDate, page]);
 
   useEffect(() => {
     fetchStudents();
@@ -110,6 +118,12 @@ export default function StudentsTab() {
 
   const handleDomainChange = (val: string) => {
     setDomainFilter(val);
+    setPage(1);
+  };
+
+  // 🎯 DURATION CHANGE HANDLER
+  const handleDurationChange = (val: string) => {
+    setDurationFilter(val);
     setPage(1);
   };
 
@@ -143,6 +157,11 @@ export default function StudentsTab() {
         domainFilter={domainFilter}
         onDomainChange={handleDomainChange}
         availableDomains={availableDomains}
+        
+        durationFilter={durationFilter}
+        onDurationChange={handleDurationChange}
+        availableDurations={["All", ...DEFAULT_DURATIONS]}
+        
         fromDate={fromDate}
         onFromDateChange={handleFromDateChange}
         toDate={toDate}
