@@ -2,13 +2,21 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, User, Clock } from "lucide-react";
-import { blogPosts } from "../data";
+import { ArrowLeft } from "lucide-react";
+import { connectToDatabase } from "@/lib/db";
+import { Journal } from "@/models/Journal";
+import mongoose from "mongoose";
 
 // Generate SEO Metadata for individual posts
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
-  const post = blogPosts.find((p) => p.id === resolvedParams.id);
+  await connectToDatabase();
+  
+  let post = await Journal.findOne({ slug: resolvedParams.id }).lean() as any;
+  if (!post && mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
+    post = await Journal.findById(resolvedParams.id).lean() as any;
+  }
+
   if (!post) {
     return {
       title: "Post Not Found | Inetz Technologies",
@@ -22,14 +30,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title: post.title,
       description: post.excerpt,
       type: "article",
-      images: [post.image],
+      images: [post.mediaUrl || post.image],
     },
   };
 }
 
 export default async function BlogPost({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const post = blogPosts.find((p) => p.id === resolvedParams.id);
+  await connectToDatabase();
+  
+  let post = await Journal.findOne({ slug: resolvedParams.id }).lean() as any;
+  if (!post && mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
+    post = await Journal.findById(resolvedParams.id).lean() as any;
+  }
 
   if (!post) {
     notFound();
@@ -51,19 +64,19 @@ export default async function BlogPost({ params }: { params: Promise<{ id: strin
           </h1>
 
           <div className="text-[#3E526B] text-[15px] mb-6 font-normal">
-            Last updated on - Sep 28, 2025
+            Last updated on - {new Date(post.date || post.createdAt).toLocaleDateString()}
           </div>
 
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full overflow-hidden relative shadow-sm bg-zinc-100">
               <Image 
                 src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200" 
-                alt={post.author}
+                alt={post.author || "Author"}
                 fill
                 className="object-cover"
               />
             </div>
-            <span className="text-[#5B799E] font-medium text-lg">{post.author}</span>
+            <span className="text-[#5B799E] font-medium text-lg">{post.author || "Inetz Team"}</span>
           </div>
         </div>
       </div>
@@ -72,14 +85,16 @@ export default async function BlogPost({ params }: { params: Promise<{ id: strin
       <div className="w-full bg-white pt-12 px-6">
         <div className="max-w-[800px] mx-auto">
           {/* Featured Image */}
-          <div className="relative aspect-[16/9] w-full bg-zinc-100 overflow-hidden rounded-xl mb-12 shadow-md">
-            <Image
-              src={post.image}
-              alt={post.title}
-              fill
-              className="object-cover"
-            />
-          </div>
+          {(post.mediaUrl || post.image) && (
+            <div className="relative aspect-[16/9] w-full bg-zinc-100 overflow-hidden rounded-xl mb-12 shadow-md">
+              <Image
+                src={post.mediaUrl || post.image}
+                alt={post.title}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
 
           {/* Article Content */}
           <article 

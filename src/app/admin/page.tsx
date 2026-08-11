@@ -7,8 +7,9 @@ import PaymentModal from "@/components/PaymentModel";
 import TracksTab from "@/components/TracksTab";
 import StudentsTab from "@/components/StudentsTab";
 import CollectionsTab from "@/components/CollectionsTab";
+import JournalTab from "@/components/JournalTab";
 
-type SidebarTab = "tracks" | "students" | "transactions";
+type SidebarTab = "tracks" | "students" | "transactions" | "journals";
 type FormView = "list" | "form";
 
 const EMPTY_FORM = { title: "", slug: "", subtitle: "", duration: "1 Week", price: "", originalPrice: "", heroImg: "" };
@@ -193,6 +194,15 @@ export default function AdminPage() {
             >
               <History size={16} /> Audit Collections
             </button>
+
+            <button
+              onClick={() => { setActiveTab("journals"); setView("list"); }}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                activeTab === "journals" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/10" : "hover:bg-zinc-800 hover:text-zinc-200"
+              }`}
+            >
+              <BookOpen size={16} /> Journal & Events
+            </button>
           </nav>
         </div>
 
@@ -222,6 +232,10 @@ export default function AdminPage() {
             <CollectionsTab
               setIsPayOpen={setIsPayOpen} 
             />
+          )}
+
+          {activeTab === "journals" && (
+            <JournalTab view={view as any} setView={setView as any} />
           )}
 
         </div>
