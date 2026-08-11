@@ -195,21 +195,28 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-8 pt-8 border-t border-zinc-100 dark:border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-zinc-400 dark:text-zinc-600 text-sm font-semibold tracking-wide">
-            © 2026 Inetz Technologies Private Limited. All Rights Reserved.
-          </p>
+        <div className="mt-8 pt-8 border-t border-zinc-100 dark:border-zinc-900 flex flex-col gap-8">
 
-          <div className="flex gap-8">
-            {footerLinks.support.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 hover:text-orange-500 transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-zinc-400 dark:text-zinc-600 text-sm font-semibold tracking-wide">
+              © 2026 Inetz Technologies Private Limited. All Rights Reserved.
+            </p>
+
+            <div className="flex gap-8">
+              {footerLinks.support.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 hover:text-orange-500 transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="text-[9px] text-zinc-400 dark:text-zinc-500 font-medium leading-relaxed opacity-50 text-center max-w-5xl mx-auto">
+            Chennai Internship Companies | Software Training  in Vadapalani | IT Internship for Students in Chennai | Best IT  in Chennai | Embedded Systems Internship | Final Year Project Center in Chennai | Java selenium training in chennai | HR internship in chennai | Bio internship opportunity in chennai | Designer intern Chennai | IoT trainee internship in Chennai | ML internship companies in Chennai | Power BI internship in Chennai | Software testing internship in Chennai | Academic project center Chennai | Best DevOps training  in Chennai | Best embedded training  in Chennai | Best project center in Chennai.
           </div>
         </div>
       </Section>

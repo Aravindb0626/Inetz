@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, X, Sparkles, Clock, Users, Eye } from "lucide-react";
 import { Section } from "@/components/ui/Section";
@@ -73,10 +74,10 @@ export default function PremiumCoursesSection() {
           transition={{ duration: 0.6 }}
           className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl text-white mb-2"
         >
-          Industry Specialized <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500">Learning Programs</span>
+          Best Software Training <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-sky-500"> in Chennai</span>
         </motion.h2>
         <p className="text-sm md:text-base text-blue-200/80 max-w-xl mx-auto leading-relaxed">
-          Get from basics to professional level with industry-designed tracks and real-time projects.
+          From Hadoop training to AI and MERN stack, we offer the most comprehensive software internship programs in Chennai for college students and freshers.
         </p>
       </div>
 
@@ -98,10 +99,12 @@ export default function PremiumCoursesSection() {
                 className="relative w-full aspect-video rounded-xl overflow-hidden mb-4 bg-blue-50 group/img cursor-pointer"
                 onClick={() => setSelected(course)}
               >
-                <img
+                <Image
                   src={course.image}
                   alt={course.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-105"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 group-hover/img:scale-105"
                 />
                 <div className="absolute inset-0 bg-blue-900/30 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                   <Eye className="w-8 h-8 text-white" />
@@ -159,8 +162,8 @@ export default function PremiumCoursesSection() {
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="w-full h-48 overflow-hidden">
-                <img src={selected.image} className="w-full h-full object-cover" alt={selected.title} />
+              <div className="w-full h-48 relative overflow-hidden">
+                <Image src={selected.image} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" alt={selected.title} />
               </div>
 
               <div className="p-6 text-left">

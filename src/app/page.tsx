@@ -1,17 +1,19 @@
-import CoursesSection from "@/components/CourseSection";
-import CTASection from "@/components/CTA";
-import CertificateSection from "@/components/CertificateSection";
+import dynamic from "next/dynamic";
 import { HeroInternship } from "@/components/HeroInternship";
-import HiringPartners from "@/components/HiringPartners";
-import IndustrySectors from "@/components/IndustrySectors";
-import InternshipProcess from "@/components/InternshipProcess";
-import { MOESection } from "@/components/MOE";
-import SuccessStories from "@/components/SuccessStories";
-import ProblemSolution from "@/components/ProblemSolution";
-import StudentProjects from "@/components/StudentProjects";
-import VideoTestimonials from "@/components/VideoTestimonials";
-import Quotes from "@/components/Quotes";
-import { EnrollmentActionSection } from "@/components/register";
+
+// Dynamically import components that are below the fold to improve initial load time
+const ProblemSolution = dynamic(() => import("@/components/ProblemSolution"), { ssr: true });
+const InternshipProcess = dynamic(() => import("@/components/InternshipProcess"), { ssr: true });
+const HiringPartners = dynamic(() => import("@/components/HiringPartners"), { ssr: true });
+const MOESection = dynamic(() => import("@/components/MOE").then((mod) => mod.MOESection), { ssr: true });
+const IndustrySectors = dynamic(() => import("@/components/IndustrySectors"), { ssr: true });
+const CoursesSection = dynamic(() => import("@/components/CourseSection"), { ssr: true });
+const StudentProjects = dynamic(() => import("@/components/StudentProjects"), { ssr: true });
+const Quotes = dynamic(() => import("@/components/Quotes"), { ssr: true });
+const VideoTestimonials = dynamic(() => import("@/components/VideoTestimonials"), { ssr: true });
+const CertificateSection = dynamic(() => import("@/components/CertificateSection"), { ssr: true });
+const SuccessStories = dynamic(() => import("@/components/SuccessStories"), { ssr: true });
+const EnrollmentActionSection = dynamic(() => import("@/components/register").then((mod) => mod.EnrollmentActionSection), { ssr: true });
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -25,14 +27,22 @@ export const metadata: Metadata = {
     "AI internship Chennai",
     "Data science internship Chennai",
     "Placement training Chennai",
-    "Best software training institute in Chennai"
+    "Best software training  in Chennai",
+    "Software internship in Chennai",
+    "Internship companies in Chennai",
+    "1 month internship in Chennai for students",
+    "IT companies in Chennai for internship",
+    "Internship in Chennai for freshers",
+    "Internship in Vadapalani",
+    "Best internship companies in Chennai",
+    "Vadapalani internship company",
+    "Best IT training  in Chennai with placement"
   ],
   alternates: {
     canonical: "https://inetztech.com",
   },
 };
 
-import HomeSEOContent from "@/components/HomeSEOContent";
 
 export default function Home() {
   return (
@@ -41,18 +51,17 @@ export default function Home() {
     <div className="min-h-[calc(100vh-4rem)]">
       <HeroInternship />
       <ProblemSolution />
-      <InternshipProcess/>
-      <HiringPartners/>
+      <InternshipProcess />
+      <HiringPartners />
       <MOESection />
-      <IndustrySectors/>
-      <CoursesSection/>   
+      <IndustrySectors />
+      <CoursesSection />
       <StudentProjects />
       <Quotes />
       <VideoTestimonials />
-      <CertificateSection/>
-      <SuccessStories/>
-      <HomeSEOContent />
-      <EnrollmentActionSection/>
+      <CertificateSection />
+      <SuccessStories />
+      <EnrollmentActionSection />
     </div>
   );
 }

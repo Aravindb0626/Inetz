@@ -1,152 +1,5 @@
-// // import { connectToDatabase } from "@/lib/db";
-// // import Application from "@/models/Application";
-// // import { NextResponse } from "next/server";
-// // import Razorpay from "razorpay";
-
-// // // 1. Initialize Razorpay (Server-side only)
-// // const razorpay = new Razorpay({
-// //   key_id: process.env.RAZORPAY_KEY_ID!, // Use private key here
-// //   key_secret: process.env.RAZORPAY_KEY_SECRET!,
-// // });
-
-// // export async function POST(req: Request) {
-// //   try {
-// //     await connectToDatabase();
-// //     const body = await req.json();
-
-// //     // 2. Validate essential fields before calling Razorpay
-// //     const { fullName, email, phone } = body;
-// //     if (!fullName || !email || !phone) {
-// //       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
-// //     }
-
-// //     // 3. Create Razorpay Order
-// //     // Hardcoded amount to prevent frontend manipulation
-// //     const amountInPaise = 500 * 100; 
-    
-// //     const order = await razorpay.orders.create({
-// //       amount: amountInPaise,
-// //       currency: "INR",
-// //       receipt: `receipt_reg_${Date.now()}`,
-// //       notes: {
-// //         studentName: fullName, // Useful for viewing in Razorpay Dashboard
-// //         email: email
-// //       }
-// //     });
-
-// //     if (!order) {
-// //       throw new Error("Razorpay order creation failed");
-// //     }
-
-// //     // 4. Save Application in "pending" state
-// //     // We save the order ID so we can match it in the /verify route later
-// //     const newApplication = await Application.create({
-// //       ...body,
-// //       razorpayOrderId: order.id, 
-// //       status: "pending",
-// //       paymentStatus: "unpaid"
-// //     });
-
-// //     // 5. Return details to trigger the Frontend Modal
-// //     return NextResponse.json({
-// //       success: true,
-// //       orderId: order.id,
-// //       amount: order.amount,
-// //       key: process.env.RAZORPAY_KEY_ID, // Frontend needs this to open the modal
-// //       applicationId: newApplication._id,
-// //     }, { status: 201 });
-
-// //   } catch (error: any) {
-// //     console.error("RAZORPAY_ORDER_ERROR:", error.message);
-// //     return NextResponse.json(
-// //       { success: false, error: "Could not initiate registration. Try again." }, 
-// //       { status: 500 }
-// //     );
-// //   }
-// // }
-
-// import { connectToDatabase } from "@/lib/db";
-// import Application from "@/models/Application";
-// import Transaction from "@/models/Transaction"; // 1. Import the model
-// import { NextResponse } from "next/server";
-// import Razorpay from "razorpay";
-
-// const razorpay = new Razorpay({
-//   key_id: process.env.RAZORPAY_KEY_ID!, 
-//   key_secret: process.env.RAZORPAY_KEY_SECRET!,
-// });
-
-// export async function POST(req: Request) {
-//   try {
-//     await connectToDatabase();
-    
-//     const body = await req.json();
-//     const { fullName, email, phone, amountToPay, track } = body;
-
-//     // 1. Validation
-//     if (!fullName || !email || !phone) {
-//       return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
-//     }
-
-//     if (!amountToPay || amountToPay < 500) {
-//       return NextResponse.json({ success: false, error: "Min ₹500 required" }, { status: 400 });
-//     }
-
-//     // 2. Create Razorpay Order
-//     const amountInPaise = Math.round(amountToPay * 100);
-//     const order = await razorpay.orders.create({
-//       amount: amountInPaise,
-//       currency: "INR",
-//       receipt: `rcpt_${Date.now()}`,
-//       notes: { studentName: fullName, email: email },
-//     });
-
-//     if (!order) throw new Error("Order creation failed");
-
-//     // 3. Save Application (Marked as PENDING/UNPAID initially)
-//     const newApplication = await Application.create({
-//       ...body,
-//       amount: amountToPay, 
-//       razorpayOrderId: order.id,
-//       status: "pending",        // "Right" way: Start as pending
-//       paymentStatus: "unpaid",  // "Right" way: Start as unpaid
-//     });
-
-//     // 4. CREATE THE TRANSACTION RECORD
-//     // This logs that the student ATTEMPTED to pay.
-//     await Transaction.create({
-//       studentEmail: email,
-//       applicationId: newApplication._id,
-//       razorpayOrderId: order.id,
-//       amount: amountToPay,
-//       note: `Initial enrollment fee for ${track || "Internship"}`,
-//       status: "pending", // Will be updated to 'success' in verify route
-//     });
-
-//     // 5. Return details to trigger modal
-//     return NextResponse.json(
-//       {
-//         success: true,
-//         orderId: order.id,
-//         amount: order.amount,
-//         key: process.env.RAZORPAY_KEY_ID, 
-//         applicationId: newApplication._id,
-//       },
-//       { status: 201 }
-//     );
-
-//   } catch (error: any) {
-//     console.error("APPLICATION_SUBMISSION_ERROR:", error.message);
-//     return NextResponse.json(
-//       { success: false, error: "Process failed. Try again." },
-//       { status: 500 }
-//     );
-//   }
-// }
-
 import { connectToDatabase } from "@/lib/db";
-import Application from "@/models/Application";
-import Transaction from "@/models/Transaction";
+import { Student } from "@/models/Student";
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
@@ -156,66 +9,97 @@ export async function POST(req: Request) {
   try {
     await connectToDatabase();
 
-    // Initialize INSIDE handler
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID!,
       key_secret: process.env.RAZORPAY_KEY_SECRET!,
     });
 
     const body = await req.json();
+    const { fullName, name, email, phone, college, domain, duration, totalBilling, amountToPay } = body;
 
-    const { fullName, email, phone, amountToPay, track } = body;
+    const studentName = (fullName || name || "").trim();
+    const studentPhone = (phone || "").trim();
+    const studentEmail = (email || "").trim().toLowerCase(); // 🎯 Extract and normalize email
 
-    // Validation
-    if (!fullName || !email || !phone) {
+    if (!studentName || !studentPhone || !studentEmail) {
       return NextResponse.json(
-        { success: false, error: "Missing fields" },
+        { success: false, error: "Missing required details (Name, Email, or Phone)" },
         { status: 400 }
       );
     }
 
-    if (!amountToPay || amountToPay < 500) {
+    const payAmount = Number(amountToPay) || 500;
+    if (payAmount < 500) {
       return NextResponse.json(
-        { success: false, error: "Min ₹500 required" },
+        { success: false, error: "Minimum payment is ₹500" },
         { status: 400 }
       );
     }
 
-    // Create Razorpay Order
-    const amountInPaise = Math.round(amountToPay * 100);
-
+    // 1. Create Razorpay Order
+    const amountInPaise = Math.round(payAmount * 100);
     const order = await razorpay.orders.create({
       amount: amountInPaise,
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
       notes: {
-        studentName: fullName,
-        email: email,
+        studentName,
+        email: studentEmail,
+        phone: studentPhone,
       },
     });
 
     if (!order) {
-      throw new Error("Order creation failed");
+      throw new Error("Razorpay Order creation failed");
     }
 
-    // Save Application
-    const newApplication = await Application.create({
-      ...body,
-      amount: amountToPay,
-      razorpayOrderId: order.id,
-      status: "pending",
-      paymentStatus: "unpaid",
+    const billingTotal = Number(totalBilling) || payAmount;
+
+    // 2. Find or Create/Update Student in "students" collection
+    let student = await Student.findOne({ 
+      $or: [{ phone: studentPhone }, { email: studentEmail }] 
     });
 
-    // Create Transaction
-    await Transaction.create({
-      studentEmail: email,
-      applicationId: newApplication._id,
-      razorpayOrderId: order.id,
-      amount: amountToPay,
-      note: `Initial enrollment fee for ${track || "Internship"}`,
-      status: "pending",
-    });
+    if (student) {
+      // 🎯 Update existing student profile including email
+      student.name = studentName;
+      student.email = studentEmail;
+      if (college) student.college = college.trim();
+      if (domain) student.domain = domain;
+      if (duration) student.duration = duration;
+      student.totalBilling = billingTotal;
+      student.pendingAmount = Math.max(0, billingTotal - (student.totalCollection || 0));
+
+      await student.save();
+    } else {
+      // 🎯 Create new student record with email included
+      const lastStudent = await Student.findOne({}, { sNo: 1 }).sort({ sNo: -1 }).lean();
+      // const nextSNo = lastStudent && typeof lastStudent.sNo === "number" ? lastStudent.sNo + 1 : 1;
+      const nextSNo = Date.now()
+
+      const now = new Date();
+      const dojString = now.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+
+      student = await Student.create({
+        sNo: nextSNo,
+        name: studentName,
+        email: studentEmail, // 🎯 Saved to MongoDB
+        phone: studentPhone,
+        college: college || "N/A",
+        domain: domain || "Web Development",
+        duration: duration || "1 Month",
+        totalBilling: billingTotal,
+        totalCollection: 0,
+        pendingAmount: billingTotal,
+        feesStatus: "Pending",
+        doj: dojString,
+        installments: [],
+      });
+    }
 
     return NextResponse.json(
       {
@@ -223,18 +107,14 @@ export async function POST(req: Request) {
         orderId: order.id,
         amount: order.amount,
         key: process.env.RAZORPAY_KEY_ID,
-        applicationId: newApplication._id,
+        studentId: student._id,
       },
       { status: 201 }
     );
   } catch (error: any) {
-    console.error("APPLICATION_SUBMISSION_ERROR:", error);
-
+    console.error("APPLY_ROUTE_ERROR:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || "Process failed",
-      },
+      { success: false, error: error.message || "Process failed" },
       { status: 500 }
     );
   }

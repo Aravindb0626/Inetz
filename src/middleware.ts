@@ -1,40 +1,42 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose'; 
-
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(req: NextRequest) {
-  // 1. Get both possible tokens
-  const customToken = req.cookies.get('token')?.value;
-  const nextAuthToken = req.cookies.get('next-auth.session-token')?.value || 
-                        req.cookies.get('__Secure-next-auth.session-token')?.value;
-
   const { pathname } = req.nextUrl;
 
-  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register');
-  const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding');
+  // Let NextAuth automatically detect HTTP (localhost) vs HTTPS
+  const token = await getToken({ 
+    req, 
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-  // 2. Logic: If trying to access protected route
-  if (isProtectedRoute) {
-    // If neither token exists, go to login
-    if (!customToken && !nextAuthToken) {
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
+  const isAuth = !!token;
+  const isAdmin = token?.role === "admin";
 
-    // If custom token exists but NextAuth doesn't, verify the custom one
-    if (customToken && !nextAuthToken) {
-      try {
-        await jwtVerify(customToken, SECRET);
-      } catch (err) {
-        return NextResponse.redirect(new URL('/login', req.url));
-      }
-    }
+  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isProtectedRoute = 
+    pathname.startsWith("/dashboard") || 
+    pathname.startsWith("/onboarding") || 
+    isAdminRoute;
+
+  // 1. Unauthenticated users -> Redirect to /login
+  if (isProtectedRoute && !isAuth) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // 3. Logic: If already logged in, prevent access to login/register
-  if (isAuthRoute && (customToken || nextAuthToken)) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  // 2. Non-Admin users -> Redirect to /dashboard
+  if (isAdminRoute && isAuth && !isAdmin) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // 3. Authenticated users opening /login -> Redirect home
+  if (isAuthRoute && isAuth) {
+    const destination = isAdmin ? "/admin" : "/dashboard";
+    return NextResponse.redirect(new URL(destination, req.url));
   }
 
   return NextResponse.next();
@@ -42,7 +44,13 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/onboarding/:path*',
+    "/dashboard",
+    "/dashboard/:path*",
+    "/onboarding",
+    "/onboarding/:path*",
+    "/admin",
+    "/admin/:path*",
+    "/login",
+    "/register",
   ],
 };

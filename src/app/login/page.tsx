@@ -28,7 +28,6 @@ function LoginContent() {
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fix Hydration: Ensure client-side values match after mount
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -43,36 +42,50 @@ function LoginContent() {
   
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
+  // Extract return target from either 'callbackUrl' or 'callback' search parameters
+  // Sanitize callback URL to enforce relative internal redirects only
+  const targetDestination = useMemo(() => {
+    const rawCallback = searchParams.get("callbackUrl") || searchParams.get("callback");
+    
+    // 🎯 FIX 1: Set fallback destination to "/admin" if no callback parameter exists
+    if (!rawCallback) return "/admin"; 
+
+    const decoded = decodeURIComponent(rawCallback).trim();
+    
+    // Prevent external redirects (e.g., "https://...", "//attacker.com", "javascript:")
+    if (decoded.startsWith("/") && !decoded.startsWith("//")) {
+      return decoded;
+    }
+
+    return "/admin";
+  }, [searchParams]);
+
   const handleLogin = async (e: React.FormEvent) => {
   e.preventDefault();
   setLoading(true);
   setError("");
   setSuccessMsg("");
 
-    const rawCallback = searchParams.get("callback");
-    
     try {
-      // FIX: Use NextAuth's native signIn function pointing to 'credentials'
       const res = await signIn("credentials", {
-        email,
-        password,
-        redirect: false, // Prevents a harsh window-reload step on failure
+        email: email.trim(),
+        password: password,
+        redirect: false, // Prevents full-page hard refresh from NextAuth
       });
 
       if (res?.error) {
-        // NextAuth forwards the throw new Error messages from authorize function here
-        setError(res.error || "Authentication failed. Check your credentials.");
+        // Handle credential verification errors
+        setError(res.error === "CredentialsSignin" ? "Invalid email or access key." : res.error);
         setLoading(false);
-      } else {
-        setSuccessMsg("Session initialized successfully!");
+      } else if (res?.ok) {
+        // 🎯 FIX 2: Check `res?.ok` instead of `res?.url` (res?.url can be null with redirect: false)
+        setSuccessMsg("Session initialized successfully! Redirecting...");
         
-        // NextAuth natively appends authentication cookies. We safe route now:
-        const finalDestination = rawCallback 
-          ? decodeURIComponent(rawCallback) 
-          : "/dashboard"; // Let layout redirect to /admin if they are an admin
-
-        router.push(finalDestination);
-        router.refresh(); // Forces Next.js data layouts to parse the updated auth token
+        // Force full refresh navigation so Next.js server components & middleware register session cookies instantly
+        window.location.href = targetDestination;
+      } else {
+        setError("Failed to establish session. Please try again.");
+        setLoading(false);
       }
     } catch (err) {
       setError("An unexpected authentication error occurred.");
@@ -130,7 +143,7 @@ function LoginContent() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2 text-red-600 text-[10px] font-bold"
+                className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 flex items-center gap-2 text-red-600 dark:text-red-400 text-[10px] font-bold"
               >
                 <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
                 {error}
@@ -141,7 +154,7 @@ function LoginContent() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-2 text-emerald-600 text-[10px] font-bold"
+                className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold"
               >
                 <ShieldCheck className="w-3 h-3 text-emerald-500" />
                 {successMsg}
@@ -218,7 +231,7 @@ function LoginContent() {
 
           <button 
             type="button"
-            onClick={() => signIn("google", { callbackUrl: searchParams.get("callback") || "/dashboard" })}
+            onClick={() => signIn("google", { callbackUrl: targetDestination })}
             className="w-full flex justify-center items-center gap-2 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-[0.98]"
           >
             <FaChrome className="w-3.5 h-3.5 text-orange-500" />
@@ -229,7 +242,7 @@ function LoginContent() {
             <p className="text-center text-[10px] text-zinc-500 uppercase tracking-tight">
               Don't have an ID?{" "}
               <Link
-                href="/register"
+                href="/apply"
                 className="font-black text-orange-600 hover:text-orange-700 underline underline-offset-4"
               >
                 Join the Academy

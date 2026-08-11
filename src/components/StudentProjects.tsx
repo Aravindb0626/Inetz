@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MoveUpRight,
@@ -76,7 +77,7 @@ const studentProjects: Project[] = [
     cardTech: ["React & Node.js Core", "MongoDB & Express", "Tailwind CSS Design"],
     accentColor: "text-orange-500",
     borderColor: "group-hover:border-orange-500/50",
-    image: "projects/mern-project.png",
+    image: "/projects/mern-project.png",
     modalContent: {
       overview: "Comprehensive masterclass on building full-stack applications with MongoDB, Express, React, and Node.js.",
       challenge: "Managing shared state across complex UI components while keeping the server response time under 100ms.",
@@ -291,9 +292,11 @@ const studentProjects: Project[] = [
 
                 {/* Visual Area */}
                 <div className="relative h-48 overflow-hidden">
-                  <img
+                  <Image
                     src={project.image}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-700"
                     alt=""
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
@@ -357,7 +360,7 @@ const studentProjects: Project[] = [
               onClick={(e) => e.stopPropagation()}
             >
               <div className="md:w-5/12 relative hidden md:block bg-zinc-900">
-                <img src={selectedProject.image} className="w-full h-full object-cover" alt="" />
+                <Image src={selectedProject.image} fill sizes="50vw" className="object-cover" alt="" />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
                 <div className="absolute bottom-8 left-8 right-8">
                   <div className="grid grid-cols-2 gap-4">

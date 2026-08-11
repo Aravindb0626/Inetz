@@ -24,15 +24,18 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ─── BRANCH B: TRANSACTIONS LEDGER FETCH (HANDLES BOTH UI & FULL EXCEL EXPORT) ───
+    // ─── BRANCH B: TRANSACTIONS LEDGER (ISOLATED DATE BOUNDARY FILTERS) ───
     const search = searchParams.get("search")?.trim() || "";
-    const isDownload = searchParams.get("download") === "true"; // 🎯 CHECK FOR DOWNLOAD FLAG
+    const isDownload = searchParams.get("download") === "true"; 
+    
+    const startDateParam = searchParams.get("startDate")?.trim();
+    const endDateParam = searchParams.get("endDate")?.trim();
     
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.max(1, Number(searchParams.get("limit")) || 20);
     const skip = (page - 1) * limit;
 
-    // 1. Build dynamic matching filters
+    // 1. Core text search stage matching student parameters
     const matchStage: any = {};
     if (search) {
       matchStage.$or = [
@@ -43,7 +46,7 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // 2. Build the Core Pipeline Aggregation Array
+    // 2. High-Performance Aggregation Matrix
     const pipeline: any[] = [
       { $match: matchStage },
       { $unwind: { path: "$installments", preserveNullAndEmptyArrays: true } },
@@ -60,21 +63,35 @@ export async function GET(req: NextRequest) {
           paymentMethod: { $ifNull: ["$installments.paymentMethod", "Cash"] },
           transactionId: { $ifNull: ["$installments.transactionId", "N/A"] },
           billingBy: { $ifNull: ["$installments.billingBy", "System Registration"] },
-          totalCoursePayment: { $ifNull: ["$totalBilling", 0] }
+          totalCoursePayment: { $ifNull: ["$totalBilling", 0] },
+          createdAt: { $ifNull: ["$installments.createdAt", "$createdAt"] }
         }
-      },
-      { $sort: { date: -1, receiptNo: -1 } }
+      }
     ];
+
+    // 🎯 LOCALIZED DATE FILTER LAYER
+    if (startDateParam || endDateParam) {
+      const dateFilter: any = {};
+      if (startDateParam) {
+        dateFilter.$gte = new Date(`${startDateParam}T00:00:00.000Z`);
+      }
+      if (endDateParam) {
+        dateFilter.$lte = new Date(`${endDateParam}T23:59:59.999Z`);
+      }
+      pipeline.push({ $match: { createdAt: dateFilter } });
+    }
+
+    // Global Chronological Sort
+    pipeline.push({ $sort: { createdAt: -1, receiptNo: -1 } });
 
     let finalTransactions = [];
     let totalLogs = 0;
 
+    // 🎯 FIXED: When isDownload is true, execute the array without injection of $skip and $limit facets
     if (isDownload) {
-      // 🎯 OPTIMIZATION FOR EXCEL: Run straight pipeline to get ALL data without pagination
       finalTransactions = await Student.aggregate(pipeline);
       totalLogs = finalTransactions.length;
     } else {
-      // 🎯 OPTIMIZATION FOR DASHBOARD UI: Use $facet to calculate totals and limit current window view to 20
       pipeline.push({
         $facet: {
           metadata: [{ $count: "totalLogs" }],
@@ -87,7 +104,7 @@ export async function GET(req: NextRequest) {
       finalTransactions = facet.dataRows || [];
     }
 
-    // 3. Post-Process Rows to compute dynamic historical previous paid sums
+    // 3. Reconstruct running totals over the targeted active viewport data records
     const activeStudents = await Student.find({
       phone: { $in: finalTransactions.map((t: any) => t.phone) }
     }).lean();
@@ -144,18 +161,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
 // ─── POST: SAVE PAYMENT (HANDLES CREATION & NESTED INSTALLMENT APPENDS) ───
 export async function POST(req: NextRequest) {
   try {
+    await connectToDatabase();
     const data = await req.json();
     const currentPaid = Number(data.paidAmount) || 0;
+    
     const newInstallment = {
       receiptNo: data.receiptNo,
       date: data.displayDate,
       paidAmount: currentPaid,
       paymentMethod: data.paymentMethod,
-      transactionId: data.transactionId,
-      billingBy: data.billingBy
+      transactionId: data.transactionId || "N/A",
+      billingBy: data.billingBy,
+      createdAt: new Date() 
     };
 
     let student = await Student.findOne({ phone: data.phone.trim() });
@@ -179,8 +200,10 @@ export async function POST(req: NextRequest) {
       });
       await student.save();
     }
+    
     return NextResponse.json({ success: true, receiptNo: data.receiptNo });
   } catch (error: any) {
+    console.error("Payment registration route crash: ", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
