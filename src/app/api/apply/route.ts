@@ -74,7 +74,8 @@ export async function POST(req: Request) {
     } else {
       // 🎯 Create new student record with email included
       const lastStudent = await Student.findOne({}, { sNo: 1 }).sort({ sNo: -1 }).lean();
-      const nextSNo = lastStudent && typeof lastStudent.sNo === "number" ? lastStudent.sNo + 1 : 1;
+      // const nextSNo = lastStudent && typeof lastStudent.sNo === "number" ? lastStudent.sNo + 1 : 1;
+      const nextSNo = Date.now()
 
       const now = new Date();
       const dojString = now.toLocaleDateString("en-IN", {
