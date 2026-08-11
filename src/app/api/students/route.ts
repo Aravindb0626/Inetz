@@ -8,101 +8,137 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
 
     const { searchParams } = new URL(req.url);
-    
+
     const search = searchParams.get("search")?.trim() || "";
-    const domainFilter = searchParams.get("domain") || "All";
+    const domainFilter = searchParams.get("domain")?.trim() || "All";
+    const fromDate = searchParams.get("fromDate")?.trim() || "";
+    const toDate = searchParams.get("toDate")?.trim() || "";
+    
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
-    const limit = Math.max(1, Number(searchParams.get("limit")) || 20); 
+    const limit = Math.max(1, Number(searchParams.get("limit")) || 20);
     const skip = (page - 1) * limit;
 
-    // 1. Build database level match filtration criteria map
     const matchStage: any = {};
-    
+
+    // 1. Search Query Match
     if (search) {
       matchStage.$or = [
         { name: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
         { phone: { $regex: search, $options: "i" } },
-        { college: { $regex: search, $options: "i" } }
+        { college: { $regex: search, $options: "i" } },
+        { domain: { $regex: search, $options: "i" } },
       ];
     }
-    
-    if (domainFilter !== "All") {
-      matchStage.domain = domainFilter;
+
+    // 2. Domain Filter Match
+    if (domainFilter && domainFilter !== "All") {
+      const escapedDomain = domainFilter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      matchStage.domain = new RegExp(`^${escapedDomain}$`, "i");
     }
 
-    // 2. Run multi-faceted pipeline calculations in one server pass
-    const aggregationResult = await Student.aggregate([
-      { $match: matchStage },
-      {
-        $facet: {
-          metadata: [
-            {
-              $group: {
-                _id: null,
-                totalStudents: { $sum: 1 },
-                accountsWithDues: {
-                  $sum: { $cond: [ { $gt: ["$pendingAmount", 0] }, 1, 0 ] }
-                },
-                clearedAccounts: {
-                  $sum: { $cond: [ { $lte: ["$pendingAmount", 0] }, 1, 0 ] }
-                }
-              }
-            }
-          ],
-          uniqueDomains: [
-            { $group: { _id: "$domain" } },
-            { $match: { _id: { $ne: null } } },
-            { $sort: { _id: 1 } }
-          ],
-          dataRows: [
-            { $sort: { updatedAt: -1 } }, 
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $project: {
-                sNo: 1,
-                doj: 1,
-                name: 1,
-                email: 1,
-                phone: 1,
-                college: 1,
-                domain: 1,
-                duration: 1,
-                totalBilling: 1,
-                totalCollection: 1,
-                balanceAmount: { $ifNull: ["$pendingAmount", 0] },
-                pendingAmount: 1,
-                feesStatus: 1,
-                certificateStatus: 1,
-                installments: 1
-              }
-            }
-          ]
-        }
+    // 🎯 3. Date Range Filter Match
+    if (fromDate || toDate) {
+      matchStage.createdAt = {};
+      if (fromDate) {
+        // Start of selected day (00:00:00)
+        matchStage.createdAt.$gte = new Date(`${fromDate}T00:00:00.000Z`);
       }
+      if (toDate) {
+        // End of selected day (23:59:59)
+        matchStage.createdAt.$lte = new Date(`${toDate}T23:59:59.999Z`);
+      }
+    }
+
+    const [aggregationResult, rawDistinctDomains] = await Promise.all([
+      Student.aggregate([
+        { $match: matchStage },
+        {
+          $facet: {
+            metadata: [
+              {
+                $group: {
+                  _id: null,
+                  totalStudents: { $sum: 1 },
+                  totalCollected: { $sum: { $ifNull: ["$totalCollection", 0] } },
+                  totalPending: { $sum: { $ifNull: ["$pendingAmount", 0] } },
+                  accountsWithDues: {
+                    $sum: { $cond: [{ $gt: ["$pendingAmount", 0] }, 1, 0] },
+                  },
+                  clearedAccounts: {
+                    $sum: { $cond: [{ $lte: ["$pendingAmount", 0] }, 1, 0] },
+                  },
+                },
+              },
+            ],
+            dataRows: [
+              { $sort: { updatedAt: -1 } },
+              { $skip: skip },
+              { $limit: limit },
+              {
+                $project: {
+                  sNo: 1,
+                  doj: 1,
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  college: 1,
+                  domain: 1,
+                  duration: 1,
+                  totalBilling: 1,
+                  totalCollection: 1,
+                  balanceAmount: { $ifNull: ["$pendingAmount", 0] },
+                  pendingAmount: 1,
+                  feesStatus: 1,
+                  certificateStatus: 1,
+                  installments: 1,
+                  createdAt: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]),
+      Student.distinct("domain"),
     ]);
 
     const facet = aggregationResult[0];
-    const meta = facet.metadata[0] || { totalStudents: 0, accountsWithDues: 0, clearedAccounts: 0 };
-    const cleanDomains = facet.uniqueDomains.map((d: any) => d._id);
+    const meta = facet.metadata[0] || {
+      totalStudents: 0,
+      totalCollected: 0,
+      totalPending: 0,
+      accountsWithDues: 0,
+      clearedAccounts: 0,
+    };
+
+    const cleanAppliedDomains = (rawDistinctDomains || [])
+      .filter((d: any) => typeof d === "string" && d.trim().length > 0)
+      .map((d: string) => d.trim())
+      .sort();
 
     return NextResponse.json({
       success: true,
       students: facet.dataRows,
-      availableDomains: ["All", ...cleanDomains],
+      availableDomains: Array.from(new Set(["All", ...cleanAppliedDomains])),
+      summary: {
+        totalStudents: meta.totalStudents || 0,
+        totalCollected: meta.totalCollected || 0,
+        totalPending: meta.totalPending || 0,
+        duesCount: meta.accountsWithDues || 0,
+        clearCount: meta.clearedAccounts || 0,
+      },
       pagination: {
         total: meta.totalStudents,
-        duesCount: meta.accountsWithDues,
-        clearCount: meta.clearedAccounts,
         currentPage: page,
-        totalPages: Math.ceil(meta.totalStudents / limit)
-      }
+        totalPages: Math.ceil(meta.totalStudents / limit) || 1,
+      },
     });
-
   } catch (error: any) {
     console.error("Student directory aggregation failure:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Server Error" },
+      { status: 500 }
+    );
   }
 }
 

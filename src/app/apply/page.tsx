@@ -28,7 +28,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Input({ label, onChange, ...props }: { label: string; onChange: (v: string) => void } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange">) {
   return (
     <Field label={label}>
-      <input {...props} onChange={(e) => onChange(e.target.value)} required
+      <input
+        {...props}
+        onChange={(e) => onChange(e.target.value)}
+        required
         className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
       />
     </Field>
@@ -39,7 +42,9 @@ function Select({ label, options, onChange, ...props }: any) {
   return (
     <Field label={label}>
       <div className="relative">
-        <select {...props} onChange={(e) => onChange(e.target.value)}
+        <select
+          {...props}
+          onChange={(e) => onChange(e.target.value)}
           className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold focus:bg-white focus:border-indigo-500 outline-none appearance-none cursor-pointer capitalize"
         >
           {options.map((o: string) => (
@@ -96,21 +101,41 @@ function ReviewAndPayContent() {
 
   // Fee state
   const [discountedFee, setDiscountedFee] = useState<number>(urlPrice || 1499);
-  const [originalFee, setOriginalFee] = useState<number>(urlOriginalPrice || (discountedFee * 2));
+  const [originalFee, setOriginalFee] = useState<number>(urlOriginalPrice || discountedFee * 2);
   const [customAmount, setCustomAmount] = useState<number>(discountedFee);
 
   // Admin Specific Options
   const [adminPaymentMethod, setAdminPaymentMethod] = useState<"Cash" | "GPay">("Cash");
 
   const [form, setForm] = useState({
-    fullName: "", email: "", phone: "",
-    college: "", department: "", year: "1st Year",
-    track: urlTrack, duration: urlDuration, mode: "Online",
+    fullName: "",
+    email: "",
+    phone: "",
+    college: "",
+    department: "",
+    year: "1st Year",
+    track: urlTrack,
+    duration: urlDuration,
+    mode: "Online",
   });
 
   const set = (key: string) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
-  // Helper function to trigger clear login alert & redirect
+  // Dynamic Razorpay Script Loader Backup
+  const ensureRazorpayLoaded = () => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const promptLogin = () => {
     const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/apply";
     const wantsToLogin = window.confirm(
@@ -132,11 +157,12 @@ function ReviewAndPayContent() {
           setPrograms(data);
 
           if (Array.isArray(data) && data.length > 0) {
-            const matched = data.find(
-              (p) => p.title.toLowerCase() === urlTrack.toLowerCase() && p.duration.toLowerCase() === urlDuration.toLowerCase()
-            ) || data.find(
-              (p) => p.title.toLowerCase() === urlTrack.toLowerCase()
-            ) || data[0];
+            const matched =
+              data.find(
+                (p) => p.title.toLowerCase() === urlTrack.toLowerCase() && p.duration.toLowerCase() === urlDuration.toLowerCase()
+              ) ||
+              data.find((p) => p.title.toLowerCase() === urlTrack.toLowerCase()) ||
+              data[0];
 
             setForm((f) => ({
               ...f,
@@ -211,9 +237,7 @@ function ReviewAndPayContent() {
 
   // 5. Handle Duration change
   const handleDurationChange = (selectedDuration: string) => {
-    const matched = programs.find(
-      (p) => p.title === form.track && p.duration === selectedDuration
-    );
+    const matched = programs.find((p) => p.title === form.track && p.duration === selectedDuration);
 
     setForm((f) => ({
       ...f,
@@ -238,7 +262,6 @@ function ReviewAndPayContent() {
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🎯 ALERT CHECK FOR UNAUTHENTICATED USERS
     if (sessionStatus === "unauthenticated" || !session) {
       promptLogin();
       return;
@@ -282,6 +305,13 @@ function ReviewAndPayContent() {
 
     // PATH 2: STUDENT ONLINE PAYMENT VIA RAZORPAY
     try {
+      const isLoaded = await ensureRazorpayLoaded();
+      if (!isLoaded) {
+        alert("Razorpay SDK failed to load. Please check your network connection.");
+        setIsProcessing(false);
+        return;
+      }
+
       const applyPayload = {
         fullName: form.fullName.trim(),
         name: form.fullName.trim(),
@@ -294,13 +324,13 @@ function ReviewAndPayContent() {
         duration: form.duration,
         mode: form.mode,
         totalBilling: discountedFee,
-        amountToPay: customAmount
+        amountToPay: customAmount,
       };
 
-      const res = await fetch("/api/apply", { 
-        method: "POST", 
-        headers: { "Content-Type": "application/json" }, 
-        body: JSON.stringify(applyPayload) 
+      const res = await fetch("/api/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(applyPayload),
       });
       const data = await res.json();
 
@@ -308,10 +338,10 @@ function ReviewAndPayContent() {
         alert(data.error || "Failed to create order.");
         return setIsProcessing(false);
       }
-      
+
       const rzp = new (window as any).Razorpay({
-        key: data.key, 
-        amount: data.amount, 
+        key: data.key,
+        amount: data.amount,
         currency: "INR",
         name: "INetZ Academy",
         description: `${form.track} Internship - ${form.duration}`,
@@ -321,20 +351,20 @@ function ReviewAndPayContent() {
         modal: { ondismiss: () => setIsProcessing(false) },
         handler: async (response: any) => {
           try {
-            const verify = await fetch("/api/verify", { 
-              method: "POST", 
-              headers: { "Content-Type": "application/json" }, 
+            const verify = await fetch("/api/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 ...response,
                 phone: form.phone.trim(),
                 email: form.email.trim(),
                 paidAmount: customAmount,
                 paymentMethod: "GPay",
-                billingBy: "Razorpay Online"
-              }) 
+                billingBy: "Razorpay Online",
+              }),
             });
             const result = await verify.json();
-            
+
             if (result.success) {
               router.push("/dashboard?status=success");
             } else {
@@ -349,7 +379,10 @@ function ReviewAndPayContent() {
         },
       });
 
-      rzp.on("payment.failed", (r: any) => { alert(`Payment failed: ${r.error.description}`); setIsProcessing(false); });
+      rzp.on("payment.failed", (r: any) => {
+        alert(`Payment failed: ${r.error.description}`);
+        setIsProcessing(false);
+      });
       rzp.open();
     } catch (err) {
       console.error(err);
@@ -364,218 +397,220 @@ function ReviewAndPayContent() {
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
       {!isAdmin && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />}
 
-      <main className="max-w-5xl mx-auto px-6 py-8 md:py-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="max-w-5xl mx-auto px-6 py-8 md:py-10">
+        <form onSubmit={handlePay} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* FORM SECTION */}
+          <div className="lg:col-span-7 space-y-6">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="text-[10px] font-black uppercase flex items-center gap-1.5 text-slate-400 hover:text-[#4F46E5] transition-all tracking-widest cursor-pointer"
+            >
+              <ArrowLeft className="w-3 h-3" /> Back
+            </button>
 
-        {/* FORM SECTION */}
-        <div className="lg:col-span-7 space-y-6">
-          <button onClick={() => router.back()} className="text-[10px] font-black uppercase flex items-center gap-1.5 text-slate-400 hover:text-[#4F46E5] transition-all tracking-widest">
-            <ArrowLeft className="w-3 h-3" /> Back
-          </button>
-          
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
-              {isAdmin ? "Admin Manual Admission" : "Review & Apply"}
-            </h1>
-            {isAdmin && (
-              <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck size={12} /> Admin Mode
-              </span>
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
+                {isAdmin ? "Admin Manual Admission" : "Review & Apply"}
+              </h1>
+              {isAdmin && (
+                <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck size={12} /> Admin Mode
+                </span>
+              )}
+            </div>
+
+            {/* ON-PAGE ALERT BANNER FOR VISITORS */}
+            {sessionStatus === "unauthenticated" && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 shadow-sm">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">Account Sign-In Required</p>
+                  <p className="text-[11px] font-medium text-amber-700 mt-0.5">
+                    You need an active account to link your payment and track your internship modules.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={promptLogin}
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] uppercase rounded-xl transition-all shrink-0 shadow-sm cursor-pointer"
+                >
+                  Sign In
+                </button>
+              </div>
             )}
-          </div>
 
-          {/* ON-PAGE ALERT BANNER FOR VISITORS */}
-          {sessionStatus === "unauthenticated" && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 shadow-sm">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">Account Sign-In Required</p>
-                <p className="text-[11px] font-medium text-amber-700 mt-0.5">
-                  You need an active account to link your payment and track your internship modules.
-                </p>
-              </div>
-              <button
-                onClick={promptLogin}
-                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] uppercase rounded-xl transition-all shrink-0 shadow-sm"
-              >
-                Sign In
-              </button>
-            </div>
-          )}
-
-          <div className="space-y-5">
-            <StepCard step={1} title="Contact Information">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Input label="Full Name *" value={form.fullName} onChange={set("fullName")} placeholder="Rahul Sharma" />
-                <Input 
-                  label={isAdmin ? "Email (Optional for Admin)" : "Email *"} 
-                  value={form.email} 
-                  onChange={set("email")} 
-                  placeholder="rahul@example.com" 
-                  disabled={!isAdmin && !!session?.user?.email} 
-                />
-                <div className="md:col-span-2">
-                  <Input label="Phone Number *" value={form.phone} onChange={set("phone")} placeholder="10-digit mobile number" />
-                </div>
-              </div>
-            </StepCard>
-
-            <StepCard step={2} title="Education Details">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="md:col-span-2">
-                  <Input label="College *" value={form.college} onChange={set("college")} placeholder="Institution Name" />
-                </div>
-                <Input label="Department *" value={form.department} onChange={set("department")} placeholder="e.g. CSE" />
-                <Select label="Year *" value={form.year} options={["1st Year", "2nd Year", "3rd Year", "4th Year"]} onChange={set("year")} />
-              </div>
-            </StepCard>
-
-            <StepCard step={3} title="Program Details">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                
-                {/* Track Dropdown */}
-                {loadingTracks ? (
-                  <Field label="Track">
-                    <div className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold text-slate-400 flex items-center gap-2">
-                      <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
-                      Loading...
-                    </div>
-                  </Field>
-                ) : trackOptions.length > 0 ? (
-                  <Select 
-                    label="Track" 
-                    value={form.track} 
-                    options={trackOptions} 
-                    onChange={handleTrackChange} 
+            <div className="space-y-5">
+              <StepCard step={1} title="Contact Information">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input label="Full Name *" value={form.fullName} onChange={set("fullName")} placeholder="Rahul Sharma" />
+                  <Input
+                    label={isAdmin ? "Email (Optional for Admin)" : "Email *"}
+                    value={form.email}
+                    onChange={set("email")}
+                    placeholder="rahul@example.com"
+                    disabled={!isAdmin && !!session?.user?.email}
                   />
-                ) : (
-                  <StaticField label="Track" value={form.track.toUpperCase()} />
-                )}
+                  <div className="md:col-span-2">
+                    <Input label="Phone Number *" value={form.phone} onChange={set("phone")} placeholder="10-digit mobile number" />
+                  </div>
+                </div>
+              </StepCard>
 
-                {/* Duration Dropdown */}
-                <Select 
-                  label="Duration" 
-                  value={form.duration} 
-                  options={durationOptions} 
-                  onChange={handleDurationChange} 
-                />
-                
-                <Select label="Mode" value={form.mode} options={["Online", "Offline"]} onChange={set("mode")} />
-              </div>
-            </StepCard>
-          </div>
-        </div>
+              <StepCard step={2} title="Education Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="md:col-span-2">
+                    <Input label="College *" value={form.college} onChange={set("college")} placeholder="Institution Name" />
+                  </div>
+                  <Input label="Department *" value={form.department} onChange={set("department")} placeholder="e.g. CSE" />
+                  <Select label="Year *" value={form.year} options={["1st Year", "2nd Year", "3rd Year", "4th Year"]} onChange={set("year")} />
+                </div>
+              </StepCard>
 
-        {/* SUMMARY SECTION */}
-        <div className="lg:col-span-5">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm sticky top-20">
-            <div className="p-3 border-b border-slate-100 flex items-center gap-2 font-black text-[9px] uppercase tracking-widest text-slate-400">
-              <Lock className="w-3.5 h-3.5 text-indigo-600" /> Order Summary
+              <StepCard step={3} title="Program Details">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Track Dropdown */}
+                  {loadingTracks ? (
+                    <Field label="Track">
+                      <div className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold text-slate-400 flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                        Loading...
+                      </div>
+                    </Field>
+                  ) : trackOptions.length > 0 ? (
+                    <Select label="Track" value={form.track} options={trackOptions} onChange={handleTrackChange} />
+                  ) : (
+                    <StaticField label="Track" value={form.track.toUpperCase()} />
+                  )}
+
+                  {/* Duration Dropdown */}
+                  <Select label="Duration" value={form.duration} options={durationOptions} onChange={handleDurationChange} />
+
+                  <Select label="Mode" value={form.mode} options={["Online", "Offline"]} onChange={set("mode")} />
+                </div>
+              </StepCard>
             </div>
-            <div className="p-4">
-              <div className="rounded-lg overflow-hidden mb-3 h-32 bg-slate-100">
-                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600" className="w-full h-full object-cover" alt="Program" />
+          </div>
+
+          {/* SUMMARY SECTION */}
+          <div className="lg:col-span-5">
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm sticky top-20">
+              <div className="p-3 border-b border-slate-100 flex items-center gap-2 font-black text-[9px] uppercase tracking-widest text-slate-400">
+                <Lock className="w-3.5 h-3.5 text-indigo-600" /> Order Summary
               </div>
-
-              <h3 className="font-black text-sm leading-tight text-slate-800 uppercase tracking-tighter">
-                {urlCourseTitle ? `${urlCourseTitle} — ${form.duration}` : `${form.duration} ${form.track} Internship`}
-              </h3>
-
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase">
-                  <span>Standard Fee</span>
-                  <span className="line-through">₹{originalFee.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-[10px] text-emerald-600 font-black uppercase">
-                  <span>Scholarship</span>
-                  <span>-₹{(originalFee - discountedFee).toLocaleString()}</span>
+              <div className="p-4">
+                <div className="rounded-lg overflow-hidden mb-3 h-32 bg-slate-100">
+                  <img
+                    src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600"
+                    className="w-full h-full object-cover"
+                    alt="Program"
+                  />
                 </div>
 
-                {/* ADMIN PAYMENT METHOD SELECTOR */}
-                {isAdmin && (
-                  <div className="my-3 p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5">
-                    <label className="text-[9px] font-black uppercase text-amber-800 tracking-wider">
-                      Admin Collection Method
-                    </label>
-                    <div className="flex gap-4 pt-1">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="adminPayment"
-                          value="Cash"
-                          checked={adminPaymentMethod === "Cash"}
-                          onChange={() => setAdminPaymentMethod("Cash")}
-                          className="accent-indigo-600"
-                        />
-                        Cash
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="adminPayment"
-                          value="GPay"
-                          checked={adminPaymentMethod === "GPay"}
-                          onChange={() => setAdminPaymentMethod("GPay")}
-                          className="accent-indigo-600"
-                        />
-                        GPay / UPI
-                      </label>
+                <h3 className="font-black text-sm leading-tight text-slate-800 uppercase tracking-tighter">
+                  {urlCourseTitle ? `${urlCourseTitle} — ${form.duration}` : `${form.duration} ${form.track} Internship`}
+                </h3>
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase">
+                    <span>Standard Fee</span>
+                    <span className="line-through">₹{originalFee.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-emerald-600 font-black uppercase">
+                    <span>Scholarship</span>
+                    <span>-₹{(originalFee - discountedFee).toLocaleString()}</span>
+                  </div>
+
+                  {/* ADMIN PAYMENT METHOD SELECTOR */}
+                  {isAdmin && (
+                    <div className="my-3 p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-amber-800 tracking-wider">Admin Collection Method</label>
+                      <div className="flex gap-4 pt-1">
+                        <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="adminPayment"
+                            value="Cash"
+                            checked={adminPaymentMethod === "Cash"}
+                            onChange={() => setAdminPaymentMethod("Cash")}
+                            className="accent-indigo-600"
+                          />
+                          Cash
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="adminPayment"
+                            value="GPay"
+                            checked={adminPaymentMethod === "GPay"}
+                            onChange={() => setAdminPaymentMethod("GPay")}
+                            className="accent-indigo-600"
+                          />
+                          GPay / UPI
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      "border rounded-lg p-2.5 my-3 flex items-center justify-between gap-3 transition-colors",
+                      isOverAmount ? "bg-red-50 border-red-200" : isUnderAmount ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-100"
+                    )}
+                  >
+                    <div>
+                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                        {isAdmin ? "Collected Amount" : "Payable Now"}
+                      </p>
+                      {isOverAmount ? (
+                        <p className="text-[7px] font-black text-red-500 uppercase tracking-wide">Max ₹{discountedFee.toLocaleString()}</p>
+                      ) : isUnderAmount ? (
+                        <p className="text-[7px] font-black text-amber-500 uppercase tracking-wide">Min ₹500</p>
+                      ) : (
+                        <p className="text-[7px] font-bold text-slate-400 italic">({isAdmin ? "Custom Admin Entry" : "Min ₹500"})</p>
+                      )}
+                    </div>
+                    <div className="relative flex-1 max-w-[110px]">
+                      <IndianRupee className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 size-3", isOverAmount ? "text-red-400" : "text-slate-400")} />
+                      <input
+                        type="number"
+                        value={customAmount}
+                        onChange={(e) => setCustomAmount(parseInt(e.target.value) || 0)}
+                        className={cn(
+                          "w-full pl-6 pr-2 py-1.5 bg-white border rounded text-sm font-black text-slate-800 outline-none text-right transition-colors",
+                          isOverAmount
+                            ? "border-red-400 focus:border-red-500 text-red-600"
+                            : isUnderAmount
+                            ? "border-amber-400 focus:border-amber-500"
+                            : "border-slate-200 focus:border-indigo-500"
+                        )}
+                      />
                     </div>
                   </div>
-                )}
 
-                <div className={cn(
-                  "border rounded-lg p-2.5 my-3 flex items-center justify-between gap-3 transition-colors",
-                  isOverAmount  ? "bg-red-50 border-red-200"    :
-                  isUnderAmount ? "bg-amber-50 border-amber-200" :
-                  "bg-slate-50 border-slate-100"
-                )}>
-                  <div>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">
-                      {isAdmin ? "Collected Amount" : "Payable Now"}
-                    </p>
-                    {isOverAmount ? (
-                      <p className="text-[7px] font-black text-red-500 uppercase tracking-wide">Max ₹{discountedFee.toLocaleString()}</p>
-                    ) : isUnderAmount ? (
-                      <p className="text-[7px] font-black text-amber-500 uppercase tracking-wide">Min ₹500</p>
-                    ) : (
-                      <p className="text-[7px] font-bold text-slate-400 italic">({isAdmin ? "Custom Admin Entry" : "Min ₹500"})</p>
-                    )}
-                  </div>
-                  <div className="relative flex-1 max-w-[110px]">
-                    <IndianRupee className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 size-3", isOverAmount ? "text-red-400" : "text-slate-400")} />
-                    <input
-                      type="number" value={customAmount}
-                      onChange={(e) => setCustomAmount(parseInt(e.target.value) || 0)}
-                      className={cn(
-                        "w-full pl-6 pr-2 py-1.5 bg-white border rounded text-sm font-black text-slate-800 outline-none text-right transition-colors",
-                        isOverAmount  ? "border-red-400 focus:border-red-500 text-red-600"   :
-                        isUnderAmount ? "border-amber-400 focus:border-amber-500"             :
-                        "border-slate-200 focus:border-indigo-500"
-                      )}
-                    />
+                  <div className="pt-2 border-t border-dashed border-slate-200 flex justify-between items-baseline">
+                    <span className="font-black text-[10px] text-slate-400 uppercase tracking-widest">Grand Total</span>
+                    <span className={cn("font-black text-xl tracking-tighter", isAmountInvalid ? "text-red-500" : "text-slate-900")}>
+                      ₹{customAmount.toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-dashed border-slate-200 flex justify-between items-baseline">
-                  <span className="font-black text-[10px] text-slate-400 uppercase tracking-widest">Grand Total</span>
-                  <span className={cn("font-black text-xl tracking-tighter", isAmountInvalid ? "text-red-500" : "text-slate-900")}>
-                    ₹{customAmount.toLocaleString()}
-                  </span>
-                </div>
+                <button
+                  type="submit"
+                  disabled={isProcessing || isAmountInvalid}
+                  className={cn(
+                    "w-full mt-5 py-3.5 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                    isAmountInvalid ? "bg-red-500 shadow-red-100" : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
+                  )}
+                >
+                  {isProcessing ? <Loader2 className="animate-spin size-3" /> : <Lock className="size-3" />}
+                  {isAdmin ? "Register Candidate (Admin)" : isOverAmount ? "Check Limit" : "Enroll Now"}
+                </button>
               </div>
-
-              <button onClick={handlePay} disabled={isProcessing || isAmountInvalid}
-                className={cn(
-                  "w-full mt-5 py-3.5 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                  isAmountInvalid ? "bg-red-500 shadow-red-100" : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
-                )}
-              >
-                {isProcessing ? <Loader2 className="animate-spin size-3" /> : <Lock className="size-3" />}
-                {isAdmin ? "Register Candidate (Admin)" : isOverAmount ? "Check Limit" : "Enroll Now"}
-              </button>
             </div>
           </div>
-        </div>
+        </form>
       </main>
     </div>
   );
@@ -583,7 +618,13 @@ function ReviewAndPayContent() {
 
 export default function ReviewAndPay() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-indigo-600" /></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <Loader2 className="animate-spin text-indigo-600" />
+        </div>
+      }
+    >
       <ReviewAndPayContent />
     </Suspense>
   );
