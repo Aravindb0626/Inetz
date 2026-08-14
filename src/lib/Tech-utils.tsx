@@ -1,4 +1,5 @@
 export type TechStack = "MERN" | "Java" | "Python" | "DataScience" | "DataAnalytics" | "Embedded";
+
 interface BrandInfo {
   color: string;
 }
@@ -47,42 +48,42 @@ export const DEVICON_MAP: Record<string, string> = {
   spring: "devicon-spring-plain",
   mysql: "devicon-mysql-plain",
   intellij: "devicon-intellij-plain",
-  hibernate: "devicon-hibernate-plain", // Note: Ensure Devicon version supports this
+  hibernate: "devicon-hibernate-plain",
 };
 
 export const STACK_MAPPING: Record<string, string[]> = {
-  "python": ["python", "django", "postgresql", "docker", "aws"],
-  "mern": ["react", "nodejs", "mongodb", "javascript", "git"],
-  "java": ["java", "spring", "postgresql", "docker", "git"],
-  "datascience": ["python", "tensorflow", "pandas", "numpy", "git"],
-  "dataanalytics": ["excel", "postgresql", "python", "powerbi"],
-  "Embedded": ["c", "cpp", "python", "git"],
-  "default": ["html5", "css3", "javascript", "react"],
-  "ml": ["python", "scikit-learn", "pandas", "numpy", "matplotlib", "postgresql"],
-  "deeplearning": ["python", "pytorch", "tensorflow", "opencv", "cuda", "docker"],
-  "ai": ["python", "langchain", "openai_api", "pinecone", "huggingface", "git"],
-  "javascript": ["javascript"],
-  "react": ["react"]
+  python: ["python", "django", "postgresql", "docker", "aws"],
+  mern: ["react", "nodejs", "mongodb", "javascript", "git"],
+  java: ["java", "spring", "postgresql", "docker", "git"],
+  datascience: ["python", "tensorflow", "pandas", "numpy", "git"],
+  dataanalytics: ["excel", "postgresql", "python", "powerbi"],
+  Embedded: ["c", "cpp", "python", "git"],
+  default: ["html5", "css3", "javascript", "react"],
+  ml: ["python", "scikit-learn", "pandas", "numpy", "matplotlib", "postgresql"],
+  deeplearning: ["python", "pytorch", "tensorflow", "opencv", "cuda", "docker"],
+  ai: ["python", "langchain", "openai_api", "pinecone", "huggingface", "git"],
+  javascript: ["javascript"],
+  react: ["react"],
 };
 
 export const MARKET_INSIGHTS: Record<string, { demand: string; trend: string }> = {
-  "python": { demand: "Critical", trend: "AI & Automation" },
-  "mern": { demand: "High", trend: "SaaS & Scalability" },
-  "java": { demand: "Stable", trend: "Enterprise FinTech" },
-  "datascience": { demand: "High", trend: "Machine Learning" },
-  "dataanalytics": { demand: "Rising", trend: "Business Intelligence" },
-  "Embedded": { demand: "Niche", trend: "IoT & Robotics" },
-  "default": { demand: "Rising", trend: "Modern Web" },
-  "ml": { "demand": "Critical", "trend": "Predictive Analytics & Automation" },
-  "deeplearning": { "demand": "High", "trend": "Computer Vision & Advanced Robotics" },
-  "ai": { "demand": "Explosive", "trend": "Generative AI & Agentic Workflows" },
-  "javascript": { "demand": "High", "trend": "Reliability & Scalable Production" },
-  "edge_ai": { "demand": "Rising", "trend": "IoT & On-Device Intelligence" }
-  
+  python: { demand: "Critical", trend: "AI & Automation" },
+  mern: { demand: "High", trend: "SaaS & Scalability" },
+  java: { demand: "Stable", trend: "Enterprise FinTech" },
+  datascience: { demand: "High", trend: "Machine Learning" },
+  dataanalytics: { demand: "Rising", trend: "Business Intelligence" },
+  Embedded: { demand: "Niche", trend: "IoT & Robotics" },
+  default: { demand: "Rising", trend: "Modern Web" },
+  ml: { demand: "Critical", trend: "Predictive Analytics & Automation" },
+  deeplearning: { demand: "High", trend: "Computer Vision & Advanced Robotics" },
+  ai: { demand: "Explosive", trend: "Generative AI & Agentic Workflows" },
+  javascript: { demand: "High", trend: "Reliability & Scalable Production" },
+  edge_ai: { demand: "Rising", trend: "IoT & On-Device Intelligence" },
 };
 
 export const getStackLogos = (stack: TechStack | string): string[] => {
-  return STACK_MAPPING[String(stack)] || STACK_MAPPING["default"];
+  const key = String(stack).toLowerCase();
+  return STACK_MAPPING[key] || STACK_MAPPING[stack] || STACK_MAPPING["default"];
 };
 
 export const getIconClass = (name: string): string => {

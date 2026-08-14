@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogOut, LayoutDashboard, User, ShieldCheck } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, User, ShieldCheck, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/programs", label: "Programs" },
+  { href: "/hire-from-us", label: "Hire From Us" },
   { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
 ] as const;
@@ -46,8 +47,6 @@ export function Navbar() {
     await signOut({ callbackUrl: "/" });
   };
 
-// If already logged in -> go straight to /register form
-  // If not logged in -> redirect to login with callbackUrl=/register so they land on form post-login
   const handleRegisterClick = () => {
     if (isLoggedIn) {
       router.push("/register");
@@ -56,7 +55,6 @@ export function Navbar() {
     }
   };
 
-  // Direct login -> lands on /dashboard after logging in
   const handleLoginClick = () => {
     router.push("/login?callbackUrl=/dashboard");
   };
@@ -81,7 +79,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-2 p-1 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-full border border-zinc-100/50 dark:border-zinc-800/50">
+        <nav className="hidden lg:flex items-center gap-1 p-1 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-full border border-zinc-100/50 dark:border-zinc-800/50">
           {navItems.map((item) => {
             const isActive = item.href === activeHref;
             return (
@@ -89,7 +87,7 @@ export function Navbar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "relative flex items-center gap-1 rounded-full px-6 py-2 text-sm font-bold transition-all duration-300",
+                    "relative flex items-center gap-1 rounded-full px-5 py-2 text-sm font-bold transition-all duration-300",
                     isActive 
                       ? "text-white dark:text-zinc-900" 
                       : "text-zinc-500 hover:text-orange-500 dark:text-zinc-400 dark:hover:text-orange-400"

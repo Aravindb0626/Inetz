@@ -126,9 +126,6 @@ function LoginContent() {
             />
           </div>
         </div>
-        <h2 className="text-center text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
-          Student <span className="text-orange-500">Developer</span> Portal
-        </h2>
         <p className="mt-1.5 text-center text-[11px] text-zinc-500 dark:text-zinc-400 font-medium italic">
           {randomQuote}
         </p>
@@ -245,7 +242,7 @@ function LoginContent() {
                 href="/apply"
                 className="font-black text-orange-600 hover:text-orange-700 underline underline-offset-4"
               >
-                Join the Academy
+                Join
               </Link>
             </p>
           </div>
