@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectToDatabase } from "@/lib/db";
@@ -6,8 +6,8 @@ import Application from "@/models/Application";
 import Job from "@/models/Job";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -31,7 +31,8 @@ export async function GET(
 
     await connectToDatabase();
 
-    const jobId = params.id;
+    // Await params before reading properties
+    const { id: jobId } = await params;
 
     // 1. Verify that the job exists and belongs to this employer
     const job = await Job.findById(jobId).lean();
@@ -44,7 +45,10 @@ export async function GET(
 
     if (userRole !== "admin" && job.postedBy.toString() !== userId) {
       return NextResponse.json(
-        { success: false, error: "You do not have permission to view applicants for this job." },
+        {
+          success: false,
+          error: "You do not have permission to view applicants for this job.",
+        },
         { status: 403 }
       );
     }

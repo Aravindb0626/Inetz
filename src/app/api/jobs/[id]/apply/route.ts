@@ -8,7 +8,7 @@ import { Student } from "@/models/Student";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,22 +16,25 @@ export async function POST(
     if (!session || !session.user) {
       return NextResponse.json(
         { success: false, error: "Please log in to apply for this position." },
-        { status: 401 }
+        { status: 401 },
       );
     }
-
     const userId = (session.user as any).id;
     const userEmail = session.user.email;
-    const jobId = params.id;
 
+    // Await the params Promise to extract the ID
+    const { id: jobId } = await params;
     await connectToDatabase();
 
     // 1. Verify Job Existence & Active Status
     const job = await Job.findById(jobId).lean();
     if (!job || !job.isActive) {
       return NextResponse.json(
-        { success: false, error: "This job listing is no longer accepting applications." },
-        { status: 404 }
+        {
+          success: false,
+          error: "This job listing is no longer accepting applications.",
+        },
+        { status: 404 },
       );
     }
 
@@ -52,9 +55,10 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error: "No resume found. Please upload a PDF resume in your profile before applying.",
+          error:
+            "No resume found. Please upload a PDF resume in your profile before applying.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -75,21 +79,24 @@ export async function POST(
         message: "Application submitted successfully!",
         application,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: any) {
     // MongoDB duplicate key error code (E11000)
     if (error.code === 11000) {
       return NextResponse.json(
-        { success: false, error: "You have already applied for this job listing." },
-        { status: 400 }
+        {
+          success: false,
+          error: "You have already applied for this job listing.",
+        },
+        { status: 400 },
       );
     }
 
     console.error("SUBMIT_APPLICATION_ERROR:", error.message);
     return NextResponse.json(
       { success: false, error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
