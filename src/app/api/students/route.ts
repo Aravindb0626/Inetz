@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Student } from "@/models/Student";
 import { connectToDatabase } from "@/lib/db";
 
-// ─── GET: HIGH-SPEED PAGINATED STUDENT DIRECTORY FEEDS ──────────────────────
+// ─── GET: HIGH-SPEED PAGINATED STUDENT DIRECTORY & METRICS ──────────────────
 
 export async function GET(req: Request) {
   try {
@@ -13,45 +13,41 @@ export async function GET(req: Request) {
     // 1. Extract Query Parameters
     const search = searchParams.get("search")?.trim() || "";
     const domain = searchParams.get("domain")?.trim() || "";
-    const duration = searchParams.get("duration")?.trim() || ""; // 🎯 Duration filter
+    const duration = searchParams.get("duration")?.trim() || "";
     const fromDate = searchParams.get("fromDate")?.trim() || "";
     const toDate = searchParams.get("toDate")?.trim() || "";
 
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "15", 10);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.max(1, parseInt(searchParams.get("limit") || "15", 10));
     const skip = (page - 1) * limit;
 
-    // 2. Build MongoDB Match Query
-    const query: Record<string, any> = {};
+    // 2. Build Filter Match
+    const matchQuery: Record<string, any> = {};
 
-    // Domain Filter
     if (domain && domain !== "All") {
-      query.domain = domain;
+      matchQuery.domain = domain;
     }
 
-    // 🎯 Duration Filter (Exact match or case-insensitive regex match)
     if (duration && duration !== "All") {
       const escapedDuration = duration.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      query.duration = { $regex: new RegExp(`^${escapedDuration}$`, "i") };
+      matchQuery.duration = { $regex: `^${escapedDuration}$`, $options: "i" };
     }
 
-    // Date Range Filter (Supports ISO date string or createdAt)
     if (fromDate || toDate) {
-      query.createdAt = {};
-      if (fromDate) query.createdAt.$gte = new Date(fromDate);
+      matchQuery.createdAt = {};
+      if (fromDate) matchQuery.createdAt.$gte = new Date(fromDate);
       if (toDate) {
         const endOfDay = new Date(toDate);
         endOfDay.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endOfDay;
+        matchQuery.createdAt.$lte = endOfDay;
       }
     }
 
-    // Search Filter (Matches Name, Email, or Phone)
     if (search) {
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const searchRegex = new RegExp(escapedSearch, "i");
+      const searchRegex = { $regex: escapedSearch, $options: "i" };
 
-      query.$or = [
+      matchQuery.$or = [
         { name: searchRegex },
         { email: searchRegex },
         { phone: searchRegex },
@@ -59,61 +55,72 @@ export async function GET(req: Request) {
       ];
     }
 
-    // 3. Fetch Students & Total Count
-    const [students, totalStudents] = await Promise.all([
-      Student.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Student.countDocuments(query),
+    // 3. Single-Pass Pipeline: Pagination + Metrics + Total in 1 DB Trip
+    const [result] = await Student.aggregate([
+      { $match: matchQuery },
+      {
+        $facet: {
+          // A. Paginated Student Documents
+          paginatedResults: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+          ],
+          // B. Global Financial Metrics & Counts for current filter
+          metrics: [
+            {
+              $project: {
+                totalBilling: { $ifNull: ["$totalBilling", 0] },
+                collected: {
+                  $cond: {
+                    if: {
+                      $and: [
+                        { $isArray: "$installments" },
+                        { $gt: [{ $size: "$installments" }, 0] },
+                      ],
+                    },
+                    then: { $sum: "$installments.paidAmount" },
+                    else: { $ifNull: ["$totalCollection", 0] },
+                  },
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalCount: { $sum: 1 },
+                totalBilling: { $sum: "$totalBilling" },
+                totalCollected: { $sum: "$collected" },
+                duesCount: {
+                  $sum: {
+                    $cond: [{ $gt: [{ $subtract: ["$totalBilling", "$collected"] }, 0] }, 1, 0],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
     ]);
 
-    // 4. Calculate Dynamic Summary Metrics based on Filtered Results
-    const allFilteredStudents = await Student.find(query)
-      .select("totalBilling totalCollection installments pendingAmount feesStatus")
-      .lean();
+    const students = result?.paginatedResults || [];
+    const metricSummary = result?.metrics?.[0] || {
+      totalCount: 0,
+      totalBilling: 0,
+      totalCollected: 0,
+      duesCount: 0,
+    };
 
-    let totalCollected = 0;
-    let totalBilling = 0;
-    let duesCount = 0;
-
-    allFilteredStudents.forEach((student: any) => {
-      const billing = Number(student.totalBilling || 0);
-
-      // Sum installments array if present
-      let collected = 0;
-      if (Array.isArray(student.installments) && student.installments.length > 0) {
-        collected = student.installments.reduce(
-          (sum: number, inst: any) => sum + (Number(inst.paidAmount) || 0),
-          0
-        );
-      } else {
-        collected = Number(student.totalCollection || 0);
-      }
-
-      totalBilling += billing;
-      totalCollected += collected;
-
-      if (billing - collected > 0) {
-        duesCount++;
-      }
-    });
-
+    const totalStudents = metricSummary.totalCount;
+    const totalBilling = metricSummary.totalBilling;
+    const totalCollected = metricSummary.totalCollected;
+    const duesCount = metricSummary.duesCount;
     const totalPending = Math.max(0, totalBilling - totalCollected);
-
-    // 5. Fetch Unique Domains for Dropdown
-    const availableDomainsRaw = await Student.distinct("domain");
-    const availableDomains = [
-      "All",
-      ...availableDomainsRaw.filter((d: string) => d && d.trim() !== ""),
-    ];
 
     return NextResponse.json(
       {
         success: true,
         students,
-        availableDomains,
         pagination: {
           totalStudents,
           totalPages: Math.ceil(totalStudents / limit) || 1,
@@ -125,10 +132,15 @@ export async function GET(req: Request) {
           totalCollected,
           totalPending,
           duesCount,
-          clearCount: totalStudents - duesCount,
+          clearCount: Math.max(0, totalStudents - duesCount),
         },
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+        },
+      }
     );
   } catch (error: any) {
     console.error("GET_STUDENTS_ERROR:", error.message);
@@ -139,7 +151,8 @@ export async function GET(req: Request) {
   }
 }
 
-// ─── POST: CREATE A NEW STUDENT PROFILE (ADMIN MANUAL ENTRY) ─────────────────
+// ─── POST: CREATE A NEW STUDENT PROFILE (ADMIN MANUAL ADMISSION) ─────────────
+
 export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -155,7 +168,7 @@ export async function POST(req: NextRequest) {
       totalBilling,
       initialPayment,
       paymentMethod,
-      billingBy
+      billingBy,
     } = body;
 
     const studentName = (name || "").trim();
@@ -169,44 +182,55 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if phone or email already exists
+    // Prevent duplicate entries by phone or email
     const existingStudent = await Student.findOne({
       $or: [
         { phone: studentPhone },
-        ...(studentEmail ? [{ email: studentEmail }] : [])
-      ]
-    });
+        ...(studentEmail ? [{ email: studentEmail }] : []),
+      ],
+    }).lean();
 
     if (existingStudent) {
       return NextResponse.json(
-        { success: false, error: "A student record with this phone number or email already exists." },
+        {
+          success: false,
+          error: "A student record with this phone number or email already exists.",
+        },
         { status: 400 }
       );
     }
 
-    // Auto-calculate Next Serial Number (sNo)
-    const lastStudent = await Student.findOne({}, { sNo: 1 }).sort({ sNo: -1 }).lean();
-    const nextSNo = lastStudent && typeof lastStudent.sNo === "number" ? lastStudent.sNo + 1 : 1;
+    // Auto-increment sNo cleanly
+    const lastStudent = await Student.findOne({}, { sNo: 1 })
+      .sort({ sNo: -1 })
+      .lean();
+    const nextSNo =
+      lastStudent && typeof lastStudent.sNo === "number" ? lastStudent.sNo + 1 : 1;
 
-    // Format Date of Joining
+    // Date formatting
     const displayDate = new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
-      year: "numeric"
+      year: "numeric",
     });
 
     const billingTotal = Number(totalBilling) || 0;
     const initialPaid = Number(initialPayment) || 0;
 
-    // Optional initial installment if cash/gpay collected at time of creation
-    const installments = initialPaid > 0 ? [{
-      receiptNo: `IT-ADM-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: displayDate,
-      paidAmount: initialPaid,
-      paymentMethod: paymentMethod === "GPay" ? "GPay" : "Cash",
-      transactionId: "N/A",
-      billingBy: billingBy || "Admin Manual Entry"
-    }] : [];
+    // Record initial installment receipt if paid during admission
+    const installments =
+      initialPaid > 0
+        ? [
+            {
+              receiptNo: `IT-ADM-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+              date: displayDate,
+              paidAmount: initialPaid,
+              paymentMethod: paymentMethod === "GPay" ? "GPay" : paymentMethod || "Cash",
+              transactionId: "N/A",
+              billingBy: billingBy || "Admin Manual Entry",
+            },
+          ]
+        : [];
 
     const newStudent = new Student({
       sNo: nextSNo,
@@ -221,25 +245,31 @@ export async function POST(req: NextRequest) {
       installments: installments,
       totalCollection: initialPaid,
       pendingAmount: Math.max(0, billingTotal - initialPaid),
-      feesStatus: (billingTotal - initialPaid) === 0 && billingTotal > 0 ? "Clear" : "Pending",
-      certificateStatus: "Pending"
+      feesStatus: billingTotal > 0 && billingTotal - initialPaid === 0 ? "Clear" : "Pending",
+      certificateStatus: "Pending",
     });
 
     await newStudent.save();
 
-    return NextResponse.json({
-      success: true,
-      message: "Student record created successfully.",
-      data: newStudent
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Student record created successfully.",
+        data: newStudent,
+      },
+      { status: 201 }
+    );
   } catch (error: any) {
     console.error("Student manual creation failure:", error);
-    return NextResponse.json({ success: false, error: error.message || "Failed to create student record." }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to create student record." },
+      { status: 500 }
+    );
   }
 }
 
-// ─── PUT: EDIT EXISTING STUDENT DATA SAFELY (ENUM CONSTRAINTS ALIGNED) ──────
+// ─── PUT: EDIT EXISTING STUDENT DATA SAFELY ─────────────────────────────────
+
 export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -247,18 +277,25 @@ export async function PUT(req: NextRequest) {
     const { id, name, email, phone, college, domain, duration, totalBilling } = data;
 
     if (!id) {
-      return NextResponse.json({ success: false, error: "Missing Target Document Student ID." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing Target Document Student ID." },
+        { status: 400 }
+      );
     }
 
     const currentStudent = await Student.findById(id);
     if (!currentStudent) {
-      return NextResponse.json({ success: false, error: "Student profile not found." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Student profile not found." },
+        { status: 404 }
+      );
     }
 
-    const updatedBilling = Number(totalBilling) || currentStudent.totalBilling;
-    const newPendingAmount = Math.max(0, updatedBilling - (currentStudent.totalCollection || 0));
-    
-    const newFeesStatus = newPendingAmount === 0 ? "Clear" : "Pending";
+    const updatedBilling =
+      totalBilling !== undefined ? Number(totalBilling) : currentStudent.totalBilling;
+    const currentCollected = Number(currentStudent.totalCollection || 0);
+    const newPendingAmount = Math.max(0, updatedBilling - currentCollected);
+    const newFeesStatus = newPendingAmount === 0 && updatedBilling > 0 ? "Clear" : "Pending";
 
     const updatedStudent = await Student.findByIdAndUpdate(
       id,
@@ -272,13 +309,13 @@ export async function PUT(req: NextRequest) {
           duration,
           totalBilling: updatedBilling,
           pendingAmount: newPendingAmount,
-          feesStatus: newFeesStatus
-        }
+          feesStatus: newFeesStatus,
+        },
       },
       { new: true, runValidators: true }
     );
 
-    return NextResponse.json({ success: true, data: updatedStudent });
+    return NextResponse.json({ success: true, data: updatedStudent }, { status: 200 });
   } catch (error: any) {
     console.error("Student directory update failure:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -286,6 +323,7 @@ export async function PUT(req: NextRequest) {
 }
 
 // ─── DELETE: REMOVE A STUDENT RECORD ENTIRELY ───────────────────────────────
+
 export async function DELETE(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -293,16 +331,26 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ success: false, error: "Missing Target Document ID." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing Target Document ID." },
+        { status: 400 }
+      );
     }
 
     const deleted = await Student.findByIdAndDelete(id);
     if (!deleted) {
-      return NextResponse.json({ success: false, error: "Profile does not exist or was already deleted." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Profile does not exist or was already deleted." },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ success: true, message: "Student record dropped successfully." });
+    return NextResponse.json(
+      { success: true, message: "Student record removed successfully." },
+      { status: 200 }
+    );
   } catch (error: any) {
+    console.error("Student deletion failure:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

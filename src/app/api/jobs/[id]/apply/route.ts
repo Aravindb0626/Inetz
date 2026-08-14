@@ -44,11 +44,11 @@ export async function POST(
 
     // Fallback: If resumeUrl wasn't passed directly in payload, search Student collection by email or user ID
     if (!finalResumeUrl) {
-      const student = await Student.findOne({
+      const student = (await Student.findOne({
         $or: [{ _id: userId }, { email: userEmail }],
-      }).lean();
+      }).lean()) as { resume?: string } | null;
 
-      finalResumeUrl = student?.resumeUrl;
+      finalResumeUrl = student?.resume;
     }
 
     if (!finalResumeUrl) {

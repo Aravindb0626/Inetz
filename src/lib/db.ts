@@ -2,8 +2,10 @@ import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
+if (!MONGODB_URI) {
+  throw new Error("❌ Please define MONGODB_URI in your environment variables.");
+}
 
-// 🎯 Declare global type to avoid TypeScript `(global as any)` assertions
 declare global {
   var mongooseCache: {
     conn: typeof mongoose | null;
@@ -18,32 +20,28 @@ if (!cached) {
 }
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
-  // 1. Return existing connection if already established
-  if (cached.conn) {
+  // 1. Return cached active connection immediately
+  if (cached.conn && cached.conn.connection.readyState === 1) {
     return cached.conn;
   }
 
-  // 2. Create connection promise if one is not already pending
+  // 2. Reuse in-flight connection promise
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
-      
-      // 🚀 Performance & Load Testing Tuning Options:
-      maxPoolSize: 50,             // Maintain up to 50 socket connections for high concurrency
-      minPoolSize: 10,             // Keep 10 sockets open to eliminate initial handshake latency
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging indefinitely if DB goes down
-      socketTimeoutMS: 45000,      // Close sockets after 45s of inactivity
+      maxPoolSize: 10,                 // Keep connection count light and fast
+      minPoolSize: 0,                  // 🎯 Avoids opening 10 sockets on cold start
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
     };
 
     cached.promise = mongoose
       .connect(MONGODB_URI as string, opts)
       .then((m) => {
-        console.log("✅ MongoDB Connected Successfully");
         return m;
       })
       .catch((err) => {
-        console.error("❌ MongoDB Connection Error:", err);
-        cached.promise = null; // Reset cached promise so subsequent requests can retry
+        cached.promise = null;
         throw err;
       });
   }
