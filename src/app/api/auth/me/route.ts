@@ -96,17 +96,21 @@ export async function GET() {
     return NextResponse.json({
       authenticated: true,
       user: {
-        id: userDoc?._id || userId,
+        _id: studentDoc?._id?.toString() || userDoc?._id?.toString() || userId,
+        id: studentDoc?._id?.toString() || userDoc?._id?.toString() || userId,
+        studentId: studentDoc?._id?.toString() || null,
         name: studentDoc?.name || userDoc?.name || "",
+        fullName: studentDoc?.name || userDoc?.name || "",
         email: emailToSearch,
         role: userDoc?.role || "student",
         phone: studentDoc?.phone || userDoc?.phone || "",
         college: studentDoc?.college || userDoc?.college || "",
-        degree: userDoc?.degree || "B.E / B.Tech",
+        degree: studentDoc?.degree || userDoc?.degree || "B.E / B.Tech",
         domain: studentDoc?.domain || userDoc?.domain || "Web Development",
-        resumeUrl: userDoc?.resumeUrl || "",
-        githubUrl: userDoc?.githubUrl || "",
-        linkedinUrl: userDoc?.linkedinUrl || "",
+        domainTrack: studentDoc?.domain || userDoc?.domain || "Web Development",
+        resumeUrl: studentDoc?.resumeUrl || userDoc?.resumeUrl || "",
+        githubUrl: studentDoc?.githubUrl || userDoc?.githubUrl || "",
+        linkedinUrl: studentDoc?.linkedinUrl || userDoc?.linkedinUrl || "",
         enrolledCourses,
         transactions,
       },
@@ -134,7 +138,7 @@ export async function PUT(req: Request) {
     const body = await req.json();
 
     const updateFields = {
-      name: body.fullName,
+      name: body.fullName || body.name,
       phone: body.phone,
       college: body.college,
       degree: body.degree,
@@ -149,17 +153,21 @@ export async function PUT(req: Request) {
       await User.findByIdAndUpdate(userId, { $set: updateFields });
     }
 
-    // 2. Sync with Student Document if present
+    // 2. Sync full details with Student Document
     const emailToSearch = userEmail || body.email;
     if (emailToSearch) {
       await Student.findOneAndUpdate(
         { email: { $regex: new RegExp(`^${emailToSearch.trim()}$`, "i") } },
         {
           $set: {
-            name: body.fullName,
+            name: body.fullName || body.name,
             phone: body.phone,
             college: body.college,
+            degree: body.degree,
             domain: body.domainTrack || body.domain,
+            resumeUrl: body.resumeUrl,
+            githubUrl: body.githubUrl,
+            linkedinUrl: body.linkedinUrl,
           },
         }
       );

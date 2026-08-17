@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, models, model } from "mongoose";
+import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IApplication extends Document {
   jobId: mongoose.Types.ObjectId;
@@ -14,41 +14,67 @@ export interface IApplication extends Document {
 
 const ApplicationSchema = new Schema<IApplication>(
   {
-    jobId: { 
-      type: Schema.Types.ObjectId, 
-      ref: "Job", 
+    jobId: {
+      type: Schema.Types.ObjectId,
+      ref: "Job",
       required: true,
-      index: true 
     },
-    studentId: { 
-      type: Schema.Types.ObjectId, 
-      ref: "Student", 
+    studentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Student",
       required: true,
-      index: true 
     },
-    resumeUrl: { type: String, required: true, trim: true },
+    resumeUrl: {
+      type: String,
+      required: true,
+      trim: true,
+      default: "",
+    },
     status: {
       type: String,
       enum: ["Applied", "Shortlisted", "Rejected"],
       default: "Applied",
     },
-    // 🎯 Access control flag for the student's interview portal
     interviewStatus: {
       type: String,
       enum: ["Locked", "Approved", "Completed"],
       default: "Locked",
     },
-    interviewDate: { type: Date },
-    interviewLink: { type: String, trim: true },
+    interviewDate: {
+      type: Date,
+    },
+    interviewLink: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    autoIndex: process.env.NODE_ENV !== "production",
+  }
 );
 
-// 🎯 Performance Indexes
+// ─── COMPOUND & QUERY PERFORMANCE INDEXES ─────────────────────────────────────
+
+// 1. Fast Employer Applicant Roster Lookup (Query by Job, sorted newest first)
 ApplicationSchema.index({ jobId: 1, createdAt: -1 });
+
+// 2. Fast Student Dashboard Lookup (Query by Student, sorted newest first)
 ApplicationSchema.index({ studentId: 1, createdAt: -1 });
 
-// 🎯 Compound Unique Index: Prevents a student from applying to the same job twice
+// 3. Unique Guard: Prevents duplicate applications for the same job
 ApplicationSchema.index({ jobId: 1, studentId: 1 }, { unique: true });
 
-export default models.Application || model<IApplication>("Application", ApplicationSchema);
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Clear cached model in Next.js development to prevent HMR schema collisions
+if (process.env.NODE_ENV !== "production") {
+  delete mongoose.models.Application;
+}
+
+export const Application: Model<IApplication> =
+  mongoose.models.Application ||
+  mongoose.model<IApplication>("Application", ApplicationSchema);
+
+export default Application;

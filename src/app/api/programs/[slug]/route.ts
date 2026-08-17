@@ -9,32 +9,34 @@ export async function GET(
   try {
     await connectToDatabase();
     const { slug } = await params;
-    
-    // 1. Get the duration from the URL search params
+
     const { searchParams } = new URL(req.url);
-    const duration = searchParams.get("duration"); // e.g., "1-week" or "1-month"
+    const duration = searchParams.get("duration");
 
     const decodedSlug = decodeURIComponent(slug);
 
-    // 2. Build the query
-    // We look for the course name AND the specific duration
-    const query: any = { slug: decodedSlug };
+    // Exact index lookup using { slug, duration }
+    const query: Record<string, any> = { slug: decodedSlug };
     if (duration) {
-      // Replace hyphens back to spaces if your DB stores "1 Week"
-      const formattedDuration = duration.replace(/-/g, " "); 
-      query.duration = { $regex: new RegExp(`^${formattedDuration}$`, "i") };
+      const formattedDuration = duration.replace(/-/g, " ");
+      query.duration = { $regex: `^${formattedDuration}$`, $options: "i" };
     }
 
-    const program = await Program.findOne(query).lean();
+    const program = await Program.findOne(query).select("-__v").lean();
 
     if (!program) {
       return NextResponse.json(
-        { error: `Program with duration ${duration} not found` }, 
+        { error: `Program not found` },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(program);
+    return NextResponse.json(program, {
+      status: 200,
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    });
   } catch (error: any) {
     console.error("Fetch Error:", error.message);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -48,9 +50,15 @@ export async function DELETE(
   try {
     await connectToDatabase();
     const { slug } = await params;
-    const deleted = await Program.findByIdAndDelete(slug);
-    if (!deleted)
-      return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+    const decodedSlug = decodeURIComponent(slug);
+
+    // Fixed: Search by slug field (findByIdAndDelete fails on string slugs)
+    const deleted = await Program.findOneAndDelete({ slug: decodedSlug });
+    
+    if (!deleted) {
+      return NextResponse.json({ success: false, error: "Program not found" }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

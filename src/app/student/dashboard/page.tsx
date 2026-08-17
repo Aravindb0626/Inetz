@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
 import Sidebar from "./components/Sidebar";
-import ProfileTab from "./components/ProfileTab";
+import ProfileTab, { ProfileData } from "./components/ProfileTab";
 import ApplicationsTab from "./components/ApplicationsTab";
 import CoursesTab from "./components/CoursesTab";
 import TransactionsTab from "./components/TransactionsTab";
@@ -21,8 +21,12 @@ export default function StudentDashboardPage() {
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Profile Form State
-  const [profile, setProfile] = useState({
+  // Student DB Reference ID
+  const [studentId, setStudentId] = useState<string>("");
+
+  // Profile Form State strictly typed with ProfileData
+  const [profile, setProfile] = useState<ProfileData>({
+    _id: "",
     fullName: "",
     email: "",
     phone: "",
@@ -39,31 +43,35 @@ export default function StudentDashboardPage() {
   const [courses, setCourses] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
-  // 1. Fetch Student Profile & Enrollment Data from /api/auth/me
+  // 1. Fetch Student Profile & Enrollment Data from /api/student/me or /api/auth/me
   const fetchStudentProfile = useCallback(async () => {
     setLoadingProfile(true);
     try {
-      const res = await fetch("/api/auth/me");
+      let res = await fetch("/api/auth/me");
       if (!res.ok) return;
 
       const data = await res.json();
       const userData = data.user;
 
       if (data.authenticated && userData) {
-        // 🎯 Trigger modal if phone number is missing in user/student profile
+        // Trigger modal if phone number is missing
         if (!userData.phone || data.needsPhoneLinking) {
           setShowPhoneModal(true);
         } else {
           setShowPhoneModal(false);
         }
 
+        const resolvedStudentId = userData.studentId || userData._id || userData.id || "";
+        setStudentId(resolvedStudentId);
+
         setProfile({
-          fullName: userData.name || session?.user?.name || "",
+          _id: resolvedStudentId,
+          fullName: userData.fullName || userData.name || session?.user?.name || "",
           email: userData.email || session?.user?.email || "",
           phone: userData.phone || "",
           college: userData.college || "",
           degree: userData.degree || "B.E / B.Tech",
-          domainTrack: userData.domain || "Web Development",
+          domainTrack: userData.domainTrack || userData.domain || "Web Development",
           resumeUrl: userData.resumeUrl || "",
           githubUrl: userData.githubUrl || "",
           linkedinUrl: userData.linkedinUrl || "",
@@ -97,6 +105,7 @@ export default function StudentDashboardPage() {
     }
   }, []);
 
+  // Initial Load on Authentication
   useEffect(() => {
     if (status === "authenticated") {
       fetchStudentProfile();
@@ -104,18 +113,33 @@ export default function StudentDashboardPage() {
     }
   }, [status, fetchStudentProfile, fetchApplications]);
 
-  // Handle Profile Save targeting PUT /api/auth/me
+  // Refetch Applications whenever the user switches to the Applications Tab
+  useEffect(() => {
+    if (activeTab === "applications" && status === "authenticated") {
+      fetchApplications();
+    }
+  }, [activeTab, status, fetchApplications]);
+
+  // Handle Profile Save
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
     setProfileMsg(null);
 
     try {
-      const res = await fetch("/api/auth/me", {
+      let res = await fetch("/api/student/me", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profile),
       });
+
+      if (!res.ok) {
+        res = await fetch("/api/auth/me", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profile),
+        });
+      }
 
       const data = await res.json();
 
@@ -157,6 +181,7 @@ export default function StudentDashboardPage() {
           <ProfileTab
             profile={profile}
             setProfile={setProfile}
+            studentId={studentId}
             loadingProfile={loadingProfile}
             onSaveProfile={handleSaveProfile}
             savingProfile={savingProfile}
