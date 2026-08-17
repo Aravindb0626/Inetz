@@ -24,11 +24,14 @@ export async function GET(req: Request) {
     // 2. Build Filter Match
     const matchQuery: Record<string, any> = {};
 
-    if (domain && domain !== "All") {
-      matchQuery.domain = domain;
+    // 🎯 Case-Insensitive Domain Matching
+    if (domain && domain.toLowerCase() !== "all") {
+      const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      matchQuery.domain = { $regex: `^${escapedDomain}$`, $options: "i" };
     }
 
-    if (duration && duration !== "All") {
+    // 🎯 Case-Insensitive Duration Matching
+    if (duration && duration.toLowerCase() !== "all") {
       const escapedDuration = duration.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       matchQuery.duration = { $regex: `^${escapedDuration}$`, $options: "i" };
     }
@@ -55,52 +58,59 @@ export async function GET(req: Request) {
       ];
     }
 
-    // 3. Single-Pass Pipeline: Pagination + Metrics + Total in 1 DB Trip
-    const [result] = await Student.aggregate([
-      { $match: matchQuery },
-      {
-        $facet: {
-          // A. Paginated Student Documents
-          paginatedResults: [
-            { $sort: { createdAt: -1 } },
-            { $skip: skip },
-            { $limit: limit },
-          ],
-          // B. Global Financial Metrics & Counts for current filter
-          metrics: [
-            {
-              $project: {
-                totalBilling: { $ifNull: ["$totalBilling", 0] },
-                collected: {
-                  $cond: {
-                    if: {
-                      $and: [
-                        { $isArray: "$installments" },
-                        { $gt: [{ $size: "$installments" }, 0] },
+    // 3. Single-Pass Pipeline: Pagination + Metrics + Distinct Domains
+    const [[result], distinctDomains] = await Promise.all([
+      Student.aggregate([
+        { $match: matchQuery },
+        {
+          $facet: {
+            // A. Paginated Student Documents
+            paginatedResults: [
+              { $sort: { createdAt: -1 } },
+              { $skip: skip },
+              { $limit: limit },
+            ],
+            // B. Global Financial Metrics & Counts for current filter
+            metrics: [
+              {
+                $project: {
+                  totalBilling: { $ifNull: ["$totalBilling", 0] },
+                  collected: {
+                    $cond: {
+                      if: {
+                        $and: [
+                          { $isArray: "$installments" },
+                          { $gt: [{ $size: "$installments" }, 0] },
+                        ],
+                      },
+                      then: { $sum: "$installments.paidAmount" },
+                      else: { $ifNull: ["$totalCollection", 0] },
+                    },
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalCount: { $sum: 1 },
+                  totalBilling: { $sum: "$totalBilling" },
+                  totalCollected: { $sum: "$collected" },
+                  duesCount: {
+                    $sum: {
+                      $cond: [
+                        { $gt: [{ $subtract: ["$totalBilling", "$collected"] }, 0] },
+                        1,
+                        0,
                       ],
                     },
-                    then: { $sum: "$installments.paidAmount" },
-                    else: { $ifNull: ["$totalCollection", 0] },
                   },
                 },
               },
-            },
-            {
-              $group: {
-                _id: null,
-                totalCount: { $sum: 1 },
-                totalBilling: { $sum: "$totalBilling" },
-                totalCollected: { $sum: "$collected" },
-                duesCount: {
-                  $sum: {
-                    $cond: [{ $gt: [{ $subtract: ["$totalBilling", "$collected"] }, 0] }, 1, 0],
-                  },
-                },
-              },
-            },
-          ],
+            ],
+          },
         },
-      },
+      ]),
+      Student.distinct("domain"),
     ]);
 
     const students = result?.paginatedResults || [];
@@ -117,10 +127,16 @@ export async function GET(req: Request) {
     const duesCount = metricSummary.duesCount;
     const totalPending = Math.max(0, totalBilling - totalCollected);
 
+    // Format available domains cleanly
+    const formattedAvailableDomains = Array.from(
+      new Set(distinctDomains.filter(Boolean))
+    );
+
     return NextResponse.json(
       {
         success: true,
         students,
+        availableDomains: ["All", ...formattedAvailableDomains],
         pagination: {
           totalStudents,
           totalPages: Math.ceil(totalStudents / limit) || 1,

@@ -37,11 +37,9 @@ export default function StudentsTab() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState("All");
-  
-  // 🎯 DURATION FILTER STATE
   const [durationFilter, setDurationFilter] = useState("All");
-  
-  // DATE RANGE STATES
+
+  // Date Range States
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -53,6 +51,7 @@ export default function StudentsTab() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  // Debounce search input
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
@@ -60,6 +59,38 @@ export default function StudentsTab() {
     return () => clearTimeout(handler);
   }, [search]);
 
+  // Fetch dynamic tracks to populate domain dropdown list
+  const fetchAvailableTracks = useCallback(async () => {
+    try {
+      let res = await fetch("/api/tracks");
+      if (!res.ok) {
+        res = await fetch("/api/programs");
+      }
+
+      if (res.ok) {
+        const rawData = await res.json();
+        const list: any[] = Array.isArray(rawData)
+          ? rawData
+          : rawData.programs || rawData.data || [];
+
+        const titles = Array.from(
+          new Set(list.map((item) => item.title?.trim()).filter(Boolean))
+        ) as string[];
+
+        if (titles.length > 0) {
+          setAvailableDomains(["All", ...titles]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load tracks for domains list:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAvailableTracks();
+  }, [fetchAvailableTracks]);
+
+  // Fetch students with normalized filters
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
@@ -69,16 +100,15 @@ export default function StudentsTab() {
         limit: "15",
       };
 
-      if (domainFilter !== "All") {
-        queryParams.domain = domainFilter;
+      // Case-insensitive check: only append if not 'all'
+      if (domainFilter.trim().toLowerCase() !== "all") {
+        queryParams.domain = domainFilter.trim();
       }
 
-      // 🎯 PASS DURATION FILTER TO QUERY PARAMS
-      if (durationFilter !== "All") {
-        queryParams.duration = durationFilter;
+      if (durationFilter.trim().toLowerCase() !== "all") {
+        queryParams.duration = durationFilter.trim();
       }
 
-      // PASS DATES TO QUERY PARAMS
       if (fromDate) queryParams.fromDate = fromDate;
       if (toDate) queryParams.toDate = toDate;
 
@@ -92,8 +122,16 @@ export default function StudentsTab() {
           setSummary(res.data.summary);
         }
 
-        if (Array.isArray(res.data.availableDomains)) {
-          setAvailableDomains(res.data.availableDomains);
+        // Merge backend-provided domains if available
+        if (Array.isArray(res.data.availableDomains) && res.data.availableDomains.length > 0) {
+          setAvailableDomains((prev) => {
+            const combined = Array.from(
+              new Set([...prev, ...res.data.availableDomains.map((d: string) => d.trim())])
+            );
+            return combined.filter((d) => d.toLowerCase() !== "all").length > 0
+              ? ["All", ...combined.filter((d) => d.toLowerCase() !== "all")]
+              : ["All"];
+          });
         }
 
         if (res.data.pagination) {
@@ -121,7 +159,6 @@ export default function StudentsTab() {
     setPage(1);
   };
 
-  // 🎯 DURATION CHANGE HANDLER
   const handleDurationChange = (val: string) => {
     setDurationFilter(val);
     setPage(1);
@@ -157,11 +194,9 @@ export default function StudentsTab() {
         domainFilter={domainFilter}
         onDomainChange={handleDomainChange}
         availableDomains={availableDomains}
-        
         durationFilter={durationFilter}
         onDurationChange={handleDurationChange}
         availableDurations={["All", ...DEFAULT_DURATIONS]}
-        
         fromDate={fromDate}
         onFromDateChange={handleFromDateChange}
         toDate={toDate}
@@ -188,8 +223,6 @@ export default function StudentsTab() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={fetchStudents}
-        defaultDomains={DEFAULT_FORM_DOMAINS}
-        defaultDurations={DEFAULT_DURATIONS}
       />
 
       <EditStudentModal

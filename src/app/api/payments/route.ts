@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { Student } from "@/models/Student";
 import { connectToDatabase } from "@/lib/db";
 
+// 🎯 Safe Date Parser: Converts "17 Aug 2026", "10 Oct 2025", "2026-08-17", etc. into timestamps
+function parseCalendarDate(dateStr?: string): number {
+  if (!dateStr || typeof dateStr !== "string") return 0;
+  
+  const cleaned = dateStr.trim();
+  
+  // 1. Direct standard Date parsing (works for "17 Aug 2026", "Aug 17, 2026", "2026-08-17")
+  const parsed = new Date(cleaned).getTime();
+  if (!isNaN(parsed) && parsed > 0) return parsed;
+
+  // 2. Handle DD-MM-YYYY or DD/MM/YYYY formats
+  const dmyMatch = cleaned.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (dmyMatch) {
+    const [_, day, month, year] = dmyMatch;
+    const d = new Date(Number(year), Number(month) - 1, Number(day)).getTime();
+    if (!isNaN(d)) return d;
+  }
+
+  // 3. Fallback: Parse "DD Mon YYYY" manually
+  const months: Record<string, number> = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+  };
+  const textMatch = cleaned.match(/^(\d{1,2})\s+([a-zA-Z]{3,9})\s+(\d{4})/);
+  if (textMatch) {
+    const [_, day, mon, year] = textMatch;
+    const monIndex = months[mon.slice(0, 3).toLowerCase()];
+    if (monIndex !== undefined) {
+      return new Date(Number(year), monIndex, Number(day)).getTime();
+    }
+  }
+
+  return 0;
+}
+
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -9,44 +44,44 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const phone = searchParams.get("phone")?.trim();
 
-    // ─── BRANCH A: SINGLE STUDENT LOOKUP BY PHONE (FOR MODAL AUTOFILL) ───
+    // ─── BRANCH A: SINGLE STUDENT LOOKUP BY PHONE ────────────────────────────
     if (phone) {
-      const student = await Student.findOne({ phone });
+      const student = await Student.findOne({ phone }).lean();
       if (!student) return NextResponse.json({ exists: false });
       return NextResponse.json({
         exists: true,
         name: student.name,
         college: student.college,
         domain: student.domain,
-        courseName: student.duration, 
+        courseName: student.duration,
         totalBilling: student.totalBilling,
-        totalAccumulatedPaid: student.totalCollection || 0
+        totalAccumulatedPaid: student.totalCollection || 0,
       });
     }
 
-    // ─── BRANCH B: TRANSACTIONS LEDGER (ISOLATED DATE BOUNDARY FILTERS) ───
+    // ─── BRANCH B: TRANSACTIONS LEDGER (DATE-WISE SORTED) ────────────────────
     const search = searchParams.get("search")?.trim() || "";
-    const isDownload = searchParams.get("download") === "true"; 
-    
+    const isDownload = searchParams.get("download") === "true";
     const startDateParam = searchParams.get("startDate")?.trim();
     const endDateParam = searchParams.get("endDate")?.trim();
-    
+
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.max(1, Number(searchParams.get("limit")) || 20);
     const skip = (page - 1) * limit;
 
-    // 1. Core text search stage matching student parameters
+    // 1. Text Search Filter
     const matchStage: any = {};
     if (search) {
+      const searchRegex = { $regex: search, $options: "i" };
       matchStage.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
-        { college: { $regex: search, $options: "i" } },
-        { "installments.receiptNo": { $regex: search, $options: "i" } }
+        { name: searchRegex },
+        { phone: searchRegex },
+        { college: searchRegex },
+        { "installments.receiptNo": searchRegex },
       ];
     }
 
-    // 2. High-Performance Aggregation Matrix
+    // 2. Fetch all matching installments
     const pipeline: any[] = [
       { $match: matchStage },
       { $unwind: { path: "$installments", preserveNullAndEmptyArrays: true } },
@@ -57,65 +92,72 @@ export async function GET(req: NextRequest) {
           name: 1,
           phone: 1,
           college: { $ifNull: ["$college", "N/A"] },
-          domain: { $ifNull: ["$domain", "Web development"] },
+          domain: { $ifNull: ["$domain", "Web Development"] },
           courseName: { $ifNull: ["$duration", "1 Month"] },
           paidAmount: { $ifNull: ["$installments.paidAmount", 0] },
           paymentMethod: { $ifNull: ["$installments.paymentMethod", "Cash"] },
           transactionId: { $ifNull: ["$installments.transactionId", "N/A"] },
           billingBy: { $ifNull: ["$installments.billingBy", "System Registration"] },
           totalCoursePayment: { $ifNull: ["$totalBilling", 0] },
-          createdAt: { $ifNull: ["$installments.createdAt", "$createdAt"] }
-        }
-      }
+          createdAt: { $ifNull: ["$installments.createdAt", "$createdAt"] },
+        },
+      },
     ];
 
-    // 🎯 LOCALIZED DATE FILTER LAYER
+    const allRawTransactions: any[] = await Student.aggregate(pipeline);
+
+    // 3. Date Range Filter (if user picks from/to dates)
+    let filteredTransactions = allRawTransactions;
     if (startDateParam || endDateParam) {
-      const dateFilter: any = {};
-      if (startDateParam) {
-        dateFilter.$gte = new Date(`${startDateParam}T00:00:00.000Z`);
-      }
-      if (endDateParam) {
-        dateFilter.$lte = new Date(`${endDateParam}T23:59:59.999Z`);
-      }
-      pipeline.push({ $match: { createdAt: dateFilter } });
-    }
+      const startMs = startDateParam ? new Date(`${startDateParam}T00:00:00.000Z`).getTime() : 0;
+      const endMs = endDateParam ? new Date(`${endDateParam}T23:59:59.999Z`).getTime() : Infinity;
 
-    // Global Chronological Sort
-    pipeline.push({ $sort: { createdAt: -1, receiptNo: -1 } });
-
-    let finalTransactions = [];
-    let totalLogs = 0;
-
-    // 🎯 FIXED: When isDownload is true, execute the array without injection of $skip and $limit facets
-    if (isDownload) {
-      finalTransactions = await Student.aggregate(pipeline);
-      totalLogs = finalTransactions.length;
-    } else {
-      pipeline.push({
-        $facet: {
-          metadata: [{ $count: "totalLogs" }],
-          dataRows: [{ $skip: skip }, { $limit: limit }]
-        }
+      filteredTransactions = filteredTransactions.filter((tx) => {
+        const txDateMs = parseCalendarDate(tx.date);
+        return txDateMs >= startMs && txDateMs <= endMs;
       });
-      const aggregationResult = await Student.aggregate(pipeline);
-      const facet = aggregationResult[0];
-      totalLogs = facet.metadata[0]?.totalLogs || 0;
-      finalTransactions = facet.dataRows || [];
     }
 
-    // 3. Reconstruct running totals over the targeted active viewport data records
+    // 🎯 4. DATE-WISE SORT: Strictly sorts by the displayed calendar date (Latest Date First)
+    filteredTransactions.sort((a, b) => {
+      const dateA = parseCalendarDate(a.date);
+      const dateB = parseCalendarDate(b.date);
+
+      // Primary Sort: Transaction Date descending
+      if (dateB !== dateA) {
+        return dateB - dateA;
+      }
+
+      // Secondary Sort: Fallback to creation timestamp or receipt number if dates are identical
+      const createdA = new Date(a.createdAt || 0).getTime();
+      const createdB = new Date(b.createdAt || 0).getTime();
+      if (createdB !== createdA) {
+        return createdB - createdA;
+      }
+
+      return String(b.receiptNo).localeCompare(String(a.receiptNo));
+    });
+
+    const totalLogs = filteredTransactions.length;
+
+    // Apply Pagination
+    const pagedTransactions = isDownload
+      ? filteredTransactions
+      : filteredTransactions.slice(skip, skip + limit);
+
+    // 5. Reconstruct Previous Payments & Remaining Balance
+    const activePhones = Array.from(new Set(pagedTransactions.map((t: any) => t.phone).filter(Boolean)));
     const activeStudents = await Student.find({
-      phone: { $in: finalTransactions.map((t: any) => t.phone) }
+      phone: { $in: activePhones },
     }).lean();
 
-    const formattedTransactions = finalTransactions.map((tx: any) => {
+    const formattedTransactions = pagedTransactions.map((tx: any) => {
       const match = activeStudents.find((s: any) => s.phone === tx.phone);
       let calculatedAlreadyPaid = 0;
 
       if (match && match.installments && tx.receiptNo !== "REGISTRATION-PENDING") {
         const sortedHistory = [...match.installments].sort(
-          (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          (a: any, b: any) => parseCalendarDate(a.date) - parseCalendarDate(b.date)
         );
 
         let runningSum = 0;
@@ -142,26 +184,26 @@ export async function GET(req: NextRequest) {
         billingBy: tx.billingBy,
         totalCoursePayment: tx.totalCoursePayment,
         alreadyPaidAmount: calculatedAlreadyPaid,
-        balanceAmount: Math.max(0, tx.totalCoursePayment - (calculatedAlreadyPaid + tx.paidAmount))
+        balanceAmount: Math.max(0, tx.totalCoursePayment - (calculatedAlreadyPaid + tx.paidAmount)),
       };
     });
 
     return NextResponse.json({
       success: true,
       data: formattedTransactions,
-      pagination: isDownload ? null : {
-        total: totalLogs,
-        currentPage: page,
-        totalPages: Math.ceil(totalLogs / limit)
-      }
+      pagination: isDownload
+        ? null
+        : {
+            total: totalLogs,
+            currentPage: page,
+            totalPages: Math.ceil(totalLogs / limit) || 1,
+          },
     });
-
   } catch (error: any) {
-    console.error("Audit ledger generation failure: ", error);
+    console.error("Audit ledger generation failure:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-
 // ─── POST: SAVE PAYMENT (HANDLES CREATION & NESTED INSTALLMENT APPENDS) ───
 export async function POST(req: NextRequest) {
   try {

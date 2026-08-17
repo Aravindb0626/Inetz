@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Search, 
   Filter, 
@@ -11,7 +11,8 @@ import {
   AlertCircle, 
   Calendar, 
   Clock, 
-  RotateCcw 
+  RotateCcw,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,14 +24,19 @@ interface SummaryData {
   clearCount: number;
 }
 
+interface ProgramTrack {
+  _id?: string;
+  title: string;
+  duration?: string;
+}
+
 interface StudentHeaderControlsProps {
   summary: SummaryData;
   search: string;
   onSearchChange: (value: string) => void;
   domainFilter: string;
   onDomainChange: (value: string) => void;
-  availableDomains: string[];
-  // 🎯 DURATION FILTER PROPS
+  availableDomains?: string[];
   durationFilter: string;
   onDurationChange: (value: string) => void;
   availableDurations?: string[];
@@ -53,6 +59,18 @@ const DEFAULT_DURATIONS = [
   "6 Months",
 ];
 
+const DEFAULT_DOMAINS = [
+  "All",
+  "Web Development",
+  "Java Full Stack",
+  "Python Development",
+  "Data Analytics",
+  "Data Science",
+  "Android App Development",
+  "Cyber Security",
+  "UI/UX Design",
+];
+
 export default function StudentHeaderControls({
   summary,
   search,
@@ -72,6 +90,89 @@ export default function StudentHeaderControls({
   onRefresh,
   onOpenAddModal,
 }: StudentHeaderControlsProps) {
+  const [fetchedTracks, setFetchedTracks] = useState<string[]>([]);
+  const [loadingTracks, setLoadingTracks] = useState(false);
+
+  // Fetch dynamic tracks from API if not provided by parent
+  useEffect(() => {
+    if (availableDomains && availableDomains.length > 1) return;
+
+    async function fetchCourseDomains() {
+      setLoadingTracks(true);
+      try {
+        let res = await fetch("/api/tracks");
+        if (!res.ok) {
+          res = await fetch("/api/programs");
+        }
+
+        if (res.ok) {
+          const raw = await res.json();
+          const list: ProgramTrack[] = Array.isArray(raw)
+            ? raw
+            : raw.programs || raw.data || [];
+
+          const titles = Array.from(
+            new Set(list.map((item) => item.title).filter(Boolean))
+          );
+          if (titles.length > 0) {
+            setFetchedTracks(titles);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load tracks for domain filter:", err);
+      } finally {
+        setLoadingTracks(false);
+      }
+    }
+
+    fetchCourseDomains();
+  }, [availableDomains]);
+
+  // Combine and deduplicate domains with case-insensitive normalization
+  const resolvedDomains = useMemo(() => {
+    let sourceList: string[] = [];
+
+    if (availableDomains && availableDomains.length > 1) {
+      sourceList = availableDomains;
+    } else if (fetchedTracks.length > 0) {
+      sourceList = ["All", ...fetchedTracks];
+    } else {
+      sourceList = DEFAULT_DOMAINS;
+    }
+
+    const seen = new Set<string>();
+    const unique: string[] = [];
+
+    sourceList.filter(Boolean).forEach((dom) => {
+      const normalized = dom.trim().toLowerCase();
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        unique.push(dom.trim());
+      }
+    });
+
+    const hasAll = unique.some((d) => d.toLowerCase() === "all");
+    if (!hasAll) {
+      unique.unshift("All");
+    }
+
+    return unique;
+  }, [availableDomains, fetchedTracks]);
+
+  // Case-insensitive match for the current domain filter value
+  const matchedDomainValue = useMemo(() => {
+    const target = (domainFilter || "all").trim().toLowerCase();
+    const found = resolvedDomains.find((d) => d.trim().toLowerCase() === target);
+    return found || "All";
+  }, [domainFilter, resolvedDomains]);
+
+  // Case-insensitive match for the current duration filter value
+  const matchedDurationValue = useMemo(() => {
+    const target = (durationFilter || "all").trim().toLowerCase();
+    const found = availableDurations.find((d) => d.trim().toLowerCase() === target);
+    return found || "All";
+  }, [durationFilter, availableDurations]);
+
   return (
     <div className="space-y-4">
       {/* KPI STATS CARDS */}
@@ -129,10 +230,10 @@ export default function StudentHeaderControls({
             </h2>
             <p className="text-xs text-zinc-400 font-medium mt-0.5 flex flex-wrap items-center gap-1">
               <span>Domain:</span>
-              <span className="font-bold text-zinc-700">{domainFilter}</span>
+              <span className="font-bold text-zinc-700">{matchedDomainValue}</span>
               <span className="text-zinc-300">•</span>
               <span>Duration:</span>
-              <span className="font-bold text-zinc-700">{durationFilter}</span>
+              <span className="font-bold text-zinc-700">{matchedDurationValue}</span>
               {(fromDate || toDate) && (
                 <span className="ml-1 text-emerald-600 font-bold">
                   ({fromDate || "Start"} to {toDate || "Present"})
@@ -159,7 +260,7 @@ export default function StudentHeaderControls({
           </div>
         </div>
 
-        {/* INPUTS ROW: SEARCH + DOMAIN + DURATION + DATE RANGE */}
+        {/* INPUTS ROW */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           
           {/* 1. Search Input */}
@@ -174,32 +275,49 @@ export default function StudentHeaderControls({
             />
           </div>
 
-          {/* 2. Domain Filter */}
+          {/* 2. Domain Filter Dropdown (Case-Insensitive Both Sides) */}
           <div className="relative">
             <select
-              value={domainFilter}
-              onChange={(e) => onDomainChange(e.target.value)}
-              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer appearance-none pr-8"
+              value={matchedDomainValue}
+              onChange={(e) => {
+                const selectedVal = e.target.value;
+                const normalized = selectedVal.trim().toLowerCase();
+                onDomainChange(normalized === "all" ? "All" : selectedVal);
+              }}
+              disabled={loadingTracks}
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer appearance-none pr-8 disabled:opacity-60"
             >
-              {availableDomains.map((dom) => (
-                <option key={dom} value={dom}>
-                  {dom === "All" ? "All Domains" : dom}
-                </option>
-              ))}
+              {loadingTracks ? (
+                <option value="All">Loading courses...</option>
+              ) : (
+                resolvedDomains.map((dom) => (
+                  <option key={dom} value={dom}>
+                    {dom.trim().toLowerCase() === "all" ? "All Domains" : dom}
+                  </option>
+                ))
+              )}
             </select>
-            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+            {loadingTracks ? (
+              <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 animate-spin pointer-events-none" />
+            ) : (
+              <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+            )}
           </div>
 
-          {/* 🎯 3. Duration Filter */}
+          {/* 3. Duration Filter Dropdown (Case-Insensitive Both Sides) */}
           <div className="relative">
             <select
-              value={durationFilter}
-              onChange={(e) => onDurationChange(e.target.value)}
+              value={matchedDurationValue}
+              onChange={(e) => {
+                const selectedVal = e.target.value;
+                const normalized = selectedVal.trim().toLowerCase();
+                onDurationChange(normalized === "all" ? "All" : selectedVal);
+              }}
               className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer appearance-none pr-8"
             >
               {availableDurations.map((dur) => (
                 <option key={dur} value={dur}>
-                  {dur === "All" ? "All Durations" : dur}
+                  {dur.trim().toLowerCase() === "all" ? "All Durations" : dur}
                 </option>
               ))}
             </select>
@@ -218,7 +336,7 @@ export default function StudentHeaderControls({
             />
           </div>
 
-          {/* 5. To Date Picker + Clear Button */}
+          {/* 5. To Date Picker + Reset Button */}
           <div className="flex gap-2">
             <div className="relative flex-1 flex items-center">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
