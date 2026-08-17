@@ -16,6 +16,7 @@ export interface IStudent extends Document {
   email?: string;
   phone: string;
   college: string;
+  degree?: string;
   domain: string;
   duration: string;
   totalBilling: number;
@@ -24,6 +25,9 @@ export interface IStudent extends Document {
   pendingAmount: number;
   feesStatus: "Pending" | "Fully Paid" | "Clear";
   certificateStatus: "Pending" | "Issued";
+  resumeUrl?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +58,7 @@ const StudentSchema = new Schema<IStudent>(
     },
     phone: { type: String, required: true, trim: true },
     college: { type: String, required: true, trim: true, default: "N/A" },
+    degree: { type: String, required: false, trim: true, default: "B.E / B.Tech" },
     domain: { type: String, required: true, trim: true },
     duration: { type: String, required: true, trim: true },
     totalBilling: { type: Number, required: true, min: 0 },
@@ -70,10 +75,13 @@ const StudentSchema = new Schema<IStudent>(
       enum: ["Pending", "Issued"],
       default: "Pending",
     },
+    resumeUrl: { type: String, default: "", trim: true },
+    githubUrl: { type: String, default: "", trim: true },
+    linkedinUrl: { type: String, default: "", trim: true },
   },
   {
     timestamps: true,
-    autoIndex: true, // Ensures MongoDB builds all schema indexes automatically
+    autoIndex: true,
   }
 );
 
