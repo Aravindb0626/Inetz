@@ -48,12 +48,18 @@ export const authOptions: NextAuthOptions = {
           );
         }
 
+        // 🎯 Check if Employer account is pending approval
+        if (dbUser.role === "employer" && dbUser.isApproved === false) {
+          throw new Error("Your employer account is currently pending admin approval.");
+        }
+
         return {
           id: dbUser._id.toString(),
           name: dbUser.name as string,
           email: dbUser.email as string,
-          image: dbUser.image ? String(dbUser.image) : null, // Fixes TS wrapper error
+          image: dbUser.image ? String(dbUser.image) : null,
           role: (dbUser.role as string) || "student",
+          companyName: (dbUser.companyName as string) || "",
         };
       },
     }),
@@ -86,9 +92,10 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          // Pass MongoDB ID and role down to jwt callback
+          // Pass MongoDB ID, role, and companyName down to jwt callback
           user.id = dbUser._id.toString();
           (user as any).role = dbUser.role || "student";
+          (user as any).companyName = dbUser.companyName || "";
 
           return true;
         } catch (error) {
@@ -104,10 +111,14 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || "student";
+        token.companyName = (user as any).companyName || "";
       }
 
       if (trigger === "update" && session?.role) {
         token.role = session.role;
+        if (session.companyName) {
+          token.companyName = session.companyName;
+        }
       }
 
       return token;
@@ -118,18 +129,16 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role || "student";
+        (session.user as any).companyName = token.companyName || "";
       }
       return session;
     },
 
     // ─── OPEN REDIRECT SANITIZATION ───────────────────────────────────────────
     async redirect({ url, baseUrl }) {
-      // Allow relative internal redirects (/dashboard, /admin)
       if (url.startsWith("/")) {
         return `${baseUrl}${url}`;
-      }
-      // Allow redirects on the exact same origin
-      else if (new URL(url).origin === baseUrl) {
+      } else if (new URL(url).origin === baseUrl) {
         return url;
       }
       return baseUrl;

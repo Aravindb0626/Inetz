@@ -3,6 +3,8 @@ import { Student } from "@/models/Student";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
@@ -16,6 +18,7 @@ export async function POST(req: Request) {
       phone,
       paidAmount,
       billingBy,
+      paymentMethod,
     } = body;
 
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -64,7 +67,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Format Receipt Details
+    // 🎯 3. Guard: Ensure installments array exists
+    if (!Array.isArray(student.installments)) {
+      student.installments = [];
+    }
+
+    // 🎯 4. Idempotency Check: Don't add duplicate payment if already processed
+    const alreadyRecorded = student.installments.some(
+      (inst: any) => inst.transactionId === razorpay_payment_id
+    );
+
+    if (alreadyRecorded) {
+      return NextResponse.json({
+        success: true,
+        message: "Payment already verified and recorded",
+        studentId: student._id,
+      });
+    }
+
+    // 5. Format Receipt Details
     const displayDate = new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
@@ -74,17 +95,24 @@ export async function POST(req: Request) {
     const paymentVal = Number(paidAmount) || 0;
     const uniqueReceiptNo = `IT-ONLINE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // 4. Push Installment to Student Document
+    // 6. Push Installment Entry
     student.installments.push({
       receiptNo: uniqueReceiptNo,
       date: displayDate,
       paidAmount: paymentVal,
-      paymentMethod: "GPay",
+      paymentMethod: paymentMethod || "Razorpay Online",
       transactionId: razorpay_payment_id || "N/A",
       billingBy: billingBy || "Razorpay Online",
     });
 
-    // 5. Trigger pre("save") hook to recalculate pendingAmount and set feesStatus
+    // 🎯 7. Recalculate totalCollection directly in case pre("save") hook only updates balance
+    const currentTotalCollected = student.installments.reduce(
+      (sum: number, inst: any) => sum + (Number(inst.paidAmount) || 0),
+      0
+    );
+    student.totalCollection = currentTotalCollected;
+
+    // 8. Trigger pre("save") hook to recalculate pendingAmount and set feesStatus
     await student.save();
 
     return NextResponse.json({

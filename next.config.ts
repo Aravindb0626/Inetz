@@ -3,15 +3,22 @@ import type { NextConfig } from "next";
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com;
+<<<<<<< HEAD
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' blob: data: https://images.unsplash.com https://lh3.googleusercontent.com;
     font-src 'self' data: https://fonts.gstatic.com;
+=======
+    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    style-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    font-src 'self' data: https://cdn.jsdelivr.net;
+    img-src 'self' blob: data: https://images.unsplash.com https://lh3.googleusercontent.com https://encrypted-tbn0.gstatic.com https://logo.clearbit.com https://autocomplete.clearbit.com https://cdn.jsdelivr.net;
+>>>>>>> 57b35ce0dd436d602a8781622ff49167d7a785a9
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
     frame-src 'self' https://api.razorpay.com;
-    connect-src 'self' https://lumberjack.razorpay.com https://api.razorpay.com;
+    connect-src 'self' https://lumberjack.razorpay.com https://api.razorpay.com https://autocomplete.clearbit.com;
     upgrade-insecure-requests;
 `.replace(/\s{2,}/g, " ").trim();
 
@@ -27,6 +34,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
         pathname: "/a/**",
+      },
+      {
+        protocol: "https",
+        hostname: "encrypted-tbn0.gstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "logo.clearbit.com",
       },
     ],
   },

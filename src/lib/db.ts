@@ -2,45 +2,50 @@ import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-
-/**
-  Global is used here to maintain a cached connection across hot reloads
-  in development and across serverless function invocations in production.
- */
-let cached = (global as any).mongoose;
-
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+if (!MONGODB_URI) {
+  throw new Error("❌ Please define MONGODB_URI in your environment variables.");
 }
 
-export async function connectToDatabase() {
-  if (!MONGODB_URI) {
-    throw new Error(
-      "Please define the MONGODB_URI environment variable inside .env.local"
-    );
-  }
+declare global {
+  var mongooseCache: {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
+  };
+}
 
-  // 1. If connection already exists, return it
-  if (cached.conn) {
+let cached = global.mongooseCache;
+
+if (!cached) {
+  cached = global.mongooseCache = { conn: null, promise: null };
+}
+
+export async function connectToDatabase(): Promise<typeof mongoose> {
+  // 1. Return cached active connection immediately
+  if (cached.conn && cached.conn.connection.readyState === 1) {
     return cached.conn;
   }
 
-  // 2. If no promise exists, create a new connection promise
+  // 2. Reuse in-flight connection promise
   if (!cached.promise) {
-    const opts = {
+    const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
+<<<<<<< HEAD
       dbName: 'internship',
+=======
+      maxPoolSize: 10,                 // Keep connection count light and fast
+      minPoolSize: 0,                  // 🎯 Avoids opening 10 sockets on cold start
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+>>>>>>> 57b35ce0dd436d602a8781622ff49167d7a785a9
     };
 
     cached.promise = mongoose
       .connect(MONGODB_URI as string, opts)
       .then((m) => {
-        console.log("Connected to MongoDB successfully");
         return m;
       })
       .catch((err) => {
-        console.error("MongoDB Connection Failed:", err);
-        cached.promise = null; // Reset promise so next request can retry
+        cached.promise = null;
         throw err;
       });
   }
@@ -48,7 +53,7 @@ export async function connectToDatabase() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
-    cached.promise = null; // Reset cached promise on failure
+    cached.promise = null;
     throw e;
   }
 

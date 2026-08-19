@@ -90,9 +90,6 @@ const ProgramsMainPage = () => {
                 <div className="p-1.5 rounded-md bg-emerald-600">
                   <Terminal size={14} className="text-white" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-900">
-                  Protocol.26
-                </span>
               </div>
 
               <motion.div

@@ -389,8 +389,8 @@ export default function AboutPage() {
               { name: "Preethi", role: "Front End Trainer",  img: "/staffs/preethi.png" },
               { name: "Aravind", role: "Mern Stack Trainer",  img: "/staffs/aravindh.png" },
               { name: "Boomika", role: "Java Full Stack Trainer", img: "/staffs/boomika.png" },
-              { name: " Dhanalakshmi", role: "Data Analytics Trainer",  img: "/staffs/sridhanalakshmi.png" },
-              { name: "Naresh", role: "MERN Stack Trainer", img: "/staffs/Naresh.png" },
+              { name: "Dhanalakshmi", role: "Data Analytics Trainer",  img: "/staffs/sridhanalakshmi.png" },
+              { name: "Naresh", role: "Mern Stack Trainer", img: "/staffs/Naresh.png" },
               { name: "Anbarasan", role: "Java Developer", img: "/staffs/anbu.png" },
               { name: "Esther Rassou", role: "Data Analytics Trainer", img: "/staffs/Esther.png.jpeg" }
             ].map((member, i) => (

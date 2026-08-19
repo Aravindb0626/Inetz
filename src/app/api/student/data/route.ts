@@ -1,6 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { Student } from "@/models/Student";
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";// Ensure path matches your project structure
 
 // ─── GET: FETCH STUDENT PROFILE BY EMAIL OR PHONE ──────────────────────────
 export async function GET(req: Request) {
@@ -20,38 +20,43 @@ export async function GET(req: Request) {
 
     const searchConditions: any[] = [];
 
+    // 1. Process Email Search
     if (rawEmail) {
       const email = decodeURIComponent(rawEmail).trim().toLowerCase();
       if (email.length > 0) {
         const escapedEmail = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        searchConditions.push(
-          { email: email },
-          { email: { $regex: new RegExp(`^${escapedEmail}$`, "i") } }
-        );
+        // Case-insensitive exact match anchor
+        searchConditions.push({
+          email: { $regex: new RegExp(`^${escapedEmail}$`, "i") },
+        });
       }
     }
 
+    // 2. Process Phone Search (Strict Minimum 10-Digit Guard)
     if (rawPhone) {
       const phoneRaw = decodeURIComponent(rawPhone).trim();
       const phoneDigits = phoneRaw.replace(/\D/g, "");
       const last10Digits = phoneDigits.slice(-10);
 
-      if (last10Digits.length > 0) {
+      // 🎯 FIX: Require AT LEAST 10 digits to prevent matching partial numbers
+      if (last10Digits.length === 10) {
         searchConditions.push(
           { phone: phoneRaw },
           { phone: last10Digits },
-          { phone: { $regex: last10Digits } }
+          // Match standard formats like "+91 9876543210", "9876543210", or "09876543210"
+          { phone: { $regex: new RegExp(`${last10Digits}$`) } }
         );
       }
     }
 
     if (searchConditions.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Invalid search parameters provided" },
+        { success: false, error: "Invalid or insufficient search parameters" },
         { status: 400 }
       );
     }
 
+    // Execute query with lean() for fast execution
     const student = await Student.findOne({ $or: searchConditions }).lean();
 
     if (!student) {

@@ -5,12 +5,10 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Retrieve and decode NextAuth's JWT session token
-  // Fix: Explicitly pass secureCookie flag based on environment / protocol
+  // Let NextAuth automatically detect HTTP (localhost) vs HTTPS
   const token = await getToken({ 
     req, 
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
   });
 
   const isAuth = !!token;
@@ -23,19 +21,19 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/onboarding") || 
     isAdminRoute;
 
-  // 1. Unauthenticated users trying to access ANY protected route -> Redirect to /login
+  // 1. Unauthenticated users -> Redirect to /login
   if (isProtectedRoute && !isAuth) {
     const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callback", pathname); // Avoid double-encoding
+    loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Non-Admin users trying to access /admin -> Redirect to /dashboard
+  // 2. Non-Admin users -> Redirect to /dashboard
   if (isAdminRoute && isAuth && !isAdmin) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // 3. Logged-in users trying to access /login or /register -> Redirect to appropriate home
+  // 3. Authenticated users opening /login -> Redirect home
   if (isAuthRoute && isAuth) {
     const destination = isAdmin ? "/admin" : "/dashboard";
     return NextResponse.redirect(new URL(destination, req.url));
@@ -46,9 +44,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all protected routes, including their base root paths
-     */
     "/dashboard",
     "/dashboard/:path*",
     "/onboarding",

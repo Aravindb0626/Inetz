@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1
-# Standard .next + next start (avoids .next/standalone, which can be missing with Next.js 16 + Turbopack).
 
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat
@@ -14,6 +13,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build-time arg for client-side env (inlined into JS bundle)
+ARG NEXT_PUBLIC_RAZORPAY_KEY_ID
+ENV NEXT_PUBLIC_RAZORPAY_KEY_ID=$NEXT_PUBLIC_RAZORPAY_KEY_ID
 
 RUN npm run build -- --webpack
 

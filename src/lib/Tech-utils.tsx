@@ -1,4 +1,15 @@
-export type TechStack = "MERN" | "Java" | "Python" | "DataScience" | "DataAnalytics" | "Embedded";
+export type TechStack =
+  | "MERN"
+  | "Java"
+  | "Python"
+  | "DataScience"
+  | "DataAnalytics"
+  | "Embedded"
+  | "ml"
+  | "deeplearning"
+  | "ai"
+  | string;
+
 interface BrandInfo {
   color: string;
 }
@@ -34,58 +45,98 @@ export const BRAND_DATA: Record<string, BrandInfo> = {
   maven: { color: "#C71A36" },
   intellij: { color: "#000000" },
   postman: { color: "#FF6C37" },
+  pytorch: { color: "#EE4C2C" },
+  opencv: { color: "#5C3EE8" },
+  cuda: { color: "#76B900" },
+  "scikit-learn": { color: "#F7931E" },
+  matplotlib: { color: "#11557C" },
+  linux: { color: "#FCC624" },
+  firebase: { color: "#FFCA28" },
 };
 
 export const DEVICON_MAP: Record<string, string> = {
+  // Web & MERN
   react: "devicon-react-original",
   nodejs: "devicon-nodejs-plain",
   mongodb: "devicon-mongodb-plain",
   express: "devicon-express-original",
+  javascript: "devicon-javascript-plain",
+  typescript: "devicon-typescript-plain",
+  html5: "devicon-html5-plain",
+  css3: "devicon-css3-plain",
+  nextjs: "devicon-nextjs-plain",
+
+  // Java & Backend
   java: "devicon-java-plain",
-  tomcat: "devicon-tomcat-line",
-  "spring-boot": "devicon-spring-plain",
   spring: "devicon-spring-plain",
+  "spring-boot": "devicon-spring-plain",
   mysql: "devicon-mysql-plain",
+  postgresql: "devicon-postgresql-plain",
+  hibernate: "devicon-hibernate-plain",
+  tomcat: "devicon-tomcat-line",
+  maven: "devicon-maven-plain",
   intellij: "devicon-intellij-plain",
-  hibernate: "devicon-hibernate-plain", // Note: Ensure Devicon version supports this
+  postman: "devicon-postman-plain",
+
+  // Python & Data Science & ML
+  python: "devicon-python-plain",
+  django: "devicon-django-plain",
+  flask: "devicon-flask-original",
+  pandas: "devicon-pandas-plain",
+  numpy: "devicon-numpy-plain",
+  tensorflow: "devicon-tensorflow-line",
+  pytorch: "devicon-pytorch-original",
+  "scikit-learn": "devicon-scikitlearn-plain",
+  matplotlib: "devicon-matplotlib-plain",
+  opencv: "devicon-opencv-plain",
+  cuda: "devicon-cuda-plain",
+
+  // Cloud & DevOps & Embedded
+  docker: "devicon-docker-plain",
+  aws: "devicon-amazonwebservices-original",
+  git: "devicon-git-plain",
+  linux: "devicon-linux-plain",
+  c: "devicon-c-plain",
+  cpp: "devicon-cplusplus-plain",
+  firebase: "devicon-firebase-plain",
 };
 
 export const STACK_MAPPING: Record<string, string[]> = {
-  "python": ["python", "django", "postgresql", "docker", "aws"],
-  "mern": ["react", "nodejs", "mongodb", "javascript", "git"],
-  "java": ["java", "spring", "postgresql", "docker", "git"],
-  "datascience": ["python", "tensorflow", "pandas", "numpy", "git"],
-  "dataanalytics": ["excel", "postgresql", "python", "powerbi"],
-  "Embedded": ["c", "cpp", "python", "git"],
-  "default": ["html5", "css3", "javascript", "react"],
-  "ml": ["python", "scikit-learn", "pandas", "numpy", "matplotlib", "postgresql"],
-  "deeplearning": ["python", "pytorch", "tensorflow", "opencv", "cuda", "docker"],
-  "ai": ["python", "langchain", "openai_api", "pinecone", "huggingface", "git"],
-  "javascript": ["javascript"],
-  "react": ["react"]
+  python: ["python", "django", "postgresql", "docker", "aws"],
+  mern: ["react", "nodejs", "mongodb", "javascript", "git"],
+  java: ["java", "spring", "postgresql", "docker", "git"],
+  datascience: ["python", "tensorflow", "pandas", "numpy", "git"],
+  dataanalytics: ["python", "pandas", "numpy", "postgresql", "mysql"],
+  embedded: ["c", "cpp", "python", "git"],
+  default: ["html5", "css3", "javascript", "react"],
+  ml: ["python", "scikit-learn", "pandas", "numpy", "matplotlib", "postgresql"],
+  deeplearning: ["python", "pytorch", "tensorflow", "opencv", "cuda", "docker"],
+  ai: ["python", "pytorch", "tensorflow", "docker", "git"],
+  javascript: ["javascript", "react", "nodejs", "html5", "css3"],
+  react: ["react", "javascript", "typescript", "html5", "css3"],
 };
 
 export const MARKET_INSIGHTS: Record<string, { demand: string; trend: string }> = {
-  "python": { demand: "Critical", trend: "AI & Automation" },
-  "mern": { demand: "High", trend: "SaaS & Scalability" },
-  "java": { demand: "Stable", trend: "Enterprise FinTech" },
-  "datascience": { demand: "High", trend: "Machine Learning" },
-  "dataanalytics": { demand: "Rising", trend: "Business Intelligence" },
-  "Embedded": { demand: "Niche", trend: "IoT & Robotics" },
-  "default": { demand: "Rising", trend: "Modern Web" },
-  "ml": { "demand": "Critical", "trend": "Predictive Analytics & Automation" },
-  "deeplearning": { "demand": "High", "trend": "Computer Vision & Advanced Robotics" },
-  "ai": { "demand": "Explosive", "trend": "Generative AI & Agentic Workflows" },
-  "javascript": { "demand": "High", "trend": "Reliability & Scalable Production" },
-  "edge_ai": { "demand": "Rising", "trend": "IoT & On-Device Intelligence" }
-  
+  python: { demand: "Critical", trend: "AI & Automation" },
+  mern: { demand: "High", trend: "SaaS & Scalability" },
+  java: { demand: "Stable", trend: "Enterprise FinTech" },
+  datascience: { demand: "High", trend: "Machine Learning" },
+  dataanalytics: { demand: "Rising", trend: "Business Intelligence" },
+  embedded: { demand: "Niche", trend: "IoT & Robotics" },
+  default: { demand: "Rising", trend: "Modern Web" },
+  ml: { demand: "Critical", trend: "Predictive Analytics & Automation" },
+  deeplearning: { demand: "High", trend: "Computer Vision & Advanced Robotics" },
+  ai: { demand: "Explosive", trend: "Generative AI & Agentic Workflows" },
+  javascript: { demand: "High", trend: "Reliability & Scalable Production" },
+  edge_ai: { demand: "Rising", trend: "IoT & On-Device Intelligence" },
 };
 
 export const getStackLogos = (stack: TechStack | string): string[] => {
-  return STACK_MAPPING[String(stack)] || STACK_MAPPING["default"];
+  const key = String(stack).toLowerCase().replace(/[^a-z0-9]/g, "");
+  return STACK_MAPPING[key] || STACK_MAPPING[String(stack).toLowerCase()] || STACK_MAPPING["default"];
 };
 
 export const getIconClass = (name: string): string => {
-  const key = name.toLowerCase();
+  const key = name.toLowerCase().trim();
   return DEVICON_MAP[key] || `devicon-${key}-plain`;
 };

@@ -253,7 +253,7 @@ export function EnrollmentActionSection() {
                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">WhatsApp Number</label>
                       <input
                         required
-                        type="tel"
+                        type="number"
                         placeholder="+91 98765 43210"
                         className="w-full mt-1.5 px-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-900 border-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
                         value={formData.phone}

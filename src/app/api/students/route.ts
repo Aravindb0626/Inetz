@@ -2,111 +2,157 @@ import { NextRequest, NextResponse } from "next/server";
 import { Student } from "@/models/Student";
 import { connectToDatabase } from "@/lib/db";
 
-// ─── GET: HIGH-SPEED PAGINATED STUDENT DIRECTORY FEEDS ──────────────────────
-export async function GET(req: NextRequest) {
+// ─── GET: HIGH-SPEED PAGINATED STUDENT DIRECTORY & METRICS ──────────────────
+
+export async function GET(req: Request) {
   try {
     await connectToDatabase();
 
     const { searchParams } = new URL(req.url);
-    
+
+    // 1. Extract Query Parameters
     const search = searchParams.get("search")?.trim() || "";
-    const domainFilter = searchParams.get("domain") || "All";
-    const page = Math.max(1, Number(searchParams.get("page")) || 1);
-    const limit = Math.max(1, Number(searchParams.get("limit")) || 20); 
+    const domain = searchParams.get("domain")?.trim() || "";
+    const duration = searchParams.get("duration")?.trim() || "";
+    const fromDate = searchParams.get("fromDate")?.trim() || "";
+    const toDate = searchParams.get("toDate")?.trim() || "";
+
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.max(1, parseInt(searchParams.get("limit") || "15", 10));
     const skip = (page - 1) * limit;
 
-    // 1. Build database level match filtration criteria map
-    const matchStage: any = {};
-    
-    if (search) {
-      matchStage.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
-        { college: { $regex: search, $options: "i" } }
-      ];
-    }
-    
-    if (domainFilter !== "All") {
-      matchStage.domain = domainFilter;
+    // 2. Build Filter Match
+    const matchQuery: Record<string, any> = {};
+
+    if (domain && domain !== "All") {
+      matchQuery.domain = domain;
     }
 
-    // 2. Run multi-faceted pipeline calculations in one server pass
-    const aggregationResult = await Student.aggregate([
-      { $match: matchStage },
+    if (duration && duration !== "All") {
+      const escapedDuration = duration.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      matchQuery.duration = { $regex: `^${escapedDuration}$`, $options: "i" };
+    }
+
+    if (fromDate || toDate) {
+      matchQuery.createdAt = {};
+      if (fromDate) matchQuery.createdAt.$gte = new Date(fromDate);
+      if (toDate) {
+        const endOfDay = new Date(toDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        matchQuery.createdAt.$lte = endOfDay;
+      }
+    }
+
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const searchRegex = { $regex: escapedSearch, $options: "i" };
+
+      matchQuery.$or = [
+        { name: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex },
+        { college: searchRegex },
+      ];
+    }
+
+    // 3. Single-Pass Pipeline: Pagination + Metrics + Total in 1 DB Trip
+    const [result] = await Student.aggregate([
+      { $match: matchQuery },
       {
         $facet: {
-          metadata: [
+          // A. Paginated Student Documents
+          paginatedResults: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+          ],
+          // B. Global Financial Metrics & Counts for current filter
+          metrics: [
+            {
+              $project: {
+                totalBilling: { $ifNull: ["$totalBilling", 0] },
+                collected: {
+                  $cond: {
+                    if: {
+                      $and: [
+                        { $isArray: "$installments" },
+                        { $gt: [{ $size: "$installments" }, 0] },
+                      ],
+                    },
+                    then: { $sum: "$installments.paidAmount" },
+                    else: { $ifNull: ["$totalCollection", 0] },
+                  },
+                },
+              },
+            },
             {
               $group: {
                 _id: null,
-                totalStudents: { $sum: 1 },
-                accountsWithDues: {
-                  $sum: { $cond: [ { $gt: ["$pendingAmount", 0] }, 1, 0 ] }
+                totalCount: { $sum: 1 },
+                totalBilling: { $sum: "$totalBilling" },
+                totalCollected: { $sum: "$collected" },
+                duesCount: {
+                  $sum: {
+                    $cond: [{ $gt: [{ $subtract: ["$totalBilling", "$collected"] }, 0] }, 1, 0],
+                  },
                 },
-                clearedAccounts: {
-                  $sum: { $cond: [ { $lte: ["$pendingAmount", 0] }, 1, 0 ] }
-                }
-              }
-            }
+              },
+            },
           ],
-          uniqueDomains: [
-            { $group: { _id: "$domain" } },
-            { $match: { _id: { $ne: null } } },
-            { $sort: { _id: 1 } }
-          ],
-          dataRows: [
-            { $sort: { updatedAt: -1 } }, 
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $project: {
-                sNo: 1,
-                doj: 1,
-                name: 1,
-                email: 1,
-                phone: 1,
-                college: 1,
-                domain: 1,
-                duration: 1,
-                totalBilling: 1,
-                totalCollection: 1,
-                balanceAmount: { $ifNull: ["$pendingAmount", 0] },
-                pendingAmount: 1,
-                feesStatus: 1,
-                certificateStatus: 1,
-                installments: 1
-              }
-            }
-          ]
-        }
-      }
+        },
+      },
     ]);
 
-    const facet = aggregationResult[0];
-    const meta = facet.metadata[0] || { totalStudents: 0, accountsWithDues: 0, clearedAccounts: 0 };
-    const cleanDomains = facet.uniqueDomains.map((d: any) => d._id);
+    const students = result?.paginatedResults || [];
+    const metricSummary = result?.metrics?.[0] || {
+      totalCount: 0,
+      totalBilling: 0,
+      totalCollected: 0,
+      duesCount: 0,
+    };
 
-    return NextResponse.json({
-      success: true,
-      students: facet.dataRows,
-      availableDomains: ["All", ...cleanDomains],
-      pagination: {
-        total: meta.totalStudents,
-        duesCount: meta.accountsWithDues,
-        clearCount: meta.clearedAccounts,
-        currentPage: page,
-        totalPages: Math.ceil(meta.totalStudents / limit)
+    const totalStudents = metricSummary.totalCount;
+    const totalBilling = metricSummary.totalBilling;
+    const totalCollected = metricSummary.totalCollected;
+    const duesCount = metricSummary.duesCount;
+    const totalPending = Math.max(0, totalBilling - totalCollected);
+
+    return NextResponse.json(
+      {
+        success: true,
+        students,
+        pagination: {
+          totalStudents,
+          totalPages: Math.ceil(totalStudents / limit) || 1,
+          currentPage: page,
+          limit,
+        },
+        summary: {
+          totalStudents,
+          totalCollected,
+          totalPending,
+          duesCount,
+          clearCount: Math.max(0, totalStudents - duesCount),
+        },
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+        },
       }
-    });
-
+    );
   } catch (error: any) {
-    console.error("Student directory aggregation failure:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("GET_STUDENTS_ERROR:", error.message);
+    return NextResponse.json(
+      { success: false, error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
-// ─── POST: CREATE A NEW STUDENT PROFILE (ADMIN MANUAL ENTRY) ─────────────────
+// ─── POST: CREATE A NEW STUDENT PROFILE (ADMIN MANUAL ADMISSION) ─────────────
+
 export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -122,7 +168,7 @@ export async function POST(req: NextRequest) {
       totalBilling,
       initialPayment,
       paymentMethod,
-      billingBy
+      billingBy,
     } = body;
 
     const studentName = (name || "").trim();
@@ -136,44 +182,55 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if phone or email already exists
+    // Prevent duplicate entries by phone or email
     const existingStudent = await Student.findOne({
       $or: [
         { phone: studentPhone },
-        ...(studentEmail ? [{ email: studentEmail }] : [])
-      ]
-    });
+        ...(studentEmail ? [{ email: studentEmail }] : []),
+      ],
+    }).lean();
 
     if (existingStudent) {
       return NextResponse.json(
-        { success: false, error: "A student record with this phone number or email already exists." },
+        {
+          success: false,
+          error: "A student record with this phone number or email already exists.",
+        },
         { status: 400 }
       );
     }
 
-    // Auto-calculate Next Serial Number (sNo)
-    const lastStudent = await Student.findOne({}, { sNo: 1 }).sort({ sNo: -1 }).lean();
-    const nextSNo = lastStudent && typeof lastStudent.sNo === "number" ? lastStudent.sNo + 1 : 1;
+    // Auto-increment sNo cleanly
+    const lastStudent = await Student.findOne({}, { sNo: 1 })
+      .sort({ sNo: -1 })
+      .lean();
+    const nextSNo =
+      lastStudent && typeof lastStudent.sNo === "number" ? lastStudent.sNo + 1 : 1;
 
-    // Format Date of Joining
+    // Date formatting
     const displayDate = new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
-      year: "numeric"
+      year: "numeric",
     });
 
     const billingTotal = Number(totalBilling) || 0;
     const initialPaid = Number(initialPayment) || 0;
 
-    // Optional initial installment if cash/gpay collected at time of creation
-    const installments = initialPaid > 0 ? [{
-      receiptNo: `IT-ADM-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: displayDate,
-      paidAmount: initialPaid,
-      paymentMethod: paymentMethod === "GPay" ? "GPay" : "Cash",
-      transactionId: "N/A",
-      billingBy: billingBy || "Admin Manual Entry"
-    }] : [];
+    // Record initial installment receipt if paid during admission
+    const installments =
+      initialPaid > 0
+        ? [
+            {
+              receiptNo: `IT-ADM-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+              date: displayDate,
+              paidAmount: initialPaid,
+              paymentMethod: paymentMethod === "GPay" ? "GPay" : paymentMethod || "Cash",
+              transactionId: "N/A",
+              billingBy: billingBy || "Admin Manual Entry",
+            },
+          ]
+        : [];
 
     const newStudent = new Student({
       sNo: nextSNo,
@@ -188,25 +245,31 @@ export async function POST(req: NextRequest) {
       installments: installments,
       totalCollection: initialPaid,
       pendingAmount: Math.max(0, billingTotal - initialPaid),
-      feesStatus: (billingTotal - initialPaid) === 0 && billingTotal > 0 ? "Clear" : "Pending",
-      certificateStatus: "Pending"
+      feesStatus: billingTotal > 0 && billingTotal - initialPaid === 0 ? "Clear" : "Pending",
+      certificateStatus: "Pending",
     });
 
     await newStudent.save();
 
-    return NextResponse.json({
-      success: true,
-      message: "Student record created successfully.",
-      data: newStudent
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Student record created successfully.",
+        data: newStudent,
+      },
+      { status: 201 }
+    );
   } catch (error: any) {
     console.error("Student manual creation failure:", error);
-    return NextResponse.json({ success: false, error: error.message || "Failed to create student record." }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to create student record." },
+      { status: 500 }
+    );
   }
 }
 
-// ─── PUT: EDIT EXISTING STUDENT DATA SAFELY (ENUM CONSTRAINTS ALIGNED) ──────
+// ─── PUT: EDIT EXISTING STUDENT DATA SAFELY ─────────────────────────────────
+
 export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -214,18 +277,25 @@ export async function PUT(req: NextRequest) {
     const { id, name, email, phone, college, domain, duration, totalBilling } = data;
 
     if (!id) {
-      return NextResponse.json({ success: false, error: "Missing Target Document Student ID." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing Target Document Student ID." },
+        { status: 400 }
+      );
     }
 
     const currentStudent = await Student.findById(id);
     if (!currentStudent) {
-      return NextResponse.json({ success: false, error: "Student profile not found." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Student profile not found." },
+        { status: 404 }
+      );
     }
 
-    const updatedBilling = Number(totalBilling) || currentStudent.totalBilling;
-    const newPendingAmount = Math.max(0, updatedBilling - (currentStudent.totalCollection || 0));
-    
-    const newFeesStatus = newPendingAmount === 0 ? "Clear" : "Pending";
+    const updatedBilling =
+      totalBilling !== undefined ? Number(totalBilling) : currentStudent.totalBilling;
+    const currentCollected = Number(currentStudent.totalCollection || 0);
+    const newPendingAmount = Math.max(0, updatedBilling - currentCollected);
+    const newFeesStatus = newPendingAmount === 0 && updatedBilling > 0 ? "Clear" : "Pending";
 
     const updatedStudent = await Student.findByIdAndUpdate(
       id,
@@ -239,13 +309,13 @@ export async function PUT(req: NextRequest) {
           duration,
           totalBilling: updatedBilling,
           pendingAmount: newPendingAmount,
-          feesStatus: newFeesStatus
-        }
+          feesStatus: newFeesStatus,
+        },
       },
       { new: true, runValidators: true }
     );
 
-    return NextResponse.json({ success: true, data: updatedStudent });
+    return NextResponse.json({ success: true, data: updatedStudent }, { status: 200 });
   } catch (error: any) {
     console.error("Student directory update failure:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -253,6 +323,7 @@ export async function PUT(req: NextRequest) {
 }
 
 // ─── DELETE: REMOVE A STUDENT RECORD ENTIRELY ───────────────────────────────
+
 export async function DELETE(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -260,16 +331,26 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ success: false, error: "Missing Target Document ID." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing Target Document ID." },
+        { status: 400 }
+      );
     }
 
     const deleted = await Student.findByIdAndDelete(id);
     if (!deleted) {
-      return NextResponse.json({ success: false, error: "Profile does not exist or was already deleted." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Profile does not exist or was already deleted." },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ success: true, message: "Student record dropped successfully." });
+    return NextResponse.json(
+      { success: true, message: "Student record removed successfully." },
+      { status: 200 }
+    );
   } catch (error: any) {
+    console.error("Student deletion failure:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

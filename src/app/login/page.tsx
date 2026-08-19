@@ -43,41 +43,49 @@ function LoginContent() {
   const randomQuote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)], []);
 
   // Extract return target from either 'callbackUrl' or 'callback' search parameters
- // Sanitize callback URL to enforce relative internal redirects only
-const targetDestination = useMemo(() => {
-  const rawCallback = searchParams.get("callbackUrl") || searchParams.get("callback");
-  if (!rawCallback) return "/dashboard";
+  // Sanitize callback URL to enforce relative internal redirects only
+  const targetDestination = useMemo(() => {
+    const rawCallback = searchParams.get("callbackUrl") || searchParams.get("callback");
+    
+    // 🎯 FIX 1: Set fallback destination to "/admin" if no callback parameter exists
+    if (!rawCallback) return "/admin"; 
 
-  const decoded = decodeURIComponent(rawCallback).trim();
-  
-  // Prevent external redirects (e.g., "https://...", "//attacker.com", "javascript:")
-  if (decoded.startsWith("/") && !decoded.startsWith("//")) {
-    return decoded;
-  }
+    const decoded = decodeURIComponent(rawCallback).trim();
+    
+    // Prevent external redirects (e.g., "https://...", "//attacker.com", "javascript:")
+    if (decoded.startsWith("/") && !decoded.startsWith("//")) {
+      return decoded;
+    }
 
-  return "/dashboard";
-}, [searchParams]);
+    return "/admin";
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccessMsg("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setSuccessMsg("");
 
     try {
       const res = await signIn("credentials", {
         email: email.trim(),
         password: password,
-        redirect: false,
+        redirect: false, // Prevents full-page hard refresh from NextAuth
       });
 
       if (res?.error) {
-        setError(res.error); 
+        // Handle credential verification errors
+        setError(res.error === "CredentialsSignin" ? "Invalid email or access key." : res.error);
         setLoading(false);
-      } else if (res?.url) {
-        setSuccessMsg("Session initialized successfully!");
-        router.push(targetDestination);
-        router.refresh();
+      } else if (res?.ok) {
+        // 🎯 FIX 2: Check `res?.ok` instead of `res?.url` (res?.url can be null with redirect: false)
+        setSuccessMsg("Session initialized successfully! Redirecting...");
+        
+        // Force full refresh navigation so Next.js server components & middleware register session cookies instantly
+        window.location.href = targetDestination;
+      } else {
+        setError("Failed to establish session. Please try again.");
+        setLoading(false);
       }
     } catch (err) {
       setError("An unexpected authentication error occurred.");
@@ -118,9 +126,6 @@ const targetDestination = useMemo(() => {
             />
           </div>
         </div>
-        <h2 className="text-center text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
-          Student <span className="text-orange-500">Developer</span> Portal
-        </h2>
         <p className="mt-1.5 text-center text-[11px] text-zinc-500 dark:text-zinc-400 font-medium italic">
           {randomQuote}
         </p>
@@ -237,7 +242,7 @@ const targetDestination = useMemo(() => {
                 href="/apply"
                 className="font-black text-orange-600 hover:text-orange-700 underline underline-offset-4"
               >
-                Join the Academy
+                Join
               </Link>
             </p>
           </div>
