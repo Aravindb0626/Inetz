@@ -390,8 +390,8 @@ export default function AboutPage() {
               { name: "Aravind", role: "Mern Stack Trainer",  img: "/staffs/aravindh.png" },
               { name: "Boomika", role: "Java Full Stack Trainer", img: "/staffs/boomika.png" },
               { name: " Dhanalakshmi", role: "Data Analytics Trainer",  img: "/staffs/sridhanalakshmi.png" },
-              { name: "Naresh", role: "Java Developer", img: "/staffs/Naresh.png" },
-              { name: "Anbarasan", role: "Mern Stack Trainer", img: "/staffs/anbu.png" },
+              { name: "Naresh", role: "MERN Stack Trainer", img: "/staffs/Naresh.png" },
+              { name: "Anbarasan", role: "Java Developer", img: "/staffs/anbu.png" },
               { name: "Esther Rassou", role: "Data Analytics Trainer", img: "/staffs/Esther.png.jpeg" }
             ].map((member, i) => (
               <motion.div key={i} className="group relative">

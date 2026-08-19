@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { Journal } from "@/models/Journal";
+import { Blog } from "@/models/Blog";
 import { v2 as cloudinary } from 'cloudinary';
 
 cloudinary.config({
@@ -13,9 +13,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const resolvedParams = await params;
     await connectToDatabase();
-    const journal = await Journal.findById(resolvedParams.id).lean();
-    if (!journal) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(journal);
+    const blog = await Blog.findById(resolvedParams.id).lean();
+    if (!blog) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(blog);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -30,24 +30,28 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     let imageUrl = body.image || "";
     
     if (imageUrl && imageUrl.startsWith('data:image')) {
-      const uploadResponse = await cloudinary.uploader.upload(imageUrl, { folder: "inetz_journals" });
-      imageUrl = uploadResponse.secure_url;
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
+        const uploadResponse = await cloudinary.uploader.upload(imageUrl, { folder: "inetz_journals" });
+        imageUrl = uploadResponse.secure_url;
+      }
     }
 
     let galleryImages = body.galleryImages || [];
     if (galleryImages.length > 0) {
-      galleryImages = await Promise.all(
-        galleryImages.map(async (img: string) => {
-          if (img.startsWith('data:image')) {
-            const res = await cloudinary.uploader.upload(img, { folder: "inetz_journals" });
-            return res.secure_url;
-          }
-          return img;
-        })
-      );
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
+        galleryImages = await Promise.all(
+          galleryImages.map(async (img: string) => {
+            if (img.startsWith('data:image')) {
+              const res = await cloudinary.uploader.upload(img, { folder: "inetz_journals" });
+              return res.secure_url;
+            }
+            return img;
+          })
+        );
+      }
     }
 
-    const updatedJournal = await Journal.findByIdAndUpdate(
+    const updatedBlog = await Blog.findByIdAndUpdate(
       resolvedParams.id,
       {
         slug: body.slug,
@@ -67,8 +71,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       { new: true }
     );
 
-    if (!updatedJournal) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(updatedJournal);
+    if (!updatedBlog) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(updatedBlog);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -78,7 +82,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const resolvedParams = await params;
     await connectToDatabase();
-    const deleted = await Journal.findByIdAndDelete(resolvedParams.id);
+    const deleted = await Blog.findByIdAndDelete(resolvedParams.id);
     if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ message: "Deleted successfully" });
   } catch (error: any) {

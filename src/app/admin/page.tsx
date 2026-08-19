@@ -7,7 +7,7 @@ import PaymentModal from "@/components/PaymentModel";
 import TracksTab from "@/components/TracksTab";
 import StudentsTab from "@/components/StudentsTab";
 import CollectionsTab from "@/components/CollectionsTab";
-import JournalTab from "@/components/JournalTab";
+import BlogsTab from "@/components/BlogsTab";
 
 type SidebarTab = "tracks" | "students" | "transactions" | "journals";
 type FormView = "list" | "form";
@@ -201,7 +201,7 @@ export default function AdminPage() {
                 activeTab === "journals" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/10" : "hover:bg-zinc-800 hover:text-zinc-200"
               }`}
             >
-              <BookOpen size={16} /> Journal & Events
+              <BookOpen size={16} /> Blogs & Events
             </button>
           </nav>
         </div>
@@ -235,7 +235,7 @@ export default function AdminPage() {
           )}
 
           {activeTab === "journals" && (
-            <JournalTab view={view as any} setView={setView as any} />
+            <BlogsTab view={view as any} setView={setView as any} />
           )}
 
         </div>

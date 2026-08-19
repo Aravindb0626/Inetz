@@ -29,6 +29,7 @@ export async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      dbName: 'internship',
     };
 
     cached.promise = mongoose
