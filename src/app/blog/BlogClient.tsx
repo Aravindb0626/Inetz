@@ -76,49 +76,98 @@ export default function BlogClient() {
     <div className="min-h-screen bg-[#FDFDFE] font-sans text-gray-900 pb-20">
 
       {/* ── Top Hero Section ── */}
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 pt-6 relative z-10">
-        <div className="w-full bg-gradient-to-r from-[#0E1F4C] to-[#122A6B] rounded-3xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between shadow-lg">
-          <div className="md:w-1/2 text-left space-y-4 p-10 md:p-14 relative z-20">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-400/30 bg-white/5 text-blue-200 text-[10px] font-semibold tracking-widest uppercase mb-2">
-              <BookOpen size={12} className="text-blue-300" />
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 pt-4 relative z-10">
+        <div className="w-full bg-white rounded-3xl relative overflow-hidden flex flex-col md:flex-row shadow-sm border border-gray-100">
+          
+          {/* Background Decorations */}
+          <div className="absolute top-0 left-0 w-64 h-64 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-50 z-0"></div>
+
+          {/* Left Column */}
+          <div className="md:w-[55%] text-left p-5 md:p-6 lg:p-8 relative z-20 flex flex-col justify-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold tracking-widest uppercase mb-3 w-fit border border-blue-100">
+              <BookOpen size={14} className="text-blue-600" />
               OUR JOURNEY
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-[1.1]">
-              Internship Blogs & Events
+            <h1 className="text-3xl md:text-[40px] lg:text-[42px] font-extrabold text-[#0B1530] tracking-tight leading-[1.1]">
+              Internship Blogs <br /> & Events
             </h1>
-            <p className="text-lg font-semibold text-blue-400">
+            <p className="text-base md:text-lg font-bold text-[#1C51F9] mt-2">
               Learn. Grow. Build. Succeed.
             </p>
-            <p className="text-gray-300 text-sm max-w-sm leading-relaxed mt-2">
+            <div className="w-10 h-1 bg-[#1C51F9] mt-2 mb-3 rounded-full"></div>
+            <p className="text-gray-500 text-sm max-w-md leading-snug">
               Explore our interns' projects, learning experiences, workshops, events and achievements.
             </p>
 
-            <div className="flex items-center gap-4 pt-4">
-              <button className="px-5 py-2.5 bg-[#1C51F9] hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm shadow-md">
-                Explore Stories <ArrowRight size={14} />
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <button 
+                onClick={() => document.getElementById('explore-stories')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-5 py-2 bg-[#1C51F9] hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm shadow-md"
+              >
+                Explore Stories <ArrowRight size={16} />
               </button>
-              <button className="px-5 py-2.5 bg-transparent border border-gray-500 hover:border-gray-300 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm">
-                Watch Videos <PlayCircle size={14} />
+              <button 
+                onClick={() => document.getElementById('watch-videos')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-5 py-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm shadow-sm"
+              >
+                <PlayCircle size={18} className="text-[#1C51F9]" />
+                Watch Videos
               </button>
+            </div>
+
+            {/* Bottom Feature Bar */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 bg-gray-50/80 p-2.5 rounded-2xl border border-gray-100 mt-5 max-w-[500px]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                </div>
+                <div>
+                  <h3 className="text-[11px] font-bold text-gray-900 leading-tight">Learn</h3>
+                  <p className="text-[9px] text-gray-500 leading-tight mt-0.5">Gain real-world<br/>knowledge</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div>
+                  <h3 className="text-[11px] font-bold text-gray-900 leading-tight">Grow</h3>
+                  <p className="text-[9px] text-gray-500 leading-tight mt-0.5">Develop skills<br/>and confidence</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                </div>
+                <div>
+                  <h3 className="text-[11px] font-bold text-gray-900 leading-tight">Succeed</h3>
+                  <p className="text-[9px] text-gray-500 leading-tight mt-0.5">Achieve goals<br/>and make impact</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="md:w-1/2 w-full h-[300px] md:h-full absolute right-0 bottom-0 md:static">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#122A6B] to-transparent z-10 hidden md:block w-32" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#122A6B] to-transparent z-10 block md:hidden h-32 bottom-0" />
+          {/* Right Column / Image Area */}
+          <div className="md:w-[45%] w-full h-[350px] md:h-auto relative">
+            <div className="absolute left-[-2px] top-0 h-full w-[80px] z-10 hidden md:block">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+                <path d="M0,0 C100,20 100,80 0,100 Z" fill="#ffffff" />
+                <path d="M0,0 C100,20 100,80 0,100" fill="none" stroke="#60a5fa" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+              </svg>
+            </div>
             <Image
               src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800"
               alt="Students collaborating"
               fill
-              className="object-cover object-left"
+              className="object-cover object-left md:object-center"
             />
           </div>
         </div>
       </div>
 
       {/* ── Search & Filter Bar ── */}
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 mt-8 relative z-20 flex flex-col md:flex-row items-center gap-6">
+      <div id="explore-stories" className="max-w-[1200px] mx-auto px-4 md:px-6 mt-8 relative z-20 flex flex-col md:flex-row items-center gap-6 scroll-mt-24">
         <div className="relative w-full md:w-[280px] shrink-0">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -336,7 +385,7 @@ export default function BlogClient() {
 
       {/* ── Internship Moments (Gallery Carousel) ── */}
       {galleryImages.length > 0 && (
-        <div className="max-w-[1200px] mx-auto px-4 md:px-6 mt-16 bg-[#FAFBFF] py-10 rounded-3xl border border-gray-100 mb-10 shadow-sm">
+        <div id="watch-videos" className="max-w-[1200px] mx-auto px-4 md:px-6 mt-16 bg-[#FAFBFF] py-10 rounded-3xl border border-gray-100 mb-10 shadow-sm scroll-mt-24">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#EEF2FF] rounded-lg flex items-center justify-center text-[#1C51F9]">

@@ -1,7 +1,5 @@
 @import url('https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css');
 @import "tailwindcss";
-/* At the very top of app/globals.css */
-@import "devicon/devicon.min.css";
 
 :root {
   --background: #ffffff;
